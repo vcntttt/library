@@ -1,8 +1,15 @@
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { ConvexReactClient } from "convex/react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { env } from "@/env";
+import { authClient } from "@/lib/auth-client";
 import Header from "../components/Header";
-import ConvexProvider from "../integrations/convex/provider";
 import appCss from "../styles.css?url";
+
+const convex = new ConvexReactClient(env.VITE_CONVEX_URL, {
+	expectAuth: true,
+});
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -15,7 +22,7 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Watch Tracker",
+				title: "Library",
 			},
 		],
 		links: [
@@ -31,17 +38,17 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="es" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>
-			<body>
-				<ConvexProvider>
+			<body suppressHydrationWarning>
+				<ConvexBetterAuthProvider authClient={authClient} client={convex}>
 					<ThemeProvider>
 						<Header />
 						{children}
 					</ThemeProvider>
-				</ConvexProvider>
+				</ConvexBetterAuthProvider>
 				<Scripts />
 			</body>
 		</html>

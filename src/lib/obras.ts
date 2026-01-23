@@ -1,9 +1,9 @@
 import type { Doc } from "../../convex/_generated/dataModel";
-import type { Work } from "./types";
+import type { Obra } from "./types";
 
-export type WorkDoc = Doc<"works">;
+export type ObraDoc = Doc<"obras">;
 
-export function workFromDoc(doc: WorkDoc): Work {
+export function obraFromDoc(doc: ObraDoc): Obra {
 	const { _id, _creationTime, ...rest } = doc;
 	void _creationTime;
 	return { id: _id, ...rest };

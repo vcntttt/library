@@ -1,10 +1,10 @@
-import type { Work } from "@/lib/types";
+import type { Obra } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { WorkCard } from "./work-card";
+import { ObraCard } from "./obra-card";
 
 interface DashboardSectionProps {
 	title: string;
-	works: Work[];
+	works: Obra[];
 	variant?: "default" | "compact";
 	emptyMessage?: string;
 	className?: string;
@@ -14,7 +14,7 @@ export function DashboardSection({
 	title,
 	works,
 	variant = "default",
-	emptyMessage = "Nothing here yet",
+	emptyMessage = "No hay nada aun",
 	className,
 }: DashboardSectionProps) {
 	return (
@@ -31,8 +31,8 @@ export function DashboardSection({
 							: "flex flex-col gap-2",
 					)}
 				>
-					{works.map((work) => (
-						<WorkCard key={work.id} work={work} variant={variant} />
+					{works.map((obra) => (
+						<ObraCard key={obra.id} obra={obra} variant={variant} />
 					))}
 				</div>
 			) : (

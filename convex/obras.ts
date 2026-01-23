@@ -1,7 +1,7 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 
-const workType = v.union(
+const obraType = v.union(
   v.literal('book'),
   v.literal('movie'),
   v.literal('series'),
@@ -9,7 +9,7 @@ const workType = v.union(
   v.literal('manga'),
 )
 
-const workStatus = v.union(
+const obraStatus = v.union(
   v.literal('backlog'),
   v.literal('in-progress'),
   v.literal('finished'),
@@ -18,49 +18,77 @@ const workStatus = v.union(
 
 export const list = query({
   args: {
-    status: v.optional(workStatus),
-    type: v.optional(workType),
+    status: v.optional(obraStatus),
+    type: v.optional(obraType),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Unauthenticated')
+    }
+
+    const userTokenIdentifier = identity.tokenIdentifier
     const limit = args.limit ?? 200
 
     if (args.status) {
       return await ctx.db
-        .query('works')
-        .withIndex('by_status_updatedAt', (q) => q.eq('status', args.status!))
+        .query('obras')
+        .withIndex('by_user_status_updatedAt', (q) =>
+          q
+            .eq('userTokenIdentifier', userTokenIdentifier)
+            .eq('status', args.status!),
+        )
         .order('desc')
         .take(limit)
     }
 
     if (args.type) {
       return await ctx.db
-        .query('works')
-        .withIndex('by_type_updatedAt', (q) => q.eq('type', args.type!))
+        .query('obras')
+        .withIndex('by_user_type_updatedAt', (q) =>
+          q.eq('userTokenIdentifier', userTokenIdentifier).eq('type', args.type!),
+        )
         .order('desc')
         .take(limit)
     }
 
     return await ctx.db
-      .query('works')
-      .withIndex('by_updatedAt')
+      .query('obras')
+      .withIndex('by_user_updatedAt', (q) =>
+        q.eq('userTokenIdentifier', userTokenIdentifier),
+      )
       .order('desc')
       .take(limit)
   },
 })
 
 export const get = query({
-  args: { id: v.id('works') },
+  args: { id: v.id('obras') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id)
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Unauthenticated')
+    }
+
+    const doc = await ctx.db.get(args.id)
+    if (!doc) {
+      return null
+    }
+
+    if (doc.userTokenIdentifier !== identity.tokenIdentifier) {
+      return null
+    }
+
+    return doc
   },
 })
 
 export const create = mutation({
   args: {
     title: v.string(),
-    type: workType,
-    status: workStatus,
+    type: obraType,
+    status: obraStatus,
     rating: v.optional(v.number()),
     review: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
@@ -78,6 +106,11 @@ export const create = mutation({
     finishedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Unauthenticated')
+    }
+
     const now = Date.now()
 
     if (args.progress) {
@@ -93,7 +126,8 @@ export const create = mutation({
       throw new Error('Rating must be between 1 and 5')
     }
 
-    return await ctx.db.insert('works', {
+    return await ctx.db.insert('obras', {
+      userTokenIdentifier: identity.tokenIdentifier,
       title: args.title.trim(),
       type: args.type,
       status: args.status,
@@ -119,11 +153,11 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    id: v.id('works'),
+    id: v.id('obras'),
     patch: v.object({
       title: v.optional(v.string()),
-      type: v.optional(workType),
-      status: v.optional(workStatus),
+      type: v.optional(obraType),
+      status: v.optional(obraStatus),
       rating: v.optional(v.number()),
       review: v.optional(v.string()),
       tags: v.optional(v.array(v.string())),
@@ -142,9 +176,18 @@ export const update = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Unauthenticated')
+    }
+
     const existing = await ctx.db.get(args.id)
     if (!existing) {
-      throw new Error('Work not found')
+      throw new Error('Obra no encontrada')
+    }
+
+    if (existing.userTokenIdentifier !== identity.tokenIdentifier) {
+      throw new Error('Obra no encontrada')
     }
 
     const patch: Record<string, any> = { ...args.patch }
@@ -187,9 +230,22 @@ export const update = mutation({
 })
 
 export const remove = mutation({
-  args: { id: v.id('works') },
+  args: { id: v.id('obras') },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Unauthenticated')
+    }
+
+    const existing = await ctx.db.get(args.id)
+    if (!existing) {
+      throw new Error('Obra no encontrada')
+    }
+
+    if (existing.userTokenIdentifier !== identity.tokenIdentifier) {
+      throw new Error('Obra no encontrada')
+    }
+
     return await ctx.db.delete(args.id)
   },
 })
-

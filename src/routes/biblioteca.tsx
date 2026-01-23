@@ -1,17 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
-import { DashboardSection } from "@/components/dashboard-section";
+import { LibraryTable } from "@/components/library-table";
 import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
 import { api } from "../../convex/_generated/api";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/biblioteca")({
 	ssr: false,
-	component: DashboardPage,
+	component: LibraryPage,
 });
 
-function DashboardPage() {
+function LibraryPage() {
 	const { data: session, isPending } = authClient.useSession();
 	if (isPending || session === undefined) {
 		return (
@@ -24,7 +24,7 @@ function DashboardPage() {
 	if (session === null) {
 		return (
 			<div className="container mx-auto p-4 md:p-6 space-y-3">
-				<h1 className="text-2xl font-semibold tracking-tight">Library</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">Biblioteca</h1>
 				<p className="text-sm text-muted-foreground">
 					Inicia sesion para ver tu biblioteca.
 				</p>
@@ -35,48 +35,26 @@ function DashboardPage() {
 		);
 	}
 
-	return <DashboardAuthed />;
+	return <LibraryAuthed />;
 }
 
-function DashboardAuthed() {
+function LibraryAuthed() {
 	const docs = useQuery(api.obras.list, {});
 	const obras = (docs ?? []).map(obraFromDoc);
 
-	const inProgress = obras.filter((w) => w.status === "in-progress");
-	const backlog = obras.filter((w) => w.status === "backlog");
-	const finished = obras.filter((w) => w.status === "finished");
-
 	return (
-		<div className="container mx-auto p-4 md:p-6 space-y-8">
+		<div className="container mx-auto p-4 md:p-6 space-y-6">
 			<div className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h1 className="text-2xl font-semibold tracking-tight">Panel</h1>
+					<h1 className="text-2xl font-semibold tracking-tight">Biblioteca</h1>
 					<p className="text-sm text-muted-foreground">
-						Tu actividad reciente, lo que esta en progreso y lo que ya
-						terminaste.
+						Busca, filtra y ordena todas tus obras.
 					</p>
 				</div>
 				<AddObraDialog />
 			</div>
 
-			<DashboardSection
-				title="En progreso"
-				works={inProgress}
-				variant="default"
-				emptyMessage="Empieza algo nuevo agregando una obra."
-			/>
-			<DashboardSection
-				title="Pendiente"
-				works={backlog}
-				variant="compact"
-				emptyMessage="No tienes nada pendiente."
-			/>
-			<DashboardSection
-				title="Terminadas"
-				works={finished}
-				variant="compact"
-				emptyMessage="Aun no terminas nada."
-			/>
+			<LibraryTable obras={obras} />
 		</div>
 	);
 }

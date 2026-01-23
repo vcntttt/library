@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { ModeToggle } from "./toggle-theme";
 
 const navItems = [
-	{ to: "/", label: "Dashboard" },
-	{ to: "/library", label: "Library" },
+	{ to: "/", label: "Panel" },
+	{ to: "/biblioteca", label: "Biblioteca" },
 ] as const;
 
 export default function Header() {
@@ -17,7 +17,7 @@ export default function Header() {
 			<div className="container mx-auto flex h-14 items-center justify-between px-4">
 				<Link to="/" className="flex items-center gap-2">
 					<BookOpen className="h-5 w-5 text-foreground" />
-					<span className="font-semibold tracking-tight">Watch Tracker</span>
+					<span className="font-semibold tracking-tight">Library</span>
 				</Link>
 
 				<nav className="flex items-center gap-1">

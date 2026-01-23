@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import type { Work } from "@/lib/types";
+import type { Obra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "./icons";
 import { ProgressBar } from "./progress-bar";
@@ -7,38 +7,38 @@ import { StarRating } from "./star-rating";
 import { StatusBadge } from "./status-badge";
 import { TypeBadge } from "./type-badge";
 
-interface WorkCardProps {
-	work: Work;
+interface ObraCardProps {
+	obra: Obra;
 	variant?: "default" | "compact";
 	className?: string;
 }
 
-export function WorkCard({
-	work,
+export function ObraCard({
+	obra,
 	variant = "default",
 	className,
-}: WorkCardProps) {
+}: ObraCardProps) {
 	const showProgress =
-		work.progress &&
-		work.type !== "movie" &&
-		(work.status === "in-progress" || work.status === "backlog");
+		obra.progress &&
+		obra.type !== "movie" &&
+		(obra.status === "in-progress" || obra.status === "backlog");
 
 	if (variant === "compact") {
 		return (
 			<Link
-				to="/work/$workId"
-				params={{ workId: work.id }}
+				to="/obra/$obraId"
+				params={{ obraId: obra.id }}
 				className={cn(
 					"group flex items-center justify-between rounded-lg border border-border/50 bg-card/50 px-4 py-3 transition-all hover:border-border hover:bg-card",
 					className,
 				)}
 			>
 				<div className="flex items-center gap-3 min-w-0">
-					<TypeBadge type={work.type} showIcon={false} />
-					<span className="truncate font-medium">{work.title}</span>
+					<TypeBadge type={obra.type} showIcon={false} />
+					<span className="truncate font-medium">{obra.title}</span>
 				</div>
 				<div className="flex items-center gap-3">
-					{work.rating && <StarRating rating={work.rating} size="sm" />}
+					{obra.rating && <StarRating rating={obra.rating} size="sm" />}
 					<ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
 				</div>
 			</Link>
@@ -47,8 +47,8 @@ export function WorkCard({
 
 	return (
 		<Link
-			to="/work/$workId"
-			params={{ workId: work.id }}
+			to="/obra/$obraId"
+			params={{ obraId: obra.id }}
 			className={cn(
 				"group flex flex-col rounded-lg border border-border/50 bg-card/50 p-4 transition-all hover:border-border hover:bg-card",
 				className,
@@ -57,34 +57,34 @@ export function WorkCard({
 			<div className="flex items-start justify-between gap-2">
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2 mb-1">
-						<TypeBadge type={work.type} />
-						<StatusBadge status={work.status} />
+						<TypeBadge type={obra.type} />
+						<StatusBadge status={obra.status} />
 					</div>
 					<h3 className="truncate font-semibold text-foreground group-hover:text-foreground/90">
-						{work.title}
+						{obra.title}
 					</h3>
-					{work.creator && (
+					{obra.creator && (
 						<p className="text-sm text-muted-foreground truncate">
-							{work.creator}
+							{obra.creator}
 						</p>
 					)}
 				</div>
-				{work.rating && <StarRating rating={work.rating} size="sm" />}
+				{obra.rating && <StarRating rating={obra.rating} size="sm" />}
 			</div>
 
-			{showProgress && work.progress && (
+			{showProgress && obra.progress && (
 				<div className="mt-3">
 					<ProgressBar
-						current={work.progress.current}
-						total={work.progress.total}
-						type={work.type}
+						current={obra.progress.current}
+						total={obra.progress.total}
+						type={obra.type}
 					/>
 				</div>
 			)}
 
-			{work.tags.length > 0 && (
+			{obra.tags.length > 0 && (
 				<div className="mt-3 flex flex-wrap gap-1">
-					{work.tags.slice(0, 3).map((tag) => (
+					{obra.tags.slice(0, 3).map((tag) => (
 						<span
 							key={tag}
 							className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
@@ -92,9 +92,9 @@ export function WorkCard({
 							{tag}
 						</span>
 					))}
-					{work.tags.length > 3 && (
+					{obra.tags.length > 3 && (
 						<span className="text-xs text-muted-foreground">
-							+{work.tags.length - 3}
+							+{obra.tags.length - 3}
 						</span>
 					)}
 				</div>

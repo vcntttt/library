@@ -18,7 +18,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { Work, WorkStatus, WorkType } from "@/lib/types";
+import type { Obra, ObraStatus, ObraType } from "@/lib/types";
 import { Search } from "./icons";
 import { StarRating } from "./star-rating";
 import { StatusBadge } from "./status-badge";
@@ -26,15 +26,15 @@ import { TypeBadge } from "./type-badge";
 
 type SortKey = "title" | "type" | "status" | "rating" | "updatedAt";
 
-export function LibraryTable({ works }: { works: Work[] }) {
+export function LibraryTable({ obras }: { obras: Obra[] }) {
 	const [search, setSearch] = useState("");
-	const [typeFilter, setTypeFilter] = useState<WorkType | "all">("all");
-	const [statusFilter, setStatusFilter] = useState<WorkStatus | "all">("all");
+	const [typeFilter, setTypeFilter] = useState<ObraType | "all">("all");
+	const [statusFilter, setStatusFilter] = useState<ObraStatus | "all">("all");
 	const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-	const filteredWorks = useMemo(() => {
-		let result = [...works];
+	const filteredObras = useMemo(() => {
+		let result = [...obras];
 
 		// Search
 		if (search) {
@@ -43,7 +43,7 @@ export function LibraryTable({ works }: { works: Work[] }) {
 				(w) =>
 					w.title.toLowerCase().includes(q) ||
 					w.creator?.toLowerCase().includes(q) ||
-					w.tags.some((t) => t.toLowerCase().includes(q)),
+					w.tags.some((t: string) => t.toLowerCase().includes(q)),
 			);
 		}
 
@@ -82,7 +82,7 @@ export function LibraryTable({ works }: { works: Work[] }) {
 		});
 
 		return result;
-	}, [works, search, typeFilter, statusFilter, sortKey, sortDir]);
+	}, [obras, search, typeFilter, statusFilter, sortKey, sortDir]);
 
 	const handleSort = (key: SortKey) => {
 		if (sortKey === key) {
@@ -100,7 +100,7 @@ export function LibraryTable({ works }: { works: Work[] }) {
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
-						placeholder="Search by title, creator, or tag..."
+						placeholder="Buscar por titulo, autor o etiqueta..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						className="pl-9"
@@ -109,33 +109,33 @@ export function LibraryTable({ works }: { works: Work[] }) {
 				<div className="flex gap-2">
 					<Select
 						value={typeFilter}
-						onValueChange={(v) => setTypeFilter(v as WorkType | "all")}
+						onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
 					>
 						<SelectTrigger className="w-[130px]">
-							<SelectValue placeholder="Type" />
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">All Types</SelectItem>
-							<SelectItem value="book">Book</SelectItem>
-							<SelectItem value="movie">Movie</SelectItem>
-							<SelectItem value="series">Series</SelectItem>
+							<SelectItem value="all">Todos los tipos</SelectItem>
+							<SelectItem value="book">Libro</SelectItem>
+							<SelectItem value="movie">Pelicula</SelectItem>
+							<SelectItem value="series">Serie</SelectItem>
 							<SelectItem value="anime">Anime</SelectItem>
 							<SelectItem value="manga">Manga</SelectItem>
 						</SelectContent>
 					</Select>
 					<Select
 						value={statusFilter}
-						onValueChange={(v) => setStatusFilter(v as WorkStatus | "all")}
+						onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
 					>
 						<SelectTrigger className="w-[140px]">
-							<SelectValue placeholder="Status" />
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">All Status</SelectItem>
-							<SelectItem value="backlog">Backlog</SelectItem>
-							<SelectItem value="in-progress">In Progress</SelectItem>
-							<SelectItem value="finished">Finished</SelectItem>
-							<SelectItem value="dropped">Dropped</SelectItem>
+							<SelectItem value="all">Todos los estados</SelectItem>
+							<SelectItem value="backlog">Pendiente</SelectItem>
+							<SelectItem value="in-progress">En progreso</SelectItem>
+							<SelectItem value="finished">Terminada</SelectItem>
+							<SelectItem value="dropped">Abandonada</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -150,46 +150,47 @@ export function LibraryTable({ works }: { works: Work[] }) {
 								className="cursor-pointer select-none"
 								onClick={() => handleSort("title")}
 							>
-								Title {sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
+								Titulo {sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
 							<TableHead
 								className="cursor-pointer select-none"
 								onClick={() => handleSort("type")}
 							>
-								Type {sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
+								Tipo {sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
 							<TableHead
 								className="cursor-pointer select-none"
 								onClick={() => handleSort("status")}
 							>
-								Status {sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
+								Estado {sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
 							<TableHead
 								className="cursor-pointer select-none"
 								onClick={() => handleSort("rating")}
 							>
-								Rating {sortKey === "rating" && (sortDir === "asc" ? "↑" : "↓")}
+								Valoracion{" "}
+								{sortKey === "rating" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
-							<TableHead className="hidden sm:table-cell">Tags</TableHead>
+							<TableHead className="hidden sm:table-cell">Etiquetas</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{filteredWorks.length === 0 ? (
+						{filteredObras.length === 0 ? (
 							<TableRow>
 								<TableCell
 									colSpan={5}
 									className="h-24 text-center text-muted-foreground"
 								>
-									No works found
+									No se encontraron obras
 								</TableCell>
 							</TableRow>
 						) : (
-							filteredWorks.map((work) => (
+							filteredObras.map((work) => (
 								<TableRow key={work.id} className="group">
 									<TableCell>
 										<Link
-											to="/work/$workId"
-											params={{ workId: work.id }}
+											to="/obra/$obraId"
+											params={{ obraId: work.id }}
 											className="font-medium text-foreground hover:underline"
 										>
 											{work.title}
@@ -215,7 +216,7 @@ export function LibraryTable({ works }: { works: Work[] }) {
 									</TableCell>
 									<TableCell className="hidden sm:table-cell">
 										<div className="flex flex-wrap gap-1">
-											{work.tags.slice(0, 2).map((tag) => (
+											{work.tags.slice(0, 2).map((tag: string) => (
 												<span
 													key={tag}
 													className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
@@ -238,7 +239,7 @@ export function LibraryTable({ works }: { works: Work[] }) {
 			</div>
 
 			<p className="text-sm text-muted-foreground">
-				Showing {filteredWorks.length} of {works.length} works
+				Mostrando {filteredObras.length} de {obras.length} obras
 			</p>
 		</div>
 	);

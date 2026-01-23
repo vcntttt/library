@@ -1,22 +1,22 @@
-import type { WorkStatus } from "@/lib/types";
+import type { ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const statusColors: Record<WorkStatus, string> = {
+const statusColors: Record<ObraStatus, string> = {
 	backlog: "text-muted-foreground",
 	"in-progress": "text-amber-400",
 	finished: "text-emerald-400",
 	dropped: "text-red-400",
 };
 
-const statusLabels: Record<WorkStatus, string> = {
-	backlog: "Backlog",
-	"in-progress": "In Progress",
-	finished: "Finished",
-	dropped: "Dropped",
+const statusLabels: Record<ObraStatus, string> = {
+	backlog: "Pendiente",
+	"in-progress": "En progreso",
+	finished: "Terminada",
+	dropped: "Abandonada",
 };
 
 interface StatusBadgeProps {
-	status: WorkStatus;
+	status: ObraStatus;
 	className?: string;
 }
 

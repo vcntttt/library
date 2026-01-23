@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently --names \"web,convex\" --prefix-colors \"green,red\" \"bun run dev:web\" \"bun run dev:convex\"",
+    "dev": "concurrently --names \"web,convex\" --prefix-colors \"green,blue\" \"bun run dev:web\" \"bun run dev:convex\"",
     "dev:web": "vite dev --port 3000",
     "dev:convex": "convex dev",
     "build": "vite build",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
+    "@convex-dev/better-auth": "^0.10.9",
     "@convex-dev/react-query": "0.1.0",
     "@faker-js/faker": "^10.0.0",
     "@t3-oss/env-core": "^0.13.8",
@@ -29,9 +30,10 @@
     "@tanstack/react-table": "^8.21.2",
     "@tanstack/router-plugin": "^1.132.0",
     "@vercel/analytics": "^1.6.1",
+    "better-auth": "^1.4.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.27.3",
+    "convex": "^1.31.2",
     "lucide-react": "^0.561.0",
     "nitro": "latest",
     "react": "^19.2.0",

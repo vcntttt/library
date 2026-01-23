@@ -1,15 +1,15 @@
-import type { WorkType } from "@/lib/types";
+import type { ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ProgressBarProps {
 	current: number;
 	total: number;
-	type: WorkType;
+	type: ObraType;
 	showLabel?: boolean;
 	className?: string;
 }
 
-const progressColors: Record<WorkType, string> = {
+const progressColors: Record<ObraType, string> = {
 	book: "bg-emerald-500",
 	movie: "bg-blue-500",
 	series: "bg-orange-500",
@@ -17,12 +17,12 @@ const progressColors: Record<WorkType, string> = {
 	manga: "bg-cyan-500",
 };
 
-const unitLabels: Record<WorkType, string> = {
-	book: "pages",
+const unitLabels: Record<ObraType, string> = {
+	book: "pag",
 	movie: "",
-	series: "episodes",
-	anime: "episodes",
-	manga: "chapters",
+	series: "eps",
+	anime: "eps",
+	manga: "caps",
 };
 
 export function ProgressBar({

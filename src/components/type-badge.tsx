@@ -1,8 +1,8 @@
-import type { WorkType } from "@/lib/types";
+import type { ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { TypeIcons } from "./icons";
 
-const typeColors: Record<WorkType, string> = {
+const typeColors: Record<ObraType, string> = {
 	book: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
 	movie: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 	series: "bg-orange-500/10 text-orange-400 border-orange-500/20",
@@ -10,16 +10,16 @@ const typeColors: Record<WorkType, string> = {
 	manga: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
 };
 
-const typeLabels: Record<WorkType, string> = {
-	book: "Book",
-	movie: "Movie",
-	series: "Series",
+const typeLabels: Record<ObraType, string> = {
+	book: "Libro",
+	movie: "Pelicula",
+	series: "Serie",
 	anime: "Anime",
 	manga: "Manga",
 };
 
 interface TypeBadgeProps {
-	type: WorkType;
+	type: ObraType;
 	showIcon?: boolean;
 	className?: string;
 }

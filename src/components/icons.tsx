@@ -19,10 +19,10 @@ import {
 	XCircle,
 } from "lucide-react";
 import type React from "react";
-import type { WorkStatus, WorkType } from "@/lib/types";
+import type { ObraStatus, ObraType } from "@/lib/types";
 
 export const TypeIcons: Record<
-	WorkType,
+	ObraType,
 	React.ComponentType<{ className?: string }>
 > = {
 	book: Book,
@@ -33,7 +33,7 @@ export const TypeIcons: Record<
 };
 
 export const StatusIcons: Record<
-	WorkStatus,
+	ObraStatus,
 	React.ComponentType<{ className?: string }>
 > = {
 	backlog: List,

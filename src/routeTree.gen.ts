@@ -9,13 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LibraryRouteImport } from './routes/library'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as WorkWorkIdRouteImport } from './routes/work/$workId'
+import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const LibraryRoute = LibraryRouteImport.update({
-  id: '/library',
-  path: '/library',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BibliotecaRoute = BibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -23,49 +30,75 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkWorkIdRoute = WorkWorkIdRouteImport.update({
-  id: '/work/$workId',
-  path: '/work/$workId',
+const ObraObraIdRoute = ObraObraIdRouteImport.update({
+  id: '/obra/$obraId',
+  path: '/obra/$obraId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/library': typeof LibraryRoute
-  '/work/$workId': typeof WorkWorkIdRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/login': typeof LoginRoute
+  '/obra/$obraId': typeof ObraObraIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/library': typeof LibraryRoute
-  '/work/$workId': typeof WorkWorkIdRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/login': typeof LoginRoute
+  '/obra/$obraId': typeof ObraObraIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/library': typeof LibraryRoute
-  '/work/$workId': typeof WorkWorkIdRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/login': typeof LoginRoute
+  '/obra/$obraId': typeof ObraObraIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/library' | '/work/$workId'
+  fullPaths: '/' | '/biblioteca' | '/login' | '/obra/$obraId' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/library' | '/work/$workId'
-  id: '__root__' | '/' | '/library' | '/work/$workId'
+  to: '/' | '/biblioteca' | '/login' | '/obra/$obraId' | '/api/auth/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/biblioteca'
+    | '/login'
+    | '/obra/$obraId'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LibraryRoute: typeof LibraryRoute
-  WorkWorkIdRoute: typeof WorkWorkIdRoute
+  BibliotecaRoute: typeof BibliotecaRoute
+  LoginRoute: typeof LoginRoute
+  ObraObraIdRoute: typeof ObraObraIdRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/library': {
-      id: '/library'
-      path: '/library'
-      fullPath: '/library'
-      preLoaderRoute: typeof LibraryRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biblioteca': {
+      id: '/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof BibliotecaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -75,11 +108,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/work/$workId': {
-      id: '/work/$workId'
-      path: '/work/$workId'
-      fullPath: '/work/$workId'
-      preLoaderRoute: typeof WorkWorkIdRouteImport
+    '/obra/$obraId': {
+      id: '/obra/$obraId'
+      path: '/obra/$obraId'
+      fullPath: '/obra/$obraId'
+      preLoaderRoute: typeof ObraObraIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -87,8 +127,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LibraryRoute: LibraryRoute,
-  WorkWorkIdRoute: WorkWorkIdRoute,
+  BibliotecaRoute: BibliotecaRoute,
+  LoginRoute: LoginRoute,
+  ObraObraIdRoute: ObraObraIdRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

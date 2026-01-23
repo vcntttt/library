@@ -2,7 +2,8 @@ import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 export default defineSchema({
-  works: defineTable({
+  obras: defineTable({
+    userTokenIdentifier: v.string(),
     title: v.string(),
     type: v.union(
       v.literal('book'),
@@ -35,7 +36,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index('by_updatedAt', ['updatedAt'])
-    .index('by_status_updatedAt', ['status', 'updatedAt'])
-    .index('by_type_updatedAt', ['type', 'updatedAt']),
+    .index('by_user_updatedAt', ['userTokenIdentifier', 'updatedAt'])
+    .index('by_user_status_updatedAt', ['userTokenIdentifier', 'status', 'updatedAt'])
+    .index('by_user_type_updatedAt', ['userTokenIdentifier', 'type', 'updatedAt']),
 })

@@ -1,14 +1,14 @@
-export type WorkType = "book" | "movie" | "series" | "anime" | "manga";
+export type ObraType = "book" | "movie" | "series" | "anime" | "manga";
 
-export type WorkStatus = "backlog" | "in-progress" | "finished" | "dropped";
+export type ObraStatus = "backlog" | "in-progress" | "finished" | "dropped";
 
-export type WorkId = import("../../convex/_generated/dataModel").Id<"works">;
+export type ObraId = import("../../convex/_generated/dataModel").Id<"obras">;
 
-export interface Work {
-	id: WorkId;
+export interface Obra {
+	id: ObraId;
 	title: string;
-	type: WorkType;
-	status: WorkStatus;
+	type: ObraType;
+	status: ObraStatus;
 	rating?: number; // 1-5
 	review?: string;
 	tags: string[];

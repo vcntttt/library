@@ -19,27 +19,27 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { WorkStatus, WorkType } from "@/lib/types";
+import type { ObraStatus, ObraType } from "@/lib/types";
 import { api } from "../../convex/_generated/api";
 import { Plus } from "./icons";
 import { StarRating } from "./star-rating";
 
-const workTypes: { value: WorkType; label: string }[] = [
-	{ value: "book", label: "Book" },
-	{ value: "movie", label: "Movie" },
-	{ value: "series", label: "Series" },
+const obraTypes: { value: ObraType; label: string }[] = [
+	{ value: "book", label: "Libro" },
+	{ value: "movie", label: "Pelicula" },
+	{ value: "series", label: "Serie" },
 	{ value: "anime", label: "Anime" },
 	{ value: "manga", label: "Manga" },
 ];
 
-const workStatuses: { value: WorkStatus; label: string }[] = [
-	{ value: "backlog", label: "Backlog" },
-	{ value: "in-progress", label: "In Progress" },
-	{ value: "finished", label: "Finished" },
-	{ value: "dropped", label: "Dropped" },
+const obraStatuses: { value: ObraStatus; label: string }[] = [
+	{ value: "backlog", label: "Pendiente" },
+	{ value: "in-progress", label: "En progreso" },
+	{ value: "finished", label: "Terminada" },
+	{ value: "dropped", label: "Abandonada" },
 ];
 
-export function AddWorkDialog() {
+export function AddObraDialog() {
 	const [open, setOpen] = useState(false);
 	const titleId = useId();
 	const typeId = useId();
@@ -48,13 +48,13 @@ export function AddWorkDialog() {
 	const totalId = useId();
 	const tagsId = useId();
 	const [title, setTitle] = useState("");
-	const [type, setType] = useState<WorkType>("book");
-	const [status, setStatus] = useState<WorkStatus>("backlog");
+	const [type, setType] = useState<ObraType>("book");
+	const [status, setStatus] = useState<ObraStatus>("backlog");
 	const [creator, setCreator] = useState("");
 	const [tags, setTags] = useState("");
 	const [rating, setRating] = useState(0);
 	const [totalProgress, setTotalProgress] = useState("");
-	const createWork = useMutation(api.works.create);
+	const createObra = useMutation(api.obras.create);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -62,7 +62,7 @@ export function AddWorkDialog() {
 
 		const parsedTotalProgress = Number.parseInt(totalProgress, 10) || 0;
 
-		await createWork({
+		await createObra({
 			title: title.trim(),
 			type,
 			status,
@@ -92,36 +92,36 @@ export function AddWorkDialog() {
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger render={<Button size="sm" className="gap-1.5" />}>
 				<Plus className="h-4 w-4" />
-				Add Work
+				Agregar obra
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Add New Work</DialogTitle>
+					<DialogTitle>Nueva obra</DialogTitle>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor={titleId}>Title</Label>
+						<Label htmlFor={titleId}>Titulo</Label>
 						<Input
 							id={titleId}
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
-							placeholder="Enter title..."
+							placeholder="Escribe un titulo..."
 							autoFocus
 						/>
 					</div>
 
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">
-							<Label htmlFor={typeId}>Type</Label>
+							<Label htmlFor={typeId}>Tipo</Label>
 							<Select
 								value={type}
-								onValueChange={(v) => setType(v as WorkType)}
+								onValueChange={(v) => setType(v as ObraType)}
 							>
 								<SelectTrigger id={typeId}>
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									{workTypes.map((t) => (
+									{obraTypes.map((t) => (
 										<SelectItem key={t.value} value={t.value}>
 											{t.label}
 										</SelectItem>
@@ -131,16 +131,16 @@ export function AddWorkDialog() {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor={statusId}>Status</Label>
+							<Label htmlFor={statusId}>Estado</Label>
 							<Select
 								value={status}
-								onValueChange={(v) => setStatus(v as WorkStatus)}
+								onValueChange={(v) => setStatus(v as ObraStatus)}
 							>
 								<SelectTrigger id={statusId}>
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									{workStatuses.map((s) => (
+									{obraStatuses.map((s) => (
 										<SelectItem key={s.value} value={s.value}>
 											{s.label}
 										</SelectItem>
@@ -151,14 +151,12 @@ export function AddWorkDialog() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor={creatorId}>
-							Creator (Author / Director / Studio)
-						</Label>
+						<Label htmlFor={creatorId}>Autor / Director / Estudio</Label>
 						<Input
 							id={creatorId}
 							value={creator}
 							onChange={(e) => setCreator(e.target.value)}
-							placeholder="e.g., Christopher Nolan"
+							placeholder="Ej: Christopher Nolan"
 						/>
 					</div>
 
@@ -167,34 +165,34 @@ export function AddWorkDialog() {
 							<Label htmlFor={totalId}>
 								Total{" "}
 								{type === "book"
-									? "Pages"
+									? "paginas"
 									: type === "manga"
-										? "Chapters"
-										: "Episodes"}
+										? "capitulos"
+										: "episodios"}
 							</Label>
 							<Input
 								id={totalId}
 								type="number"
 								value={totalProgress}
 								onChange={(e) => setTotalProgress(e.target.value)}
-								placeholder="e.g., 320"
+								placeholder="Ej: 320"
 							/>
 						</div>
 					)}
 
 					<div className="space-y-2">
-						<Label htmlFor={tagsId}>Tags (comma-separated)</Label>
+						<Label htmlFor={tagsId}>Etiquetas (separadas por coma)</Label>
 						<Textarea
 							id={tagsId}
 							value={tags}
 							onChange={(e) => setTags(e.target.value)}
-							placeholder="e.g., sci-fi, philosophy, drama"
+							placeholder="Ej: sci-fi, filosofia, drama"
 							rows={2}
 						/>
 					</div>
 
 					<div className="space-y-2">
-						<Label>Rating</Label>
+						<Label>Valoracion</Label>
 						<StarRating
 							rating={rating}
 							interactive
@@ -209,10 +207,10 @@ export function AddWorkDialog() {
 							variant="outline"
 							onClick={() => setOpen(false)}
 						>
-							Cancel
+							Cancelar
 						</Button>
 						<Button type="submit" disabled={!title.trim()}>
-							Add Work
+							Agregar
 						</Button>
 					</div>
 				</form>
