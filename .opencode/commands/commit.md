@@ -10,6 +10,8 @@ Workflow:
 - Group changes into buildable/logical units (schema, generated types, UI, auth wiring, docs, etc.).
 - Stage and commit each group with an intent-focused Conventional Commit message.
 - Use the `Git Commit Helper` (`git-commit-helper`) skill to draft messages from the staged diff, then normalize to Conventional Commits (ignore repo style).
+- Include a short rationale in the commit body (1-2 lines explaining why).
+- Respond in Spanish.
 - Do not commit secrets/credentials (e.g. `.env.local`).
 - Do not commit large exports like `data/*.csv` unless explicitly requested.
 - Do not push.
