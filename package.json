@@ -1,9 +1,11 @@
 {
-  "name": "watch-tracker",
+  "name": "library",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "concurrently --names \"web,convex\" --prefix-colors \"green,red\" \"bun run dev:web\" \"bun run dev:convex\"",
+    "dev:web": "vite dev --port 3000",
+    "dev:convex": "convex dev",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -52,6 +54,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
     "babel-plugin-react-compiler": "^1.0.0",
+    "concurrently": "^9.2.1",
     "jsdom": "^27.0.0",
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
