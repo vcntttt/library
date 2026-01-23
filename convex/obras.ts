@@ -115,15 +115,15 @@ export const create = mutation({
 
     if (args.progress) {
       if (args.progress.total <= 0 || args.progress.current < 0) {
-        throw new Error('Invalid progress')
+        throw new Error('Progreso invalido')
       }
       if (args.progress.current > args.progress.total) {
-        throw new Error('Progress current cannot exceed total')
+        throw new Error('El progreso no puede superar el total')
       }
     }
 
     if (args.rating !== undefined && (args.rating < 1 || args.rating > 5)) {
-      throw new Error('Rating must be between 1 and 5')
+      throw new Error('La valoracion debe estar entre 1 y 5')
     }
 
     return await ctx.db.insert('obras', {
@@ -209,10 +209,10 @@ export const update = mutation({
 
     if (patch.progress !== undefined && patch.progress !== null) {
       if (patch.progress.total <= 0 || patch.progress.current < 0) {
-        throw new Error('Invalid progress')
+        throw new Error('Progreso invalido')
       }
       if (patch.progress.current > patch.progress.total) {
-        throw new Error('Progress current cannot exceed total')
+        throw new Error('El progreso no puede superar el total')
       }
     }
 
@@ -220,7 +220,7 @@ export const update = mutation({
       patch.rating !== undefined &&
       (patch.rating < 1 || patch.rating > 5)
     ) {
-      throw new Error('Rating must be between 1 and 5')
+      throw new Error('La valoracion debe estar entre 1 y 5')
     }
 
     patch.updatedAt = Date.now()
