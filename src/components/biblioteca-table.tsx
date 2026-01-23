@@ -26,7 +26,7 @@ import { TypeBadge } from "./type-badge";
 
 type SortKey = "title" | "type" | "status" | "rating" | "updatedAt";
 
-export function LibraryTable({ obras }: { obras: Obra[] }) {
+export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 	const [search, setSearch] = useState("");
 	const [typeFilter, setTypeFilter] = useState<ObraType | "all">("all");
 	const [statusFilter, setStatusFilter] = useState<ObraStatus | "all">("all");
@@ -185,38 +185,38 @@ export function LibraryTable({ obras }: { obras: Obra[] }) {
 								</TableCell>
 							</TableRow>
 						) : (
-							filteredObras.map((work) => (
-								<TableRow key={work.id} className="group">
+							filteredObras.map((obra) => (
+								<TableRow key={obra.id} className="group">
 									<TableCell>
 										<Link
 											to="/obra/$obraId"
-											params={{ obraId: work.id }}
+											params={{ obraId: obra.id }}
 											className="font-medium text-foreground hover:underline"
 										>
-											{work.title}
+											{obra.title}
 										</Link>
-										{work.creator && (
+										{obra.creator && (
 											<p className="text-sm text-muted-foreground">
-												{work.creator}
+												{obra.creator}
 											</p>
 										)}
 									</TableCell>
 									<TableCell>
-										<TypeBadge type={work.type} showIcon={false} />
+										<TypeBadge type={obra.type} showIcon={false} />
 									</TableCell>
 									<TableCell>
-										<StatusBadge status={work.status} />
+										<StatusBadge status={obra.status} />
 									</TableCell>
 									<TableCell>
-										{work.rating ? (
-											<StarRating rating={work.rating} size="sm" />
+										{obra.rating ? (
+											<StarRating rating={obra.rating} size="sm" />
 										) : (
 											"—"
 										)}
 									</TableCell>
 									<TableCell className="hidden sm:table-cell">
 										<div className="flex flex-wrap gap-1">
-											{work.tags.slice(0, 2).map((tag: string) => (
+											{obra.tags.slice(0, 2).map((tag: string) => (
 												<span
 													key={tag}
 													className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
@@ -224,9 +224,9 @@ export function LibraryTable({ obras }: { obras: Obra[] }) {
 													{tag}
 												</span>
 											))}
-											{work.tags.length > 2 && (
+											{obra.tags.length > 2 && (
 												<span className="text-xs text-muted-foreground">
-													+{work.tags.length - 2}
+													+{obra.tags.length - 2}
 												</span>
 											)}
 										</div>

@@ -36,10 +36,10 @@ import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/obra/$obraId")({
 	ssr: false,
-	component: WorkPage,
+	component: ObraPage,
 });
 
-function WorkPage() {
+function ObraPage() {
 	const { obraId } = Route.useParams();
 	const id = obraId as ObraId;
 	const navigate = Route.useNavigate();
@@ -66,10 +66,10 @@ function WorkPage() {
 		);
 	}
 
-	return <WorkAuthed id={id} navigate={navigate} />;
+	return <ObraAuthed id={id} navigate={navigate} />;
 }
 
-function WorkAuthed({
+function ObraAuthed({
 	id,
 	navigate,
 }: {
@@ -77,8 +77,8 @@ function WorkAuthed({
 	navigate: (opts: { to: string }) => void;
 }) {
 	const doc = useQuery(api.obras.get, { id });
-	const updateWork = useMutation(api.obras.update);
-	const removeWork = useMutation(api.obras.remove);
+	const updateObra = useMutation(api.obras.update);
+	const removeObra = useMutation(api.obras.remove);
 
 	const form = useForm({
 		defaultValues: {
@@ -112,7 +112,7 @@ function WorkAuthed({
 				};
 			}
 
-			await updateWork({ id, patch });
+			await updateObra({ id, patch });
 		},
 	});
 
@@ -151,15 +151,15 @@ function WorkAuthed({
 	const hasProgress = obra.type !== "movie";
 
 	const handleStatusChange = async (status: ObraStatus) => {
-		await updateWork({ id, patch: { status } });
+		await updateObra({ id, patch: { status } });
 	};
 
 	const handleRatingChange = async (rating: number) => {
-		await updateWork({ id, patch: { rating } });
+		await updateObra({ id, patch: { rating } });
 	};
 
 	const handleDelete = async () => {
-		await removeWork({ id });
+		await removeObra({ id });
 		navigate({ to: "/biblioteca" });
 	};
 

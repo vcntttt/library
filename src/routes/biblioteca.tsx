@@ -1,17 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
-import { LibraryTable } from "@/components/library-table";
+import { BibliotecaTable } from "@/components/biblioteca-table";
 import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/biblioteca")({
 	ssr: false,
-	component: LibraryPage,
+	component: BibliotecaPage,
 });
 
-function LibraryPage() {
+function BibliotecaPage() {
 	const { data: session, isPending } = authClient.useSession();
 	if (isPending || session === undefined) {
 		return (
@@ -35,10 +35,10 @@ function LibraryPage() {
 		);
 	}
 
-	return <LibraryAuthed />;
+	return <BibliotecaAuthed />;
 }
 
-function LibraryAuthed() {
+function BibliotecaAuthed() {
 	const docs = useQuery(api.obras.list, {});
 	const obras = (docs ?? []).map(obraFromDoc);
 
@@ -54,7 +54,7 @@ function LibraryAuthed() {
 				<AddObraDialog />
 			</div>
 
-			<LibraryTable obras={obras} />
+			<BibliotecaTable obras={obras} />
 		</div>
 	);
 }

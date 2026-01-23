@@ -61,19 +61,19 @@ function DashboardAuthed() {
 
 			<DashboardSection
 				title="En progreso"
-				works={inProgress}
+				obras={inProgress}
 				variant="default"
 				emptyMessage="Empieza algo nuevo agregando una obra."
 			/>
 			<DashboardSection
 				title="Pendiente"
-				works={backlog}
+				obras={backlog}
 				variant="compact"
 				emptyMessage="No tienes nada pendiente."
 			/>
 			<DashboardSection
 				title="Terminadas"
-				works={finished}
+				obras={finished}
 				variant="compact"
 				emptyMessage="Aun no terminas nada."
 			/>

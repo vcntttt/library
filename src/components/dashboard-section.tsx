@@ -4,7 +4,7 @@ import { ObraCard } from "./obra-card";
 
 interface DashboardSectionProps {
 	title: string;
-	works: Obra[];
+	obras: Obra[];
 	variant?: "default" | "compact";
 	emptyMessage?: string;
 	className?: string;
@@ -12,7 +12,7 @@ interface DashboardSectionProps {
 
 export function DashboardSection({
 	title,
-	works,
+	obras,
 	variant = "default",
 	emptyMessage = "No hay nada aun",
 	className,
@@ -21,9 +21,9 @@ export function DashboardSection({
 		<section className={cn("space-y-4", className)}>
 			<div className="flex items-center justify-between">
 				<h2 className="text-lg font-semibold text-foreground">{title}</h2>
-				<span className="text-sm text-muted-foreground">{works.length}</span>
+				<span className="text-sm text-muted-foreground">{obras.length}</span>
 			</div>
-			{works.length > 0 ? (
+			{obras.length > 0 ? (
 				<div
 					className={cn(
 						variant === "default"
@@ -31,7 +31,7 @@ export function DashboardSection({
 							: "flex flex-col gap-2",
 					)}
 				>
-					{works.map((obra) => (
+					{obras.map((obra) => (
 						<ObraCard key={obra.id} obra={obra} variant={variant} />
 					))}
 				</div>

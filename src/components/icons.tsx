@@ -5,13 +5,10 @@ import {
 	CheckCircle2,
 	ChevronRight,
 	Clock,
-	Edit,
 	Film,
 	List,
-	MoreHorizontal,
 	Plus,
 	Search,
-	SlidersHorizontal,
 	Sparkles,
 	Star,
 	Trash2,
@@ -42,14 +39,4 @@ export const StatusIcons: Record<
 	dropped: XCircle,
 };
 
-export {
-	Star,
-	Plus,
-	Search,
-	SlidersHorizontal,
-	ChevronRight,
-	ArrowLeft,
-	Trash2,
-	Edit,
-	MoreHorizontal,
-};
+export { Star, Plus, Search, ChevronRight, ArrowLeft, Trash2 };
