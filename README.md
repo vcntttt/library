@@ -104,7 +104,7 @@ Configurar en `.env.local`:
 
 Cuando se integre Better Auth, tambien se usa:
 
-- `VITE_CONVEX_SITE_URL` (ej: `http://localhost:3000`)
+- `VITE_CONVEX_SITE_URL` (Convex HTTP Actions URL; termina en `.convex.site`)
 
 Atajo: `npx convex init` puede setearlas automaticamente.
 
