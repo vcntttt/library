@@ -1,6 +1,7 @@
+import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { StarRating } from "@/components/star-rating";
 import { StatusBadge } from "@/components/status-badge";
@@ -78,21 +79,54 @@ function WorkAuthed({
 	const doc = useQuery(api.obras.get, { id });
 	const updateWork = useMutation(api.obras.update);
 	const removeWork = useMutation(api.obras.remove);
-	const [review, setReview] = useState("");
-	const [notes, setNotes] = useState("");
-	const [progressCurrent, setProgressCurrent] = useState(0);
-	const [progressTotal, setProgressTotal] = useState(0);
-	const [isSaving, setIsSaving] = useState(false);
+
+	const form = useForm({
+		defaultValues: {
+			review: "",
+			notes: "",
+			progressCurrent: 0,
+			progressTotal: 0,
+		},
+		onSubmit: async ({ value }) => {
+			const hasProgress = doc?.type !== "movie";
+			const canSaveProgress =
+				!hasProgress ||
+				(Number.isFinite(value.progressCurrent) &&
+					Number.isFinite(value.progressTotal) &&
+					value.progressTotal >= 0 &&
+					value.progressCurrent >= 0 &&
+					(value.progressTotal === 0 ||
+						value.progressCurrent <= value.progressTotal));
+
+			if (!canSaveProgress) return;
+
+			const patch: Record<string, unknown> = {
+				review: value.review.trim() || undefined,
+				notes: value.notes.trim() || undefined,
+			};
+
+			if (hasProgress && value.progressTotal > 0) {
+				patch.progress = {
+					current: Math.min(value.progressCurrent, value.progressTotal),
+					total: value.progressTotal,
+				};
+			}
+
+			await updateWork({ id, patch });
+		},
+	});
 
 	useEffect(() => {
 		if (!doc) {
 			return;
 		}
-		setReview(doc.review ?? "");
-		setNotes(doc.notes ?? "");
-		setProgressCurrent(doc.progress?.current ?? 0);
-		setProgressTotal(doc.progress?.total ?? 0);
-	}, [doc]);
+		form.reset({
+			review: doc.review ?? "",
+			notes: doc.notes ?? "",
+			progressCurrent: doc.progress?.current ?? 0,
+			progressTotal: doc.progress?.total ?? 0,
+		});
+	}, [doc, form]);
 
 	if (doc === undefined) {
 		return (
@@ -122,37 +156,6 @@ function WorkAuthed({
 
 	const handleRatingChange = async (rating: number) => {
 		await updateWork({ id, patch: { rating } });
-	};
-
-	const canSaveProgress =
-		hasProgress &&
-		Number.isFinite(progressCurrent) &&
-		Number.isFinite(progressTotal) &&
-		progressTotal >= 0 &&
-		progressCurrent >= 0 &&
-		(progressTotal === 0 || progressCurrent <= progressTotal);
-
-	const handleSave = async () => {
-		if (isSaving) return;
-		if (!canSaveProgress) return;
-		setIsSaving(true);
-		try {
-			const patch: Record<string, unknown> = {
-				review: review.trim() || undefined,
-				notes: notes.trim() || undefined,
-			};
-
-			if (hasProgress && progressTotal > 0) {
-				patch.progress = {
-					current: Math.min(progressCurrent, progressTotal),
-					total: progressTotal,
-				};
-			}
-
-			await updateWork({ id, patch });
-		} finally {
-			setIsSaving(false);
-		}
 	};
 
 	const handleDelete = async () => {
@@ -246,77 +249,148 @@ function WorkAuthed({
 					</div>
 				</div>
 
-				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="space-y-2">
-						<Label>Resena</Label>
-						<Textarea
-							value={review}
-							onChange={(e) => setReview(e.target.value)}
-							placeholder="Que te dejo esta obra?"
-							rows={4}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Notas (Markdown)</Label>
-						<Textarea
-							value={notes}
-							onChange={(e) => setNotes(e.target.value)}
-							placeholder="Ideas, citas, preguntas..."
-							rows={8}
-						/>
-					</div>
-				</div>
-
-				{hasProgress && (
-					<div className="grid gap-4 sm:grid-cols-3">
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						void form.handleSubmit();
+					}}
+					className="space-y-4"
+				>
+					<div className="grid gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
-							<Label>Progreso</Label>
-							<div className="flex items-center gap-2">
-								<Input
-									type="number"
-									value={progressCurrent}
-									onChange={(e) =>
-										setProgressCurrent(Number(e.target.value) || 0)
-									}
-									min={0}
-									className="w-24"
-								/>
-								<span className="text-sm text-muted-foreground">/</span>
-								<Input
-									type="number"
-									value={progressTotal}
-									onChange={(e) =>
-										setProgressTotal(Number(e.target.value) || 0)
-									}
-									min={0}
-									className="w-24"
-								/>
-							</div>
-							{!canSaveProgress && (
-								<p className="text-sm text-destructive">
-									El progreso no puede superar el total.
-								</p>
-							)}
+							<Label>Resena</Label>
+							<form.Field name="review">
+								{(field) => (
+									<Textarea
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										placeholder="Que te dejo esta obra?"
+										rows={4}
+									/>
+								)}
+							</form.Field>
 						</div>
-						<div className="sm:col-span-2 flex items-end justify-end">
-							<Button
-								onClick={handleSave}
-								disabled={isSaving || !canSaveProgress}
-								className={cn(!canSaveProgress && "pointer-events-none")}
-							>
-								{isSaving ? "Guardando..." : "Guardar"}
-							</Button>
+						<div className="space-y-2">
+							<Label>Notas (Markdown)</Label>
+							<form.Field name="notes">
+								{(field) => (
+									<Textarea
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										placeholder="Ideas, citas, preguntas..."
+										rows={8}
+									/>
+								)}
+							</form.Field>
 						</div>
 					</div>
-				)}
 
-				{!hasProgress && (
-					<div className="flex justify-end">
-						<Button onClick={handleSave} disabled={isSaving}>
-							{isSaving ? "Guardando..." : "Guardar"}
-						</Button>
-					</div>
-				)}
+					{hasProgress && (
+						<div className="grid gap-4 sm:grid-cols-3">
+							<div className="space-y-2">
+								<Label>Progreso</Label>
+								<div className="flex items-center gap-2">
+									<form.Field name="progressCurrent">
+										{(field) => (
+											<Input
+												type="number"
+												value={field.state.value}
+												onChange={(e) =>
+													field.handleChange(Number(e.target.value) || 0)
+												}
+												min={0}
+												className="w-24"
+											/>
+										)}
+									</form.Field>
+									<span className="text-sm text-muted-foreground">/</span>
+									<form.Field name="progressTotal">
+										{(field) => (
+											<Input
+												type="number"
+												value={field.state.value}
+												onChange={(e) =>
+													field.handleChange(Number(e.target.value) || 0)
+												}
+												min={0}
+												className="w-24"
+											/>
+										)}
+									</form.Field>
+								</div>
+								<form.Subscribe
+									selector={(state) =>
+										[
+											state.values.progressCurrent,
+											state.values.progressTotal,
+										] as const
+									}
+								>
+									{([progressCurrent, progressTotal]) => {
+										const canSaveProgress =
+											Number.isFinite(progressCurrent) &&
+											Number.isFinite(progressTotal) &&
+											progressTotal >= 0 &&
+											progressCurrent >= 0 &&
+											(progressTotal === 0 || progressCurrent <= progressTotal);
+
+										if (canSaveProgress) return null;
+										return (
+											<p className="text-sm text-destructive">
+												El progreso no puede superar el total.
+											</p>
+										);
+									}}
+								</form.Subscribe>
+							</div>
+							<div className="sm:col-span-2 flex items-end justify-end">
+								<form.Subscribe
+									selector={(state) =>
+										[
+											state.values.progressCurrent,
+											state.values.progressTotal,
+											state.isSubmitting,
+										] as const
+									}
+								>
+									{([progressCurrent, progressTotal, isSubmitting]) => {
+										const canSaveProgress =
+											Number.isFinite(progressCurrent) &&
+											Number.isFinite(progressTotal) &&
+											progressTotal >= 0 &&
+											progressCurrent >= 0 &&
+											(progressTotal === 0 || progressCurrent <= progressTotal);
+
+										return (
+											<Button
+												type="submit"
+												disabled={isSubmitting || !canSaveProgress}
+												className={cn(
+													!canSaveProgress && "pointer-events-none",
+												)}
+											>
+												{isSubmitting ? "Guardando..." : "Guardar"}
+											</Button>
+										);
+									}}
+								</form.Subscribe>
+							</div>
+						</div>
+					)}
+
+					{!hasProgress && (
+						<div className="flex justify-end">
+							<form.Subscribe selector={(state) => state.isSubmitting}>
+								{(isSubmitting) => (
+									<Button type="submit" disabled={isSubmitting}>
+										{isSubmitting ? "Guardando..." : "Guardar"}
+									</Button>
+								)}
+							</form.Subscribe>
+						</div>
+					)}
+				</form>
 			</div>
 		</div>
 	);
