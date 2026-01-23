@@ -1,5 +1,5 @@
+import { useForm } from "@tanstack/react-form";
 import { useMutation } from "convex/react";
-import type React from "react";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,46 +47,46 @@ export function AddObraDialog() {
 	const creatorId = useId();
 	const totalId = useId();
 	const tagsId = useId();
-	const [title, setTitle] = useState("");
-	const [type, setType] = useState<ObraType>("book");
-	const [status, setStatus] = useState<ObraStatus>("backlog");
-	const [creator, setCreator] = useState("");
-	const [tags, setTags] = useState("");
-	const [rating, setRating] = useState(0);
-	const [totalProgress, setTotalProgress] = useState("");
 	const createObra = useMutation(api.obras.create);
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!title.trim()) return;
+	const form = useForm({
+		defaultValues: {
+			title: "",
+			type: "book" as ObraType,
+			status: "backlog" as ObraStatus,
+			creator: "",
+			tags: "",
+			rating: 0,
+			totalProgress: "",
+		},
+		onSubmit: async ({ value }) => {
+			if (!value.title.trim()) return;
 
-		const parsedTotalProgress = Number.parseInt(totalProgress, 10) || 0;
+			const parsedTotalProgress = Math.max(
+				0,
+				Number.parseInt(value.totalProgress, 10) || 0,
+			);
 
-		await createObra({
-			title: title.trim(),
-			type,
-			status,
-			creator: creator.trim() || undefined,
-			tags: tags
-				.split(",")
-				.map((t) => t.trim())
-				.filter(Boolean),
-			rating: rating > 0 ? rating : undefined,
-			progress:
-				type !== "movie" && parsedTotalProgress > 0
-					? { current: 0, total: parsedTotalProgress }
-					: undefined,
-		});
+			await createObra({
+				title: value.title.trim(),
+				type: value.type,
+				status: value.status,
+				creator: value.creator.trim() || undefined,
+				tags: value.tags
+					.split(",")
+					.map((t) => t.trim())
+					.filter(Boolean),
+				rating: value.rating > 0 ? value.rating : undefined,
+				progress:
+					value.type !== "movie" && parsedTotalProgress > 0
+						? { current: 0, total: parsedTotalProgress }
+						: undefined,
+			});
 
-		setTitle("");
-		setType("book");
-		setStatus("backlog");
-		setCreator("");
-		setTags("");
-		setRating(0);
-		setTotalProgress("");
-		setOpen(false);
-	};
+			form.reset();
+			setOpen(false);
+		},
+	});
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -98,108 +98,147 @@ export function AddObraDialog() {
 				<DialogHeader>
 					<DialogTitle>Nueva obra</DialogTitle>
 				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor={titleId}>Titulo</Label>
-						<Input
-							id={titleId}
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							placeholder="Escribe un titulo..."
-							autoFocus
-						/>
-					</div>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						void form.handleSubmit();
+					}}
+					className="space-y-4"
+				>
+					<form.Field name="title">
+						{(field) => (
+							<div className="space-y-2">
+								<Label htmlFor={titleId}>Titulo</Label>
+								<Input
+									id={titleId}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+									placeholder="Escribe un titulo..."
+									autoFocus
+								/>
+							</div>
+						)}
+					</form.Field>
 
 					<div className="grid grid-cols-2 gap-4">
-						<div className="space-y-2">
-							<Label htmlFor={typeId}>Tipo</Label>
-							<Select
-								value={type}
-								onValueChange={(v) => setType(v as ObraType)}
-							>
-								<SelectTrigger id={typeId}>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{obraTypes.map((t) => (
-										<SelectItem key={t.value} value={t.value}>
-											{t.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+						<form.Field name="type">
+							{(field) => (
+								<div className="space-y-2">
+									<Label htmlFor={typeId}>Tipo</Label>
+									<Select
+										value={field.state.value}
+										onValueChange={(v) => field.handleChange(v as ObraType)}
+									>
+										<SelectTrigger id={typeId}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{obraTypes.map((t) => (
+												<SelectItem key={t.value} value={t.value}>
+													{t.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
+						</form.Field>
 
-						<div className="space-y-2">
-							<Label htmlFor={statusId}>Estado</Label>
-							<Select
-								value={status}
-								onValueChange={(v) => setStatus(v as ObraStatus)}
-							>
-								<SelectTrigger id={statusId}>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{obraStatuses.map((s) => (
-										<SelectItem key={s.value} value={s.value}>
-											{s.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+						<form.Field name="status">
+							{(field) => (
+								<div className="space-y-2">
+									<Label htmlFor={statusId}>Estado</Label>
+									<Select
+										value={field.state.value}
+										onValueChange={(v) => field.handleChange(v as ObraStatus)}
+									>
+										<SelectTrigger id={statusId}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{obraStatuses.map((s) => (
+												<SelectItem key={s.value} value={s.value}>
+													{s.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
+						</form.Field>
 					</div>
 
-					<div className="space-y-2">
-						<Label htmlFor={creatorId}>Autor / Director / Estudio</Label>
-						<Input
-							id={creatorId}
-							value={creator}
-							onChange={(e) => setCreator(e.target.value)}
-							placeholder="Ej: Christopher Nolan"
-						/>
-					</div>
+					<form.Field name="creator">
+						{(field) => (
+							<div className="space-y-2">
+								<Label htmlFor={creatorId}>Autor / Director / Estudio</Label>
+								<Input
+									id={creatorId}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+									placeholder="Ej: Christopher Nolan"
+								/>
+							</div>
+						)}
+					</form.Field>
 
-					{type !== "movie" && (
-						<div className="space-y-2">
-							<Label htmlFor={totalId}>
-								Total{" "}
-								{type === "book"
-									? "paginas"
-									: type === "manga"
-										? "capitulos"
-										: "episodios"}
-							</Label>
-							<Input
-								id={totalId}
-								type="number"
-								value={totalProgress}
-								onChange={(e) => setTotalProgress(e.target.value)}
-								placeholder="Ej: 320"
-							/>
-						</div>
-					)}
+					<form.Subscribe selector={(state) => state.values.type}>
+						{(type) =>
+							type !== "movie" && (
+								<form.Field name="totalProgress">
+									{(field) => (
+										<div className="space-y-2">
+											<Label htmlFor={totalId}>
+												Total{" "}
+												{type === "book"
+													? "paginas"
+													: type === "manga"
+														? "capitulos"
+														: "episodios"}
+											</Label>
+											<Input
+												id={totalId}
+												type="number"
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+												placeholder="Ej: 320"
+											/>
+										</div>
+									)}
+								</form.Field>
+							)
+						}
+					</form.Subscribe>
 
-					<div className="space-y-2">
-						<Label htmlFor={tagsId}>Etiquetas (separadas por coma)</Label>
-						<Textarea
-							id={tagsId}
-							value={tags}
-							onChange={(e) => setTags(e.target.value)}
-							placeholder="Ej: sci-fi, filosofia, drama"
-							rows={2}
-						/>
-					</div>
+					<form.Field name="tags">
+						{(field) => (
+							<div className="space-y-2">
+								<Label htmlFor={tagsId}>Etiquetas (separadas por coma)</Label>
+								<Textarea
+									id={tagsId}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+									placeholder="Ej: sci-fi, filosofia, drama"
+									rows={2}
+								/>
+							</div>
+						)}
+					</form.Field>
 
-					<div className="space-y-2">
-						<Label>Valoracion</Label>
-						<StarRating
-							rating={rating}
-							interactive
-							onRatingChange={setRating}
-							size="lg"
-						/>
-					</div>
+					<form.Field name="rating">
+						{(field) => (
+							<div className="space-y-2">
+								<Label>Valoracion</Label>
+								<StarRating
+									rating={field.state.value}
+									interactive
+									onRatingChange={field.handleChange}
+									size="lg"
+								/>
+							</div>
+						)}
+					</form.Field>
 
 					<div className="flex justify-end gap-2 pt-2">
 						<Button
@@ -209,9 +248,17 @@ export function AddObraDialog() {
 						>
 							Cancelar
 						</Button>
-						<Button type="submit" disabled={!title.trim()}>
-							Agregar
-						</Button>
+						<form.Subscribe
+							selector={(state) =>
+								[state.values.title, state.isSubmitting] as const
+							}
+						>
+							{([title, isSubmitting]) => (
+								<Button type="submit" disabled={isSubmitting || !title.trim()}>
+									Agregar
+								</Button>
+							)}
+						</form.Subscribe>
 					</div>
 				</form>
 			</DialogContent>
