@@ -1,13 +1,15 @@
+import { Badge } from "@/components/ui/badge";
 import type { ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { TypeIcons } from "./icons";
 
 const typeColors: Record<ObraType, string> = {
-	book: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-	movie: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-	series: "bg-orange-500/10 text-orange-400 border-orange-500/20",
-	anime: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-	manga: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+	book: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+	movie: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+	series:
+		"border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+	anime: "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+	manga: "border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
 };
 
 const typeLabels: Record<ObraType, string> = {
@@ -32,15 +34,15 @@ export function TypeBadge({
 	const Icon = TypeIcons[type];
 
 	return (
-		<span
+		<Badge
 			className={cn(
-				"inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
+				"gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em]",
 				typeColors[type],
 				className,
 			)}
 		>
 			{showIcon && <Icon className="h-3 w-3" />}
 			{typeLabels[type]}
-		</span>
+		</Badge>
 	);
 }
