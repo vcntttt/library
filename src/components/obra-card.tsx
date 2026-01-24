@@ -29,7 +29,7 @@ export function ObraCard({
 				to="/obra/$obraId"
 				params={{ obraId: obra.id }}
 				className={cn(
-					"group flex items-center justify-between rounded-lg border border-border/50 bg-card/50 px-4 py-3 transition-all hover:border-border hover:bg-card",
+					"group flex items-center justify-between rounded-2xl border border-border/60 bg-card/70 px-4 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
 					className,
 				)}
 			>
@@ -50,7 +50,7 @@ export function ObraCard({
 			to="/obra/$obraId"
 			params={{ obraId: obra.id }}
 			className={cn(
-				"group flex flex-col rounded-lg border border-border/50 bg-card/50 p-4 transition-all hover:border-border hover:bg-card",
+				"group flex flex-col rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
 				className,
 			)}
 		>
@@ -60,7 +60,7 @@ export function ObraCard({
 						<TypeBadge type={obra.type} />
 						<StatusBadge status={obra.status} />
 					</div>
-					<h3 className="truncate font-semibold text-foreground group-hover:text-foreground/90">
+					<h3 className="truncate font-semibold text-foreground font-serif group-hover:text-foreground/90">
 						{obra.title}
 					</h3>
 					{obra.creator && (
@@ -87,7 +87,7 @@ export function ObraCard({
 					{obra.tags.slice(0, 3).map((tag) => (
 						<span
 							key={tag}
-							className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+							className="rounded-full border border-border/60 bg-muted/60 px-2.5 py-0.5 text-[0.65rem] tracking-[0.08em] text-muted-foreground"
 						>
 							{tag}
 						</span>

@@ -8,7 +8,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import {
 	Table,
@@ -25,6 +24,23 @@ import { StatusBadge } from "./status-badge";
 import { TypeBadge } from "./type-badge";
 
 type SortKey = "title" | "type" | "status" | "rating" | "updatedAt";
+
+const typeLabels: Record<ObraType | "all", string> = {
+	all: "Todos los tipos",
+	book: "Libro",
+	movie: "Pelicula",
+	series: "Serie",
+	anime: "Anime",
+	manga: "Manga",
+};
+
+const statusLabels: Record<ObraStatus | "all", string> = {
+	all: "Todos los estados",
+	backlog: "Pendiente",
+	"in-progress": "En progreso",
+	finished: "Terminada",
+	dropped: "Abandonada",
+};
 
 export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 	const [search, setSearch] = useState("");
@@ -94,84 +110,86 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 	};
 
 	return (
-		<div className="space-y-4">
-			{/* Filters */}
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						placeholder="Buscar por titulo, autor o etiqueta..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						className="pl-9"
-					/>
-				</div>
-				<div className="flex gap-2">
-					<Select
-						value={typeFilter}
-						onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
-					>
-						<SelectTrigger className="w-[130px]">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos los tipos</SelectItem>
-							<SelectItem value="book">Libro</SelectItem>
-							<SelectItem value="movie">Pelicula</SelectItem>
-							<SelectItem value="series">Serie</SelectItem>
-							<SelectItem value="anime">Anime</SelectItem>
-							<SelectItem value="manga">Manga</SelectItem>
-						</SelectContent>
-					</Select>
-					<Select
-						value={statusFilter}
-						onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
-					>
-						<SelectTrigger className="w-[140px]">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos los estados</SelectItem>
-							<SelectItem value="backlog">Pendiente</SelectItem>
-							<SelectItem value="in-progress">En progreso</SelectItem>
-							<SelectItem value="finished">Terminada</SelectItem>
-							<SelectItem value="dropped">Abandonada</SelectItem>
-						</SelectContent>
-					</Select>
+		<div className="space-y-6">
+			<div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+					<div className="relative flex-1 min-w-[220px]">
+						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							placeholder="Buscar por titulo, autor o etiqueta..."
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							className="pl-9 rounded-full bg-background/70 shadow-sm"
+						/>
+					</div>
+					<div className="flex flex-wrap gap-2">
+						<Select
+							value={typeFilter}
+							onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
+						>
+							<SelectTrigger className="w-[130px] rounded-full bg-background/70 shadow-sm">
+								<span className="truncate">{typeLabels[typeFilter]}</span>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">Todos los tipos</SelectItem>
+								<SelectItem value="book">Libro</SelectItem>
+								<SelectItem value="movie">Pelicula</SelectItem>
+								<SelectItem value="series">Serie</SelectItem>
+								<SelectItem value="anime">Anime</SelectItem>
+								<SelectItem value="manga">Manga</SelectItem>
+							</SelectContent>
+						</Select>
+						<Select
+							value={statusFilter}
+							onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
+						>
+							<SelectTrigger className="w-[140px] rounded-full bg-background/70 shadow-sm">
+								<span className="truncate">{statusLabels[statusFilter]}</span>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">Todos los estados</SelectItem>
+								<SelectItem value="backlog">Pendiente</SelectItem>
+								<SelectItem value="in-progress">En progreso</SelectItem>
+								<SelectItem value="finished">Terminada</SelectItem>
+								<SelectItem value="dropped">Abandonada</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 				</div>
 			</div>
 
-			{/* Table */}
-			<div className="rounded-lg border border-border/50 overflow-hidden">
+			<div className="rounded-2xl border border-border/60 bg-card/70 shadow-sm overflow-hidden">
 				<Table>
 					<TableHeader>
-						<TableRow className="hover:bg-transparent">
+						<TableRow className="bg-muted/40 hover:bg-muted/40">
 							<TableHead
-								className="cursor-pointer select-none"
+								className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
 								onClick={() => handleSort("title")}
 							>
 								Titulo {sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
 							<TableHead
-								className="cursor-pointer select-none"
+								className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
 								onClick={() => handleSort("type")}
 							>
 								Tipo {sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
 							<TableHead
-								className="cursor-pointer select-none"
+								className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
 								onClick={() => handleSort("status")}
 							>
 								Estado {sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
 							<TableHead
-								className="cursor-pointer select-none"
+								className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
 								onClick={() => handleSort("rating")}
 							>
 								Valoracion{" "}
 								{sortKey === "rating" && (sortDir === "asc" ? "↑" : "↓")}
 							</TableHead>
-							<TableHead className="hidden sm:table-cell">Etiquetas</TableHead>
+							<TableHead className="hidden text-xs uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
+								Etiquetas
+							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -186,7 +204,10 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 							</TableRow>
 						) : (
 							filteredObras.map((obra) => (
-								<TableRow key={obra.id} className="group">
+								<TableRow
+									key={obra.id}
+									className="group transition-colors hover:bg-muted/40"
+								>
 									<TableCell>
 										<Link
 											to="/obra/$obraId"
@@ -219,7 +240,7 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 											{obra.tags.slice(0, 2).map((tag: string) => (
 												<span
 													key={tag}
-													className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+													className="rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[0.65rem] tracking-[0.08em] text-muted-foreground"
 												>
 													{tag}
 												</span>
@@ -238,7 +259,7 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 				</Table>
 			</div>
 
-			<p className="text-sm text-muted-foreground">
+			<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
 				Mostrando {filteredObras.length} de {obras.length} obras
 			</p>
 		</div>

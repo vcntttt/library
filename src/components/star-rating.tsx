@@ -34,16 +34,17 @@ export function StarRating({
 					disabled={!interactive}
 					onClick={() => interactive && onRatingChange?.(star)}
 					className={cn(
-						"transition-colors",
-						interactive && "cursor-pointer hover:text-amber-400",
+						"transition-transform transition-colors",
+						interactive &&
+							"cursor-pointer hover:text-amber-500 hover:scale-105",
 					)}
 				>
 					<Star
 						className={cn(
 							sizeClasses[size],
 							star <= rating
-								? "fill-amber-400 text-amber-400"
-								: "text-muted-foreground/30",
+								? "fill-amber-500 text-amber-500 drop-shadow-sm"
+								: "text-muted-foreground/40",
 						)}
 					/>
 				</button>

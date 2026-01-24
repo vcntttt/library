@@ -18,10 +18,14 @@ export function DashboardSection({
 	className,
 }: DashboardSectionProps) {
 	return (
-		<section className={cn("space-y-4", className)}>
+		<section className={cn("space-y-3", className)}>
 			<div className="flex items-center justify-between">
-				<h2 className="text-lg font-semibold text-foreground">{title}</h2>
-				<span className="text-sm text-muted-foreground">{obras.length}</span>
+				<h2 className="text-lg font-semibold text-foreground font-serif">
+					{title}
+				</h2>
+				<span className="rounded-full border border-border/60 bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+					{obras.length}
+				</span>
 			</div>
 			{obras.length > 0 ? (
 				<div
@@ -36,7 +40,7 @@ export function DashboardSection({
 					))}
 				</div>
 			) : (
-				<div className="rounded-lg border border-dashed border-border/50 py-8 text-center">
+				<div className="rounded-2xl border border-dashed border-border/60 bg-card/60 py-8 text-center">
 					<p className="text-sm text-muted-foreground">{emptyMessage}</p>
 				</div>
 			)}

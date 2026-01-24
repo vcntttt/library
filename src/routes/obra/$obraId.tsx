@@ -25,7 +25,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth-client";
@@ -33,6 +32,13 @@ import { obraFromDoc } from "@/lib/obras";
 import type { ObraId, ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
+
+const statusLabels: Record<ObraStatus, string> = {
+	backlog: "Pendiente",
+	"in-progress": "En progreso",
+	finished: "Terminada",
+	dropped: "Abandonada",
+};
 
 export const Route = createFileRoute("/obra/$obraId")({
 	ssr: false,
@@ -164,233 +170,237 @@ function ObraAuthed({
 	};
 
 	return (
-		<div className="container mx-auto p-4 md:p-6 space-y-6">
-			<div className="flex items-center justify-between gap-4">
-				<Link
-					to="/biblioteca"
-					className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-				>
-					<ArrowLeft className="h-4 w-4" />
-					Volver
-				</Link>
-
-				<AlertDialog>
-					<AlertDialogTrigger
-						render={<Button variant="outline" size="sm" className="gap-2" />}
+		<div className="min-h-[calc(100vh-4rem)]">
+			<div className="container mx-auto space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				<div className="flex items-center justify-between gap-4">
+					<Link
+						to="/biblioteca"
+						className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
 					>
-						<Trash2 className="h-4 w-4" />
-						Eliminar
-					</AlertDialogTrigger>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Eliminar obra?</AlertDialogTitle>
-							<AlertDialogDescription>
-								Esto no se puede deshacer.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancelar</AlertDialogCancel>
-							<AlertDialogAction onClick={handleDelete}>
-								Eliminar
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			</div>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Link>
 
-			<div className="rounded-xl border border-border/50 bg-card/50 p-4 md:p-6 space-y-4">
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-					<div className="min-w-0 space-y-1">
-						<div className="flex flex-wrap items-center gap-2">
-							<TypeBadge type={obra.type} />
-							<StatusBadge status={obra.status} />
-						</div>
-						<h1 className="text-2xl font-semibold tracking-tight">
-							{obra.title}
-						</h1>
-						{obra.creator && (
-							<p className="text-sm text-muted-foreground">{obra.creator}</p>
-						)}
-					</div>
-
-					<div className="flex items-center gap-3">
-						<StarRating
-							rating={obra.rating}
-							interactive
-							onRatingChange={handleRatingChange}
-						/>
-					</div>
-				</div>
-
-				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="space-y-2">
-						<p className="text-sm font-medium">Estado</p>
-						<Select
-							value={obra.status}
-							onValueChange={(v) => handleStatusChange(v as ObraStatus)}
+					<AlertDialog>
+						<AlertDialogTrigger
+							render={<Button variant="outline" size="sm" className="gap-2" />}
 						>
-							<SelectTrigger>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="backlog">Pendiente</SelectItem>
-								<SelectItem value="in-progress">En progreso</SelectItem>
-								<SelectItem value="finished">Terminada</SelectItem>
-								<SelectItem value="dropped">Abandonada</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="space-y-2">
-						<p className="text-sm font-medium">Actualizado</p>
-						<p className="text-sm text-muted-foreground">
-							{new Date(obra.updatedAt).toLocaleString()}
-						</p>
-					</div>
+							<Trash2 className="h-4 w-4" />
+							Eliminar
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Eliminar obra?</AlertDialogTitle>
+								<AlertDialogDescription>
+									Esto no se puede deshacer.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancelar</AlertDialogCancel>
+								<AlertDialogAction onClick={handleDelete}>
+									Eliminar
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
 				</div>
 
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						void form.handleSubmit();
-					}}
-					className="space-y-4"
-				>
+				<div className="rounded-2xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
+					<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+						<div className="min-w-0 space-y-1">
+							<div className="flex flex-wrap items-center gap-2">
+								<TypeBadge type={obra.type} />
+								<StatusBadge status={obra.status} />
+							</div>
+							<h1 className="text-2xl font-semibold tracking-tight font-serif">
+								{obra.title}
+							</h1>
+							{obra.creator && (
+								<p className="text-sm text-muted-foreground">{obra.creator}</p>
+							)}
+						</div>
+
+						<div className="flex items-center gap-3">
+							<StarRating
+								rating={obra.rating}
+								interactive
+								onRatingChange={handleRatingChange}
+							/>
+						</div>
+					</div>
+
 					<div className="grid gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
-							<Label>Resena</Label>
-							<form.Field name="review">
-								{(field) => (
-									<Textarea
-										value={field.state.value}
-										onChange={(e) => field.handleChange(e.target.value)}
-										placeholder="Que te dejo esta obra?"
-										rows={4}
-									/>
-								)}
-							</form.Field>
+							<p className="text-sm font-medium">Estado</p>
+							<Select
+								value={obra.status}
+								onValueChange={(v) => handleStatusChange(v as ObraStatus)}
+							>
+								<SelectTrigger>
+									<span className="truncate">{statusLabels[obra.status]}</span>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="backlog">Pendiente</SelectItem>
+									<SelectItem value="in-progress">En progreso</SelectItem>
+									<SelectItem value="finished">Terminada</SelectItem>
+									<SelectItem value="dropped">Abandonada</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
+
 						<div className="space-y-2">
-							<Label>Notas (Markdown)</Label>
-							<form.Field name="notes">
-								{(field) => (
-									<Textarea
-										value={field.state.value}
-										onChange={(e) => field.handleChange(e.target.value)}
-										placeholder="Ideas, citas, preguntas..."
-										rows={8}
-									/>
-								)}
-							</form.Field>
+							<p className="text-sm font-medium">Actualizado</p>
+							<p className="text-sm text-muted-foreground">
+								{new Date(obra.updatedAt).toLocaleString()}
+							</p>
 						</div>
 					</div>
 
-					{hasProgress && (
-						<div className="grid gap-4 sm:grid-cols-3">
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							void form.handleSubmit();
+						}}
+						className="space-y-4"
+					>
+						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-2">
-								<Label>Progreso</Label>
-								<div className="flex items-center gap-2">
-									<form.Field name="progressCurrent">
-										{(field) => (
-											<Input
-												type="number"
-												value={field.state.value}
-												onChange={(e) =>
-													field.handleChange(Number(e.target.value) || 0)
-												}
-												min={0}
-												className="w-24"
-											/>
-										)}
-									</form.Field>
-									<span className="text-sm text-muted-foreground">/</span>
-									<form.Field name="progressTotal">
-										{(field) => (
-											<Input
-												type="number"
-												value={field.state.value}
-												onChange={(e) =>
-													field.handleChange(Number(e.target.value) || 0)
-												}
-												min={0}
-												className="w-24"
-											/>
-										)}
-									</form.Field>
+								<Label>Resena</Label>
+								<form.Field name="review">
+									{(field) => (
+										<Textarea
+											value={field.state.value}
+											onChange={(e) => field.handleChange(e.target.value)}
+											placeholder="Que te dejo esta obra?"
+											rows={4}
+										/>
+									)}
+								</form.Field>
+							</div>
+							<div className="space-y-2">
+								<Label>Notas (Markdown)</Label>
+								<form.Field name="notes">
+									{(field) => (
+										<Textarea
+											value={field.state.value}
+											onChange={(e) => field.handleChange(e.target.value)}
+											placeholder="Ideas, citas, preguntas..."
+											rows={8}
+										/>
+									)}
+								</form.Field>
+							</div>
+						</div>
+
+						{hasProgress && (
+							<div className="grid gap-4 sm:grid-cols-3">
+								<div className="space-y-2">
+									<Label>Progreso</Label>
+									<div className="flex items-center gap-2">
+										<form.Field name="progressCurrent">
+											{(field) => (
+												<Input
+													type="number"
+													value={field.state.value}
+													onChange={(e) =>
+														field.handleChange(Number(e.target.value) || 0)
+													}
+													min={0}
+													className="w-24"
+												/>
+											)}
+										</form.Field>
+										<span className="text-sm text-muted-foreground">/</span>
+										<form.Field name="progressTotal">
+											{(field) => (
+												<Input
+													type="number"
+													value={field.state.value}
+													onChange={(e) =>
+														field.handleChange(Number(e.target.value) || 0)
+													}
+													min={0}
+													className="w-24"
+												/>
+											)}
+										</form.Field>
+									</div>
+									<form.Subscribe
+										selector={(state) =>
+											[
+												state.values.progressCurrent,
+												state.values.progressTotal,
+											] as const
+										}
+									>
+										{([progressCurrent, progressTotal]) => {
+											const canSaveProgress =
+												Number.isFinite(progressCurrent) &&
+												Number.isFinite(progressTotal) &&
+												progressTotal >= 0 &&
+												progressCurrent >= 0 &&
+												(progressTotal === 0 ||
+													progressCurrent <= progressTotal);
+
+											if (canSaveProgress) return null;
+											return (
+												<p className="text-sm text-destructive">
+													El progreso no puede superar el total.
+												</p>
+											);
+										}}
+									</form.Subscribe>
 								</div>
-								<form.Subscribe
-									selector={(state) =>
-										[
-											state.values.progressCurrent,
-											state.values.progressTotal,
-										] as const
-									}
-								>
-									{([progressCurrent, progressTotal]) => {
-										const canSaveProgress =
-											Number.isFinite(progressCurrent) &&
-											Number.isFinite(progressTotal) &&
-											progressTotal >= 0 &&
-											progressCurrent >= 0 &&
-											(progressTotal === 0 || progressCurrent <= progressTotal);
+								<div className="sm:col-span-2 flex items-end justify-end">
+									<form.Subscribe
+										selector={(state) =>
+											[
+												state.values.progressCurrent,
+												state.values.progressTotal,
+												state.isSubmitting,
+											] as const
+										}
+									>
+										{([progressCurrent, progressTotal, isSubmitting]) => {
+											const canSaveProgress =
+												Number.isFinite(progressCurrent) &&
+												Number.isFinite(progressTotal) &&
+												progressTotal >= 0 &&
+												progressCurrent >= 0 &&
+												(progressTotal === 0 ||
+													progressCurrent <= progressTotal);
 
-										if (canSaveProgress) return null;
-										return (
-											<p className="text-sm text-destructive">
-												El progreso no puede superar el total.
-											</p>
-										);
-									}}
+											return (
+												<Button
+													type="submit"
+													disabled={isSubmitting || !canSaveProgress}
+													className={cn(
+														!canSaveProgress && "pointer-events-none",
+													)}
+												>
+													{isSubmitting ? "Guardando..." : "Guardar"}
+												</Button>
+											);
+										}}
+									</form.Subscribe>
+								</div>
+							</div>
+						)}
+
+						{!hasProgress && (
+							<div className="flex justify-end">
+								<form.Subscribe selector={(state) => state.isSubmitting}>
+									{(isSubmitting) => (
+										<Button type="submit" disabled={isSubmitting}>
+											{isSubmitting ? "Guardando..." : "Guardar"}
+										</Button>
+									)}
 								</form.Subscribe>
 							</div>
-							<div className="sm:col-span-2 flex items-end justify-end">
-								<form.Subscribe
-									selector={(state) =>
-										[
-											state.values.progressCurrent,
-											state.values.progressTotal,
-											state.isSubmitting,
-										] as const
-									}
-								>
-									{([progressCurrent, progressTotal, isSubmitting]) => {
-										const canSaveProgress =
-											Number.isFinite(progressCurrent) &&
-											Number.isFinite(progressTotal) &&
-											progressTotal >= 0 &&
-											progressCurrent >= 0 &&
-											(progressTotal === 0 || progressCurrent <= progressTotal);
-
-										return (
-											<Button
-												type="submit"
-												disabled={isSubmitting || !canSaveProgress}
-												className={cn(
-													!canSaveProgress && "pointer-events-none",
-												)}
-											>
-												{isSubmitting ? "Guardando..." : "Guardar"}
-											</Button>
-										);
-									}}
-								</form.Subscribe>
-							</div>
-						</div>
-					)}
-
-					{!hasProgress && (
-						<div className="flex justify-end">
-							<form.Subscribe selector={(state) => state.isSubmitting}>
-								{(isSubmitting) => (
-									<Button type="submit" disabled={isSubmitting}>
-										{isSubmitting ? "Guardando..." : "Guardar"}
-									</Button>
-								)}
-							</form.Subscribe>
-						</div>
-					)}
-				</form>
+						)}
+					</form>
+				</div>
 			</div>
 		</div>
 	);

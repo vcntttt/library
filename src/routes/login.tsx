@@ -65,129 +65,134 @@ function LoginPage() {
 	}
 
 	return (
-		<div className="container mx-auto max-w-md p-4 md:p-6">
-			<div className="rounded-xl border border-border/50 bg-card/50 p-4 md:p-6 space-y-4">
-				<form.Subscribe selector={(state) => state.values.mode}>
-					{(mode) => (
-						<>
-							<div className="space-y-1">
-								<h1 className="text-xl font-semibold tracking-tight">
-									{mode === "signup" ? "Crear cuenta" : "Iniciar sesion"}
-								</h1>
-								<p className="text-sm text-muted-foreground">
-									Library es privada. Necesitas una cuenta para entrar.
-								</p>
-							</div>
+		<div className="min-h-[calc(100vh-4rem)]">
+			<div className="container mx-auto max-w-md p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				<div className="rounded-2xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
+					<form.Subscribe selector={(state) => state.values.mode}>
+						{(mode) => (
+							<>
+								<div className="space-y-2">
+									<p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+										Acceso privado
+									</p>
+									<h1 className="text-2xl font-semibold tracking-tight font-serif">
+										{mode === "signup" ? "Crear cuenta" : "Iniciar sesion"}
+									</h1>
+									<p className="text-sm text-muted-foreground">
+										La biblioteca es privada. Necesitas una cuenta para entrar.
+									</p>
+								</div>
 
-							<form
-								onSubmit={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									void form.handleSubmit();
-								}}
-								className="space-y-4"
-							>
-								{mode === "signup" && (
-									<form.Field name="name">
+								<form
+									onSubmit={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										void form.handleSubmit();
+									}}
+									className="space-y-4"
+								>
+									{mode === "signup" && (
+										<form.Field name="name">
+											{(field) => (
+												<div className="space-y-2">
+													<Label htmlFor={nameId}>Nombre</Label>
+													<Input
+														id={nameId}
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														placeholder="Tu nombre"
+														autoComplete="name"
+													/>
+												</div>
+											)}
+										</form.Field>
+									)}
+
+									<form.Field name="email">
 										{(field) => (
 											<div className="space-y-2">
-												<Label htmlFor={nameId}>Nombre</Label>
+												<Label htmlFor={emailId}>Email</Label>
 												<Input
-													id={nameId}
+													id={emailId}
+													type="email"
 													value={field.state.value}
 													onChange={(e) => field.handleChange(e.target.value)}
-													placeholder="Tu nombre"
-													autoComplete="name"
+													placeholder="tu@email.com"
+													autoComplete="email"
+													required
 												/>
 											</div>
 										)}
 									</form.Field>
-								)}
 
-								<form.Field name="email">
-									{(field) => (
-										<div className="space-y-2">
-											<Label htmlFor={emailId}>Email</Label>
-											<Input
-												id={emailId}
-												type="email"
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="tu@email.com"
-												autoComplete="email"
-												required
-											/>
-										</div>
-									)}
-								</form.Field>
+									<form.Field name="password">
+										{(field) => (
+											<div className="space-y-2">
+												<Label htmlFor={passwordId}>Contrasena</Label>
+												<Input
+													id={passwordId}
+													type="password"
+													value={field.state.value}
+													onChange={(e) => field.handleChange(e.target.value)}
+													autoComplete={
+														mode === "signup"
+															? "new-password"
+															: "current-password"
+													}
+													required
+												/>
+											</div>
+										)}
+									</form.Field>
 
-								<form.Field name="password">
-									{(field) => (
-										<div className="space-y-2">
-											<Label htmlFor={passwordId}>Contrasena</Label>
-											<Input
-												id={passwordId}
-												type="password"
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												autoComplete={
-													mode === "signup"
-														? "new-password"
-														: "current-password"
-												}
-												required
-											/>
-										</div>
-									)}
-								</form.Field>
+									{error && <p className="text-sm text-destructive">{error}</p>}
 
-								{error && <p className="text-sm text-destructive">{error}</p>}
+									<form.Subscribe selector={(state) => state.isSubmitting}>
+										{(isSubmitting) => (
+											<Button
+												type="submit"
+												className="w-full"
+												disabled={isSubmitting}
+											>
+												{isSubmitting
+													? "Procesando..."
+													: mode === "signup"
+														? "Crear cuenta"
+														: "Entrar"}
+											</Button>
+										)}
+									</form.Subscribe>
+								</form>
 
-								<form.Subscribe selector={(state) => state.isSubmitting}>
-									{(isSubmitting) => (
-										<Button
-											type="submit"
-											className="w-full"
-											disabled={isSubmitting}
+								<div className="text-sm text-muted-foreground">
+									{mode === "signup" ? (
+										<button
+											type="button"
+											className="underline underline-offset-4"
+											onClick={() => {
+												setError(null);
+												form.setFieldValue("mode", "signin");
+											}}
 										>
-											{isSubmitting
-												? "Procesando..."
-												: mode === "signup"
-													? "Crear cuenta"
-													: "Entrar"}
-										</Button>
+											Ya tienes cuenta? Inicia sesion
+										</button>
+									) : (
+										<button
+											type="button"
+											className="underline underline-offset-4"
+											onClick={() => {
+												setError(null);
+												form.setFieldValue("mode", "signup");
+											}}
+										>
+											No tienes cuenta? Crea una
+										</button>
 									)}
-								</form.Subscribe>
-							</form>
-
-							<div className="text-sm text-muted-foreground">
-								{mode === "signup" ? (
-									<button
-										type="button"
-										className="underline underline-offset-4"
-										onClick={() => {
-											setError(null);
-											form.setFieldValue("mode", "signin");
-										}}
-									>
-										Ya tienes cuenta? Inicia sesion
-									</button>
-								) : (
-									<button
-										type="button"
-										className="underline underline-offset-4"
-										onClick={() => {
-											setError(null);
-											form.setFieldValue("mode", "signup");
-										}}
-									>
-										No tienes cuenta? Crea una
-									</button>
-								)}
-							</div>
-						</>
-					)}
-				</form.Subscribe>
+								</div>
+							</>
+						)}
+					</form.Subscribe>
+				</div>
 			</div>
 		</div>
 	);

@@ -36,17 +36,17 @@ export function ProgressBar({
 
 	return (
 		<div className={cn("space-y-1", className)}>
-			<div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+			<div className="h-2 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
 				<div
 					className={cn(
-						"h-full rounded-full transition-all",
+						"h-full rounded-full transition-all duration-500",
 						progressColors[type],
 					)}
 					style={{ width: `${percentage}%` }}
 				/>
 			</div>
 			{showLabel && (
-				<p className="text-xs text-muted-foreground">
+				<p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
 					{current} / {total} {unitLabels[type]}
 				</p>
 			)}

@@ -16,7 +16,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { ObraStatus, ObraType } from "@/lib/types";
@@ -38,6 +37,21 @@ const obraStatuses: { value: ObraStatus; label: string }[] = [
 	{ value: "finished", label: "Terminada" },
 	{ value: "dropped", label: "Abandonada" },
 ];
+
+const obraTypeLabels: Record<ObraType, string> = {
+	book: "Libro",
+	movie: "Pelicula",
+	series: "Serie",
+	anime: "Anime",
+	manga: "Manga",
+};
+
+const obraStatusLabels: Record<ObraStatus, string> = {
+	backlog: "Pendiente",
+	"in-progress": "En progreso",
+	finished: "Terminada",
+	dropped: "Abandonada",
+};
 
 export function AddObraDialog() {
 	const [open, setOpen] = useState(false);
@@ -90,13 +104,17 @@ export function AddObraDialog() {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger render={<Button size="sm" className="gap-1.5" />}>
+			<DialogTrigger
+				render={<Button size="sm" className="gap-1.5 shadow-sm" />}
+			>
 				<Plus className="h-4 w-4" />
 				Agregar obra
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent className="sm:max-w-lg rounded-2xl">
 				<DialogHeader>
-					<DialogTitle>Nueva obra</DialogTitle>
+					<DialogTitle className="text-lg font-semibold font-serif">
+						Nueva obra
+					</DialogTitle>
 				</DialogHeader>
 				<form
 					onSubmit={(e) => {
@@ -131,7 +149,9 @@ export function AddObraDialog() {
 										onValueChange={(v) => field.handleChange(v as ObraType)}
 									>
 										<SelectTrigger id={typeId}>
-											<SelectValue />
+											<span className="truncate">
+												{obraTypeLabels[field.state.value]}
+											</span>
 										</SelectTrigger>
 										<SelectContent>
 											{obraTypes.map((t) => (
@@ -154,7 +174,9 @@ export function AddObraDialog() {
 										onValueChange={(v) => field.handleChange(v as ObraStatus)}
 									>
 										<SelectTrigger id={statusId}>
-											<SelectValue />
+											<span className="truncate">
+												{obraStatusLabels[field.state.value]}
+											</span>
 										</SelectTrigger>
 										<SelectContent>
 											{obraStatuses.map((s) => (
