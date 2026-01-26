@@ -39,6 +39,8 @@ Notes:
 
 ## Commands
 
+- Do not run `bun run dev` unless explicitly asked; server is usually running in another terminal.
+
 ```bash
 # install
 bun install
