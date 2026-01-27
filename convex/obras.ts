@@ -16,6 +16,44 @@ const obraStatus = v.union(
   v.literal('dropped'),
 )
 
+type MetadataInput = {
+  pages?: number | null
+  seasons?: number | null
+  episodes?: number | null
+  episodesAired?: number | null
+  nextEpisodeDate?: number | null
+  status?: string | null
+  chapters?: number | null
+  volumes?: number | null
+  season?: string | null
+  seasonYear?: number | null
+  runtime?: number | null
+  watchProviders?: Array<string | null> | null
+} | null
+
+const sanitizeMetadata = (metadata?: MetadataInput) => {
+  if (!metadata) return undefined
+
+  return {
+    pages: metadata.pages ?? undefined,
+    seasons: metadata.seasons ?? undefined,
+    episodes: metadata.episodes ?? undefined,
+    episodesAired: metadata.episodesAired ?? undefined,
+    nextEpisodeDate: metadata.nextEpisodeDate ?? undefined,
+    status: metadata.status ?? undefined,
+    chapters: metadata.chapters ?? undefined,
+    volumes: metadata.volumes ?? undefined,
+    season: metadata.season ?? undefined,
+    seasonYear: metadata.seasonYear ?? undefined,
+    runtime: metadata.runtime ?? undefined,
+    watchProviders: metadata.watchProviders
+      ? metadata.watchProviders
+          .map((provider) => provider?.trim())
+          .filter((provider): provider is string => Boolean(provider))
+      : undefined,
+  }
+}
+
 export const list = query({
   args: {
     status: v.optional(obraStatus),
@@ -93,6 +131,29 @@ export const create = mutation({
     review: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
+    obsidianPath: v.optional(v.string()),
+    external: v.optional(
+      v.object({
+        source: v.string(),
+        id: v.string(),
+      }),
+    ),
+    metadata: v.optional(
+      v.object({
+        pages: v.optional(v.number()),
+        seasons: v.optional(v.number()),
+        episodes: v.optional(v.number()),
+        episodesAired: v.optional(v.number()),
+        nextEpisodeDate: v.optional(v.number()),
+        status: v.optional(v.string()),
+        chapters: v.optional(v.number()),
+        volumes: v.optional(v.number()),
+        season: v.optional(v.string()),
+        seasonYear: v.optional(v.number()),
+        runtime: v.optional(v.number()),
+        watchProviders: v.optional(v.array(v.string())),
+      }),
+    ),
     coverUrl: v.optional(v.string()),
     creator: v.optional(v.string()),
     year: v.optional(v.number()),
@@ -126,6 +187,32 @@ export const create = mutation({
       throw new Error('La valoracion debe estar entre 1 y 5')
     }
 
+    if (args.external) {
+      const source = args.external.source.trim()
+      const id = args.external.id.trim()
+      if (!source || !id) {
+        throw new Error('Metadata invalida')
+      }
+    }
+
+    const metadata = sanitizeMetadata(args.metadata as MetadataInput)
+
+    let startedAt = args.startedAt
+    let finishedAt = args.finishedAt
+
+    if (args.status === 'in-progress' && startedAt === undefined) {
+      startedAt = now
+    }
+
+    if (args.status === 'finished') {
+      if (startedAt === undefined) {
+        startedAt = now
+      }
+      if (finishedAt === undefined) {
+        finishedAt = now
+      }
+    }
+
     return await ctx.db.insert('obras', {
       userTokenIdentifier: identity.tokenIdentifier,
       title: args.title.trim(),
@@ -139,12 +226,20 @@ export const create = mutation({
           .filter(Boolean)
           .slice(0, 20) ?? [],
       notes: args.notes?.trim() || undefined,
+      obsidianPath: args.obsidianPath?.trim() || undefined,
+      external: args.external
+        ? {
+            source: args.external.source.trim(),
+            id: args.external.id.trim(),
+          }
+        : undefined,
+      metadata,
       coverUrl: args.coverUrl?.trim() || undefined,
       creator: args.creator?.trim() || undefined,
       year: args.year,
       progress: args.progress,
-      startedAt: args.startedAt,
-      finishedAt: args.finishedAt,
+      startedAt,
+      finishedAt,
       createdAt: now,
       updatedAt: now,
     })
@@ -162,6 +257,29 @@ export const update = mutation({
       review: v.optional(v.string()),
       tags: v.optional(v.array(v.string())),
       notes: v.optional(v.string()),
+      obsidianPath: v.optional(v.string()),
+      external: v.optional(
+        v.object({
+          source: v.string(),
+          id: v.string(),
+        }),
+      ),
+      metadata: v.optional(
+        v.object({
+          pages: v.optional(v.number()),
+          seasons: v.optional(v.number()),
+          episodes: v.optional(v.number()),
+          episodesAired: v.optional(v.number()),
+          nextEpisodeDate: v.optional(v.number()),
+          status: v.optional(v.string()),
+          chapters: v.optional(v.number()),
+          volumes: v.optional(v.number()),
+          season: v.optional(v.string()),
+          seasonYear: v.optional(v.number()),
+          runtime: v.optional(v.number()),
+          watchProviders: v.optional(v.array(v.string())),
+        }),
+      ),
       coverUrl: v.optional(v.string()),
       creator: v.optional(v.string()),
       year: v.optional(v.number()),
@@ -196,6 +314,19 @@ export const update = mutation({
     if (patch.review !== undefined)
       patch.review = patch.review?.trim() || undefined
     if (patch.notes !== undefined) patch.notes = patch.notes?.trim() || undefined
+    if (patch.obsidianPath !== undefined)
+      patch.obsidianPath = patch.obsidianPath?.trim() || undefined
+    if (patch.external !== undefined) {
+      const source = patch.external?.source?.trim()
+      const id = patch.external?.id?.trim()
+      if (!source || !id) {
+        throw new Error('Metadata invalida')
+      }
+      patch.external = { source, id }
+    }
+    if (patch.metadata !== undefined) {
+      patch.metadata = sanitizeMetadata(patch.metadata as MetadataInput)
+    }
     if (patch.coverUrl !== undefined)
       patch.coverUrl = patch.coverUrl?.trim() || undefined
     if (patch.creator !== undefined)
@@ -221,6 +352,32 @@ export const update = mutation({
       (patch.rating < 1 || patch.rating > 5)
     ) {
       throw new Error('La valoracion debe estar entre 1 y 5')
+    }
+
+    if (patch.status && patch.status !== existing.status) {
+      if (
+        patch.status === 'in-progress' &&
+        existing.startedAt === undefined &&
+        patch.startedAt === undefined
+      ) {
+        patch.startedAt = Date.now()
+      }
+
+      if (
+        patch.status === 'finished' &&
+        existing.finishedAt === undefined &&
+        patch.finishedAt === undefined
+      ) {
+        patch.finishedAt = Date.now()
+      }
+
+      if (
+        existing.status === 'finished' &&
+        patch.status !== 'finished' &&
+        patch.finishedAt === undefined
+      ) {
+        patch.finishedAt = undefined
+      }
     }
 
     patch.updatedAt = Date.now()

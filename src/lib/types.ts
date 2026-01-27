@@ -1,3 +1,5 @@
+import type { MetadataSource } from "@/lib/metadata/types";
+
 export type ObraType = "book" | "movie" | "series" | "anime" | "manga";
 
 export type ObraStatus = "backlog" | "in-progress" | "finished" | "dropped";
@@ -13,9 +15,28 @@ export interface Obra {
 	review?: string;
 	tags: string[];
 	notes?: string; // markdown
+	obsidianPath?: string;
 	coverUrl?: string;
 	creator?: string; // author, director, studio
 	year?: number;
+	external?: {
+		source: MetadataSource;
+		id: string;
+	};
+	metadata?: {
+		pages?: number;
+		seasons?: number;
+		episodes?: number;
+		episodesAired?: number;
+		nextEpisodeDate?: number;
+		status?: string;
+		chapters?: number;
+		volumes?: number;
+		season?: string;
+		seasonYear?: number;
+		runtime?: number;
+		watchProviders?: string[];
+	};
 	// Progress tracking
 	progress?: {
 		current: number;
