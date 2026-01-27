@@ -5,8 +5,9 @@ import { ObraCard } from "./obra-card";
 interface DashboardSectionProps {
 	title: string;
 	obras: Obra[];
-	variant?: "default" | "compact";
+	variant?: "default" | "compact" | "grid";
 	emptyMessage?: string;
+	getSecondaryText?: (obra: Obra) => string | undefined;
 	className?: string;
 }
 
@@ -15,6 +16,7 @@ export function DashboardSection({
 	obras,
 	variant = "default",
 	emptyMessage = "No hay nada aun",
+	getSecondaryText,
 	className,
 }: DashboardSectionProps) {
 	return (
@@ -32,15 +34,22 @@ export function DashboardSection({
 					className={cn(
 						variant === "default"
 							? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-							: "flex flex-col gap-2",
+							: variant === "grid"
+								? "grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+								: "flex flex-col gap-2",
 					)}
 				>
 					{obras.map((obra) => (
-						<ObraCard key={obra.id} obra={obra} variant={variant} />
+						<ObraCard
+							key={obra.id}
+							obra={obra}
+							variant={variant}
+							secondaryText={getSecondaryText?.(obra)}
+						/>
 					))}
 				</div>
 			) : (
-				<div className="rounded-2xl border border-dashed border-border/60 bg-card/60 py-8 text-center">
+				<div className="rounded-xl border border-dashed border-border/60 bg-card/60 py-8 text-center">
 					<p className="text-sm text-muted-foreground">{emptyMessage}</p>
 				</div>
 			)}

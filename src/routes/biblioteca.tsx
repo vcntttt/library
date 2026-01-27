@@ -28,7 +28,7 @@ function BibliotecaPage() {
 					Biblioteca
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Inicia sesion para ver tu biblioteca.
+					Inicia sesión para ver tu biblioteca.
 				</p>
 				<Link to="/login" className="text-sm underline underline-offset-4">
 					Ir a login
@@ -50,7 +50,7 @@ function BibliotecaAuthed() {
 				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 					<div className="space-y-3">
 						<p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-							Coleccion
+							Colección
 						</p>
 						<h1 className="text-3xl font-semibold tracking-tight font-serif sm:text-4xl">
 							Biblioteca

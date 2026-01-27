@@ -18,11 +18,11 @@ const progressColors: Record<ObraType, string> = {
 };
 
 const unitLabels: Record<ObraType, string> = {
-	book: "pag",
+	book: "páginas",
 	movie: "",
-	series: "eps",
-	anime: "eps",
-	manga: "caps",
+	series: "episodios",
+	anime: "episodios",
+	manga: "capítulos",
 };
 
 export function ProgressBar({

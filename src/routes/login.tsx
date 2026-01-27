@@ -76,7 +76,7 @@ function LoginPage() {
 										Acceso privado
 									</p>
 									<h1 className="text-2xl font-semibold tracking-tight font-serif">
-										{mode === "signup" ? "Crear cuenta" : "Iniciar sesion"}
+										{mode === "signup" ? "Crear cuenta" : "Iniciar sesión"}
 									</h1>
 									<p className="text-sm text-muted-foreground">
 										La biblioteca es privada. Necesitas una cuenta para entrar.
@@ -174,7 +174,7 @@ function LoginPage() {
 												form.setFieldValue("mode", "signin");
 											}}
 										>
-											Ya tienes cuenta? Inicia sesion
+											Ya tienes cuenta? Inicia sesión
 										</button>
 									) : (
 										<button

@@ -14,7 +14,7 @@ const typeColors: Record<ObraType, string> = {
 
 const typeLabels: Record<ObraType, string> = {
 	book: "Libro",
-	movie: "Pelicula",
+	movie: "Película",
 	series: "Serie",
 	anime: "Anime",
 	manga: "Manga",

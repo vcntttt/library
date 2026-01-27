@@ -62,7 +62,7 @@ export function UserMenu() {
 					"rounded-full border-border/60 bg-background/60 shadow-sm",
 				)}
 			>
-				Inicia sesion
+				Inicia sesión
 			</Link>
 		);
 	}
@@ -94,7 +94,7 @@ export function UserMenu() {
 					</span>
 				</span>
 				<ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
-				<span className="sr-only">Menu de usuario</span>
+				<span className="sr-only">Menú de usuario</span>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
@@ -119,7 +119,7 @@ export function UserMenu() {
 						className="cursor-pointer"
 					>
 						<LogOut className="h-4 w-4" />
-						{isSigningOut ? "Cerrando sesion..." : "Cerrar sesion"}
+						{isSigningOut ? "Cerrando sesión..." : "Cerrar sesión"}
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 			</DropdownMenuContent>

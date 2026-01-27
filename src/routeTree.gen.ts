@@ -13,6 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
+import { Route as ApiObsidianOpenRouteImport } from './routes/api/obsidian/open'
+import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
+import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const LoginRoute = LoginRouteImport.update({
@@ -35,6 +38,21 @@ const ObraObraIdRoute = ObraObraIdRouteImport.update({
   path: '/obra/$obraId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiObsidianOpenRoute = ApiObsidianOpenRouteImport.update({
+  id: '/api/obsidian/open',
+  path: '/api/obsidian/open',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
+  id: '/api/metadata/search',
+  path: '/api/metadata/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMetadataDetailsRoute = ApiMetadataDetailsRouteImport.update({
+  id: '/api/metadata/details',
+  path: '/api/metadata/details',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -47,6 +65,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/metadata/details': typeof ApiMetadataDetailsRoute
+  '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/obsidian/open': typeof ApiObsidianOpenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +75,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/metadata/details': typeof ApiMetadataDetailsRoute
+  '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/obsidian/open': typeof ApiObsidianOpenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +86,31 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/metadata/details': typeof ApiMetadataDetailsRoute
+  '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/obsidian/open': typeof ApiObsidianOpenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/biblioteca' | '/login' | '/obra/$obraId' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/biblioteca'
+    | '/login'
+    | '/obra/$obraId'
+    | '/api/auth/$'
+    | '/api/metadata/details'
+    | '/api/metadata/search'
+    | '/api/obsidian/open'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/biblioteca' | '/login' | '/obra/$obraId' | '/api/auth/$'
+  to:
+    | '/'
+    | '/biblioteca'
+    | '/login'
+    | '/obra/$obraId'
+    | '/api/auth/$'
+    | '/api/metadata/details'
+    | '/api/metadata/search'
+    | '/api/obsidian/open'
   id:
     | '__root__'
     | '/'
@@ -75,6 +118,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/obra/$obraId'
     | '/api/auth/$'
+    | '/api/metadata/details'
+    | '/api/metadata/search'
+    | '/api/obsidian/open'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +129,9 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ObraObraIdRoute: typeof ObraObraIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
+  ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
+  ApiObsidianOpenRoute: typeof ApiObsidianOpenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,6 +164,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ObraObraIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/obsidian/open': {
+      id: '/api/obsidian/open'
+      path: '/api/obsidian/open'
+      fullPath: '/api/obsidian/open'
+      preLoaderRoute: typeof ApiObsidianOpenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/metadata/search': {
+      id: '/api/metadata/search'
+      path: '/api/metadata/search'
+      fullPath: '/api/metadata/search'
+      preLoaderRoute: typeof ApiMetadataSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/metadata/details': {
+      id: '/api/metadata/details'
+      path: '/api/metadata/details'
+      fullPath: '/api/metadata/details'
+      preLoaderRoute: typeof ApiMetadataDetailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -131,6 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ObraObraIdRoute: ObraObraIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
+  ApiMetadataSearchRoute: ApiMetadataSearchRoute,
+  ApiObsidianOpenRoute: ApiObsidianOpenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

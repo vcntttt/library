@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { useState } from "react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
 import { StatusIcons } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
 import { cn } from "@/lib/utils";
@@ -30,7 +32,7 @@ function DashboardPage() {
 					Biblioteca
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Inicia sesion para ver tu biblioteca.
+					Inicia sesión para ver tu biblioteca.
 				</p>
 				<Link to="/login" className="text-sm underline underline-offset-4">
 					Ir a login
@@ -45,6 +47,20 @@ function DashboardPage() {
 function DashboardAuthed() {
 	const docs = useQuery(api.obras.list, {});
 	const obras = (docs ?? []).map(obraFromDoc);
+	const [view, setView] = useState<"list" | "grid">("list");
+	const isGridView = view === "grid";
+	const now = Date.now();
+	const formatRecentLabel = (timestamp: number) => {
+		const diffMs = now - timestamp;
+		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+		if (diffDays <= 0) return "Actualizado hoy";
+		if (diffDays === 1) return "Actualizado ayer";
+		if (diffDays < 7) return `Actualizado hace ${diffDays} dias`;
+		return `Actualizado ${new Date(timestamp).toLocaleDateString()}`;
+	};
+	const recent = [...obras]
+		.sort((a, b) => b.updatedAt - a.updatedAt)
+		.slice(0, 6);
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
 	const backlog = obras.filter((w) => w.status === "backlog");
@@ -89,11 +105,41 @@ function DashboardAuthed() {
 							Panel
 						</h1>
 						<p className="text-sm text-muted-foreground">
-							Tu actividad reciente, lo que esta en progreso y lo que ya
+							Tu actividad reciente, lo que está en progreso y lo que ya
 							terminaste.
 						</p>
 					</div>
-					<AddObraDialog />
+					<div className="flex items-center gap-2">
+						<div className="inline-flex items-center overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm">
+							<Button
+								size="sm"
+								variant="ghost"
+								className={cn(
+									"h-8 rounded-none border-r border-border/60 px-3 text-xs",
+									view === "list"
+										? "bg-foreground/10 text-foreground"
+										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+								)}
+								onClick={() => setView("list")}
+							>
+								Lista
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								className={cn(
+									"h-8 rounded-none px-3 text-xs",
+									view === "grid"
+										? "bg-foreground/10 text-foreground"
+										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+								)}
+								onClick={() => setView("grid")}
+							>
+								Grid
+							</Button>
+						</div>
+						<AddObraDialog />
+					</div>
 				</div>
 
 				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -102,7 +148,7 @@ function DashboardAuthed() {
 						return (
 							<div
 								key={stat.label}
-								className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm"
+								className="rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm"
 							>
 								<div className="flex items-center justify-between">
 									<div>
@@ -129,22 +175,30 @@ function DashboardAuthed() {
 				</div>
 
 				<DashboardSection
+					title="Recientes"
+					obras={recent}
+					variant={isGridView ? "grid" : "compact"}
+					emptyMessage="Aún no hay actividad reciente."
+					getSecondaryText={(obra) => formatRecentLabel(obra.updatedAt)}
+				/>
+
+				<DashboardSection
 					title="En progreso"
 					obras={inProgress}
-					variant="default"
+					variant={isGridView ? "grid" : "default"}
 					emptyMessage="Empieza algo nuevo agregando una obra."
 				/>
 				<DashboardSection
 					title="Pendiente"
 					obras={backlog}
-					variant="compact"
+					variant={isGridView ? "grid" : "compact"}
 					emptyMessage="No tienes nada pendiente."
 				/>
 				<DashboardSection
 					title="Terminadas"
 					obras={finished}
-					variant="compact"
-					emptyMessage="Aun no terminas nada."
+					variant={isGridView ? "grid" : "compact"}
+					emptyMessage="Aún no terminas nada."
 				/>
 			</div>
 		</div>
