@@ -37,6 +37,16 @@ Notes:
 - Prefer loading a domain skill (`senior-frontend`, `senior-fullstack`, etc.) plus `systematic-debugging` when debugging.
 - Some skills may be unused in this repo today; keep them here as a capability map.
 
+## Linear workflow
+
+- Siempre trabajar con Team: Freelance y Project: Library (salvo que el usuario indique lo contrario).
+- Minimizar la cantidad de issues: preferir una issue con checklist/descripcion clara en lugar de muchas issues o subissues.
+- Evitar subissues salvo que sean indispensables (trabajo en paralelo real, bloqueos o dependencias claras).
+- Usar labels/tags correctamente: por defecto `feature`, sumar 1-2 labels de dominio (por ejemplo `ui`, `backend`, `convex`, `auth`, `docs`). No crear labels nuevos salvo necesidad.
+- La descripcion de la issue debe ser implementable en otra sesion: contexto, alcance/no alcance, criterios de aceptacion, notas tecnicas, links/mocks, edge cases y definition of done.
+- Al empezar a trabajar en una issue, marcarla como `In Progress` (y asignar a `me` si aplica).
+- No completar issues hasta confirmacion del usuario o el flujo de `/commit`.
+
 ## Commands
 
 - Do not run `bun run dev` unless explicitly asked; server is usually running in another terminal.
