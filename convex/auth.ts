@@ -16,6 +16,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 			enabled: true,
 			requireEmailVerification: false,
 		},
+		advanced: {
+			useSecureCookies: false,
+		},
 		plugins: [convex({ authConfig })],
 		trustedOrigins: [
 			"http://localhost",
@@ -30,6 +33,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 			"http://192.168.1.8:*",
 			"http://192.168.1.8:3010",
 			"http://library.home",
+			"http://library.home:3010",
 		],
 	});
 };
