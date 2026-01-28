@@ -29,6 +29,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 			"http://192.168.1.8",
 			"http://192.168.1.8:*",
 			"http://192.168.1.8:3010",
+			"http://library.home",
 		],
 	});
 };
