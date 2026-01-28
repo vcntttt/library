@@ -41,9 +41,10 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       "http://library.home",
       "http://library.home:3010",
       "https://vr-homelab.tailf8b14c.ts.net",
-			baseOrigin
+      baseOrigin,
     ],
-		advanced: { trustedProxyHeaders: true },
-
+    advanced: {
+      disableCSRFCheck: true,
+    },
   });
 };
