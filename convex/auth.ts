@@ -27,8 +27,5 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       convex({ authConfig }),
     ],
     trustedOrigins: ["*"], // fuck better auth,
-    advanced: {
-      useSecureCookies: false,
-    },
   });
 };
