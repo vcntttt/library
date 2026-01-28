@@ -3,7 +3,6 @@ import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import authConfig from "./auth.config";
 import { components } from "./_generated/api";
-import { query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
 
@@ -26,6 +25,21 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
     ],
-    trustedOrigins: ["*"], // fuck better auth,
+    trustedOrigins: [
+      "http://localhost",
+      "http://localhost:*",
+      "http://127.0.0.1",
+      "http://127.0.0.1:*",
+      "https://localhost",
+      "https://localhost:*",
+      "https://127.0.0.1",
+      "https://127.0.0.1:*",
+      "http://192.168.1.8",
+      "http://192.168.1.8:*",
+      "http://192.168.1.8:3010",
+      "http://library.home",
+      "http://library.home:3010",
+      "https://vr-homelab.tailf8b14c.ts.net",
+    ],
   });
 };
