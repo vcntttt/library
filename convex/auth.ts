@@ -26,25 +26,8 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
     ],
-    trustedOrigins: [
-      "http://localhost",
-      "http://localhost:*",
-      "http://127.0.0.1",
-      "http://127.0.0.1:*",
-      "https://localhost",
-      "https://localhost:*",
-      "https://127.0.0.1",
-      "https://127.0.0.1:*",
-      "http://192.168.1.8",
-      "http://192.168.1.8:*",
-      "http://192.168.1.8:3010",
-      "http://library.home",
-      "http://library.home:3010",
-      "https://vr-homelab.tailf8b14c.ts.net",
-      baseOrigin,
-    ],
     advanced: {
-      disableCSRFCheck: true,
+			disableOriginCheck: true,
     },
   });
 };
