@@ -26,6 +26,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
     ],
-    trustedOrigins: ["*"], // fuck better auth
+    trustedOrigins: ["*"], // fuck better auth,
+    advanced: {
+      useSecureCookies: false,
+    },
   });
 };
