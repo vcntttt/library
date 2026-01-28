@@ -47,6 +47,7 @@ function LoginPage() {
 				await router.navigate({ to: "/" });
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Error al autenticar");
+				console.error("site url:", process.env.SITE_URL);
 			}
 		},
 	});
