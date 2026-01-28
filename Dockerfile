@@ -9,13 +9,13 @@ COPY . .
 RUN bun run build
 
 # ---------- runtime ----------
-FROM node:22-alpine AS run
+FROM oven/bun:1 AS run
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=3000
 
 COPY --from=build /app/.output ./.output
 
-ENV PORT=3000
 EXPOSE 3000
 
 CMD ["bun", ".output/server/index.mjs"]
