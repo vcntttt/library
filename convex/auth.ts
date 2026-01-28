@@ -7,6 +7,7 @@ import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
 
 const siteUrl = process.env.SITE_URL!;
+const baseOrigin = new URL(siteUrl).origin;
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -14,7 +15,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
-    baseURL: siteUrl,
+    baseURL: baseOrigin,
     database: authComponent.adapter(ctx),
     // Configure simple, non-verified email/password to get started
     emailAndPassword: {
@@ -40,6 +41,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       "http://library.home",
       "http://library.home:3010",
       "https://vr-homelab.tailf8b14c.ts.net",
+			baseOrigin
     ],
+		advanced: { trustedProxyHeaders: true },
+
   });
 };
