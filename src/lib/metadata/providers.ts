@@ -186,7 +186,7 @@ async function searchAnilist(query: string, obraType?: ObraType) {
 				media.title.romaji ??
 				media.title.native ??
 				"Sin título",
-			creator: undefined,
+			creator: getAnilistCreator(media, obraType),
 			year: media.startDate?.year ?? undefined,
 			coverUrl: media.coverImage?.extraLarge ?? media.coverImage?.large,
 			episodes: media.episodes ?? undefined,
@@ -288,7 +288,10 @@ async function getTmdbDetails(
 	};
 }
 
-async function getAnilistDetails(id: string): Promise<MetadataDetails> {
+async function getAnilistDetails(
+	id: string,
+	obraType?: ObraType,
+): Promise<MetadataDetails> {
 	const response = await fetchJson<AnilistDetailsResponse>(
 		"https://graphql.anilist.co",
 		{
@@ -316,6 +319,7 @@ async function getAnilistDetails(id: string): Promise<MetadataDetails> {
 			media.title.romaji ??
 			media.title.native ??
 			undefined,
+		creator: getAnilistCreator(media, obraType),
 		coverUrl: media.coverImage?.extraLarge ?? media.coverImage?.large,
 		season: media.season ?? undefined,
 		seasonYear: media.seasonYear ?? undefined,
@@ -357,7 +361,7 @@ export async function getMetadataDetails(
 			details = await getTmdbDetails(id, obraType);
 			break;
 		case "anilist":
-			details = await getAnilistDetails(id);
+			details = await getAnilistDetails(id, obraType);
 			break;
 	}
 
@@ -372,9 +376,45 @@ export async function getMetadataDetails(
 async function fetchJson<T>(url: string, init?: RequestInit) {
 	const response = await fetch(url, init);
 	if (!response.ok) {
-		throw new Error("No se pudo consultar metadatos.");
+		const message = await getMetadataErrorMessage(response, url);
+		throw new Error(message);
 	}
 	return (await response.json()) as T;
+}
+
+async function getMetadataErrorMessage(response: Response, url: string) {
+	const fallback = "No se pudo consultar metadatos.";
+	let detail: string | undefined;
+
+	try {
+		const text = await response.text();
+		if (text) {
+			const payload = JSON.parse(text) as {
+				error?: { message?: string } | string;
+			};
+			if (payload?.error) {
+				detail =
+					typeof payload.error === "string"
+						? payload.error
+						: payload.error.message;
+			}
+		}
+	} catch (error) {
+		void error;
+	}
+
+	if (response.status === 403 && url.includes("googleapis.com/books")) {
+		return (
+			detail ??
+			"Google Books requiere una API key para esta IP. Configura GOOGLE_BOOKS_API_KEY."
+		);
+	}
+
+	if (detail) {
+		return detail;
+	}
+
+	return `${fallback} (HTTP ${response.status}).`;
 }
 
 function parseYear(value?: string) {
@@ -484,6 +524,21 @@ interface AnilistResponse {
 					extraLarge?: string;
 					large?: string;
 				};
+				studios?: {
+					nodes?: Array<{
+						name?: string;
+					}>;
+				};
+				staff?: {
+					edges?: Array<{
+						role?: string;
+						node?: {
+							name?: {
+								full?: string;
+							};
+						};
+					}>;
+				};
 				startDate?: {
 					year?: number;
 				};
@@ -511,6 +566,21 @@ interface AnilistDetailsResponse {
 				extraLarge?: string;
 				large?: string;
 			};
+			studios?: {
+				nodes?: Array<{
+					name?: string;
+				}>;
+			};
+			staff?: {
+				edges?: Array<{
+					role?: string;
+					node?: {
+						name?: {
+							full?: string;
+						};
+					};
+				}>;
+			};
 			season?: string;
 			seasonYear?: number;
 			status?: string;
@@ -523,6 +593,57 @@ interface AnilistDetailsResponse {
 			} | null;
 		};
 	};
+}
+
+function getAnilistCreator(
+	media: {
+		studios?: { nodes?: Array<{ name?: string }> };
+		staff?: {
+			edges?: Array<{
+				role?: string;
+				node?: { name?: { full?: string } };
+			}>;
+		};
+	},
+	obraType?: ObraType,
+) {
+	const studioName = media.studios?.nodes?.find((node) => node?.name)?.name;
+	const staffEdges = media.staff?.edges ?? [];
+	const staffName = pickStaffName(staffEdges, obraType);
+
+	if (obraType === "anime") {
+		return studioName ?? staffName;
+	}
+
+	return staffName ?? studioName;
+}
+
+function pickStaffName(
+	edges: Array<{
+		role?: string;
+		node?: { name?: { full?: string } };
+	}>,
+	obraType?: ObraType,
+) {
+	const rolePriority =
+		obraType === "anime"
+			? ["director", "original creator", "creator"]
+			: [
+					"story",
+					"story & art",
+					"story and art",
+					"original creator",
+					"creator",
+					"author",
+				];
+
+	for (const role of rolePriority) {
+		const match = edges.find((edge) => edge.role?.toLowerCase().includes(role));
+		const name = match?.node?.name?.full;
+		if (name) return name;
+	}
+
+	return edges.find((edge) => edge.node?.name?.full)?.node?.name?.full;
 }
 
 const ANILIST_QUERY = `
@@ -538,6 +659,21 @@ query ($search: String, $type: MediaType) {
       coverImage {
         extraLarge
         large
+      }
+      studios(isMain: true) {
+        nodes {
+          name
+        }
+      }
+      staff(perPage: 3) {
+        edges {
+          role
+          node {
+            name {
+              full
+            }
+          }
+        }
       }
       startDate {
         year
@@ -565,6 +701,21 @@ query ($id: Int) {
     coverImage {
       extraLarge
       large
+    }
+    studios(isMain: true) {
+      nodes {
+        name
+      }
+    }
+    staff(perPage: 6) {
+      edges {
+        role
+        node {
+          name {
+            full
+          }
+        }
+      }
     }
     season
     seasonYear
