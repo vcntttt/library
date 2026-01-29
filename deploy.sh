@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =========================
+# Config
+# =========================
+DOKPLOY_BASE_URL="${DOKPLOY_BASE_URL:-http://192.168.1.8:3000}"
+DOKPLOY_API_KEY="${DOKPLOY_API_KEY:-libraryIKlSXuIGpQBArRAUQiDCyeAotnvDJUJZGjhcgCueEiNuXhKmkFcbPqzFMYhLCMBH}"
+DOKPLOY_APP_ID="${DOKPLOY_APP_ID:-Ckr5KEOg_XT7ZrbCLz12X}"
+
+# Convex
+CONVEX_CMD="${CONVEX_CMD:-bunx convex deploy}"
+
+# Git
+GIT_REMOTE="${GIT_REMOTE:-origin}"
+BRANCH="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
+
+# =========================
+# Helpers
+# =========================
+die() {
+  echo "❌ $*" >&2
+  exit 1
+}
+info() { echo "ℹ️  $*"; }
+ok() { echo "✅ $*"; }
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "Falta el comando: $1"
+}
+
+# =========================
+# Preconditions
+# =========================
+require_cmd git
+require_cmd curl
+require_cmd jq
+require_cmd bunx
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "No estás dentro de un repo git."
+
+if [[ -z "$DOKPLOY_API_KEY" ]]; then
+  die "Falta DOKPLOY_API_KEY. Exporta la variable o crea un .env y sourcéalo."
+fi
+
+# =========================
+# 1) Convex deploy
+# =========================
+info "Convex: $CONVEX_CMD"
+eval "$CONVEX_CMD"
+ok "Convex deploy listo"
+
+# =========================
+# 2) Git push
+# =========================
+info "Git status:"
+git status -sb
+
+# Si no hay upstream, lo seteamos al remoto/branch
+UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null || true)"
+if [[ -z "$UPSTREAM" ]]; then
+  info "No hay upstream para $BRANCH. Seteando upstream a $GIT_REMOTE/$BRANCH"
+  git push -u "$GIT_REMOTE" "$BRANCH"
+else
+  info "Push a $UPSTREAM"
+  git push
+fi
+
+ok "Git push listo"
+
+# =========================
+# 3) Trigger Dokploy deploy
+# =========================
+info "Dokploy deploy: appId=$DOKPLOY_APP_ID"
+RESP="$(curl -sS -X POST \
+  "$DOKPLOY_BASE_URL/api/application.deploy" \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H "x-api-key: $DOKPLOY_API_KEY" \
+  -d "{\"applicationId\":\"$DOKPLOY_APP_ID\"}")"
+
+echo "$RESP" | jq .
+ok "Dokploy deploy triggereado"
