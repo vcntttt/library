@@ -57,6 +57,8 @@ export const getObraMetaLine = (obra: Obra) => {
 
 	if (obra.type === "manga") {
 		if (metadata?.chapters) parts.push(`${metadata.chapters} capítulos`);
+		if (!parts.length && metadata?.volumes)
+			parts.push(`${metadata.volumes} volúmenes`);
 		const status = formatMetadataStatus(metadata?.status);
 		if (status) parts.push(status);
 		if (!parts.length && obra.year) parts.push(`Año ${obra.year}`);

@@ -401,6 +401,12 @@ function ObraAuthed({
 				value: metadata.chapters.toLocaleString(),
 			});
 		}
+		if (obra.type === "manga" && metadata.volumes) {
+			metadataItems.push({
+				label: "Volúmenes",
+				value: metadata.volumes.toLocaleString(),
+			});
+		}
 		if (obra.type === "manga" && statusLabel) {
 			metadataItems.push({
 				label: "Estado de publicación",
@@ -621,7 +627,7 @@ function ObraAuthed({
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
 			<div className="container mx-auto space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex items-center justify-between gap-4">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<Link
 						to="/biblioteca"
 						className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -699,7 +705,7 @@ function ObraAuthed({
 							</div>
 						</div>
 
-						<div className="flex items-center gap-3">
+						<div className="flex w-full items-center justify-start gap-3 sm:w-auto sm:justify-end">
 							<StarRating
 								rating={obra.rating}
 								interactive
@@ -709,7 +715,7 @@ function ObraAuthed({
 					</div>
 
 					<div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
-						<div className="flex items-center justify-between gap-4">
+						<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
 							<p className="text-sm font-medium">Ficha técnica</p>
 							<p className="text-xs text-muted-foreground">
 								Actualizado {new Date(obra.updatedAt).toLocaleString()}
