@@ -37,7 +37,7 @@ export function ObraCard({
 					className,
 				)}
 			>
-				<div className="aspect-[2/3] w-full bg-muted/60">
+				<div className="aspect-[4/5] w-full max-h-56 bg-muted/60 sm:aspect-[2/3] sm:max-h-none">
 					{obra.coverUrl ? (
 						<img
 							src={obra.coverUrl}

@@ -109,7 +109,7 @@ function DashboardAuthed() {
 							terminaste.
 						</p>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
 						<div className="inline-flex items-center overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm">
 							<Button
 								size="sm"

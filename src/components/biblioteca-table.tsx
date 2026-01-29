@@ -133,12 +133,12 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 							className="pl-9 rounded-lg bg-background/70 shadow-sm"
 						/>
 					</div>
-					<div className="flex flex-wrap gap-2">
+					<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 						<Select
 							value={typeFilter}
 							onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
 						>
-							<SelectTrigger className="min-w-[210px] rounded-lg bg-background/70 shadow-sm">
+							<SelectTrigger className="w-full rounded-lg bg-background/70 shadow-sm sm:min-w-[210px]">
 								<span className="truncate">{typeLabels[typeFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -154,7 +154,7 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 							value={statusFilter}
 							onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
 						>
-							<SelectTrigger className="min-w-[210px] rounded-lg bg-background/70 shadow-sm">
+							<SelectTrigger className="w-full rounded-lg bg-background/70 shadow-sm sm:min-w-[210px]">
 								<span className="truncate">{statusLabels[statusFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -165,7 +165,7 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 								<SelectItem value="dropped">Abandonada</SelectItem>
 							</SelectContent>
 						</Select>
-						<div className="inline-flex items-center overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm">
+						<div className="hidden items-center overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm sm:inline-flex">
 							<Button
 								size="sm"
 								variant="ghost"
@@ -198,165 +198,182 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 			</div>
 
 			{view === "list" ? (
-				<div className="rounded-lg border border-border/60 bg-card/70 shadow-sm overflow-hidden">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/40 hover:bg-muted/40">
-								<TableHead
-									className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-									onClick={() => handleSort("title")}
-								>
-									Título{" "}
-									{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
-								</TableHead>
-								<TableHead
-									className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-									onClick={() => handleSort("type")}
-								>
-									Tipo {sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
-								</TableHead>
-								<TableHead
-									className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-									onClick={() => handleSort("status")}
-								>
-									Estado{" "}
-									{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
-								</TableHead>
-								<TableHead
-									className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-									onClick={() => handleSort("rating")}
-								>
-									Valoración{" "}
-									{sortKey === "rating" && (sortDir === "asc" ? "↑" : "↓")}
-								</TableHead>
-								<TableHead className="hidden text-xs uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
-									Etiquetas
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filteredObras.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="h-24 text-center text-muted-foreground"
+				<>
+					<div className="sm:hidden">
+						{filteredObras.length === 0 ? (
+							<div className="rounded-lg border border-border/60 bg-card/70 py-10 text-center">
+								<p className="text-sm text-muted-foreground">
+									No se encontraron obras
+								</p>
+							</div>
+						) : (
+							<div className="grid gap-3">
+								{filteredObras.map((obra) => (
+									<ObraCard key={obra.id} obra={obra} variant="grid" />
+								))}
+							</div>
+						)}
+					</div>
+					<div className="hidden rounded-lg border border-border/60 bg-card/70 shadow-sm overflow-hidden sm:block">
+						<Table>
+							<TableHeader>
+								<TableRow className="bg-muted/40 hover:bg-muted/40">
+									<TableHead
+										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
+										onClick={() => handleSort("title")}
 									>
-										No se encontraron obras
-									</TableCell>
+										Título{" "}
+										{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
+									</TableHead>
+									<TableHead
+										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
+										onClick={() => handleSort("type")}
+									>
+										Tipo {sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
+									</TableHead>
+									<TableHead
+										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
+										onClick={() => handleSort("status")}
+									>
+										Estado{" "}
+										{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
+									</TableHead>
+									<TableHead
+										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
+										onClick={() => handleSort("rating")}
+									>
+										Valoración{" "}
+										{sortKey === "rating" && (sortDir === "asc" ? "↑" : "↓")}
+									</TableHead>
+									<TableHead className="hidden text-xs uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
+										Etiquetas
+									</TableHead>
 								</TableRow>
-							) : (
-								filteredObras.map((obra) => {
-									const metaLine = getObraMetaLine(obra);
-									const showOngoingBadge =
-										(obra.type === "series" || obra.type === "anime") &&
-										isMetadataOngoing(obra.metadata?.status);
-									const showUpToDateBadge = isObraUpToDate(obra);
-									const showProgress =
-										obra.type !== "movie" && (obra.progress?.total ?? 0) > 0;
-									return (
-										<TableRow
-											key={obra.id}
-											className="group transition-colors hover:bg-muted/40"
+							</TableHeader>
+							<TableBody>
+								{filteredObras.length === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={5}
+											className="h-24 text-center text-muted-foreground"
 										>
-											<TableCell>
-												<div className="flex items-center gap-3">
-													{obra.coverUrl && (
-														<div className="h-12 w-8 overflow-hidden rounded-md bg-muted/60">
-															<img
-																src={obra.coverUrl}
-																alt=""
-																className="h-full w-full object-cover"
-																loading="lazy"
-															/>
+											No se encontraron obras
+										</TableCell>
+									</TableRow>
+								) : (
+									filteredObras.map((obra) => {
+										const metaLine = getObraMetaLine(obra);
+										const showOngoingBadge =
+											(obra.type === "series" || obra.type === "anime") &&
+											isMetadataOngoing(obra.metadata?.status);
+										const showUpToDateBadge = isObraUpToDate(obra);
+										const showProgress =
+											obra.type !== "movie" && (obra.progress?.total ?? 0) > 0;
+										return (
+											<TableRow
+												key={obra.id}
+												className="group transition-colors hover:bg-muted/40"
+											>
+												<TableCell>
+													<div className="flex items-center gap-3">
+														{obra.coverUrl && (
+															<div className="h-12 w-8 overflow-hidden rounded-md bg-muted/60">
+																<img
+																	src={obra.coverUrl}
+																	alt=""
+																	className="h-full w-full object-cover"
+																	loading="lazy"
+																/>
+															</div>
+														)}
+														<div className="min-w-0">
+															<Link
+																to="/obra/$obraId"
+																params={{ obraId: obra.id }}
+																className="font-medium text-foreground hover:underline"
+															>
+																{obra.title}
+															</Link>
+															{obra.creator && (
+																<p className="text-sm text-muted-foreground">
+																	{obra.creator}
+																</p>
+															)}
+															{metaLine && (
+																<p className="text-xs text-muted-foreground">
+																	{metaLine}
+																</p>
+															)}
 														</div>
-													)}
-													<div className="min-w-0">
-														<Link
-															to="/obra/$obraId"
-															params={{ obraId: obra.id }}
-															className="font-medium text-foreground hover:underline"
-														>
-															{obra.title}
-														</Link>
-														{obra.creator && (
-															<p className="text-sm text-muted-foreground">
-																{obra.creator}
-															</p>
-														)}
-														{metaLine && (
-															<p className="text-xs text-muted-foreground">
-																{metaLine}
-															</p>
+													</div>
+												</TableCell>
+												<TableCell>
+													<TypeBadge type={obra.type} showIcon={false} />
+												</TableCell>
+												<TableCell>
+													<div className="space-y-2">
+														<div className="flex flex-wrap items-center gap-2">
+															<StatusBadge status={obra.status} />
+															{showOngoingBadge && (
+																<Badge
+																	variant="outline"
+																	className="h-4 rounded-full border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-200"
+																>
+																	En emisión
+																</Badge>
+															)}
+															{showUpToDateBadge && (
+																<Badge
+																	variant="outline"
+																	className="h-4 rounded-full border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200"
+																>
+																	Al día
+																</Badge>
+															)}
+														</div>
+														{showProgress && obra.progress && (
+															<ProgressBar
+																current={obra.progress.current}
+																total={obra.progress.total}
+																type={obra.type}
+																showLabel={false}
+																className="w-28"
+															/>
 														)}
 													</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												<TypeBadge type={obra.type} showIcon={false} />
-											</TableCell>
-											<TableCell>
-												<div className="space-y-2">
-													<div className="flex flex-wrap items-center gap-2">
-														<StatusBadge status={obra.status} />
-														{showOngoingBadge && (
-															<Badge
-																variant="outline"
-																className="h-4 rounded-full border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-200"
+												</TableCell>
+												<TableCell>
+													{obra.rating ? (
+														<StarRating rating={obra.rating} size="sm" />
+													) : (
+														"—"
+													)}
+												</TableCell>
+												<TableCell className="hidden sm:table-cell">
+													<div className="flex flex-wrap gap-1">
+														{obra.tags.slice(0, 2).map((tag: string) => (
+															<span
+																key={tag}
+																className="rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[0.65rem] tracking-[0.08em] text-muted-foreground"
 															>
-																En emisión
-															</Badge>
-														)}
-														{showUpToDateBadge && (
-															<Badge
-																variant="outline"
-																className="h-4 rounded-full border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200"
-															>
-																Al día
-															</Badge>
+																{tag}
+															</span>
+														))}
+														{obra.tags.length > 2 && (
+															<span className="text-xs text-muted-foreground">
+																+{obra.tags.length - 2}
+															</span>
 														)}
 													</div>
-													{showProgress && obra.progress && (
-														<ProgressBar
-															current={obra.progress.current}
-															total={obra.progress.total}
-															type={obra.type}
-															showLabel={false}
-															className="w-28"
-														/>
-													)}
-												</div>
-											</TableCell>
-											<TableCell>
-												{obra.rating ? (
-													<StarRating rating={obra.rating} size="sm" />
-												) : (
-													"—"
-												)}
-											</TableCell>
-											<TableCell className="hidden sm:table-cell">
-												<div className="flex flex-wrap gap-1">
-													{obra.tags.slice(0, 2).map((tag: string) => (
-														<span
-															key={tag}
-															className="rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[0.65rem] tracking-[0.08em] text-muted-foreground"
-														>
-															{tag}
-														</span>
-													))}
-													{obra.tags.length > 2 && (
-														<span className="text-xs text-muted-foreground">
-															+{obra.tags.length - 2}
-														</span>
-													)}
-												</div>
-											</TableCell>
-										</TableRow>
-									);
-								})
-							)}
-						</TableBody>
-					</Table>
-				</div>
+												</TableCell>
+											</TableRow>
+										);
+									})
+								)}
+							</TableBody>
+						</Table>
+					</div>
+				</>
 			) : (
 				<div className="space-y-4">
 					{filteredObras.length === 0 ? (

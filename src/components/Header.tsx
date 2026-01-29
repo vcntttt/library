@@ -15,7 +15,7 @@ export default function Header() {
 
 	return (
 		<header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/75 backdrop-blur-lg">
-			<div className="container mx-auto flex h-16 items-center justify-between px-4">
+			<div className="container mx-auto flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-0">
 				<Link to="/" className="flex items-center gap-3">
 					<span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
 						<BookOpen className="h-4 w-4" />
@@ -30,8 +30,8 @@ export default function Header() {
 					</div>
 				</Link>
 
-				<div className="flex items-center gap-3">
-					<nav className="flex items-center gap-1">
+				<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
+					<nav className="flex flex-wrap items-center gap-1">
 						{navItems.map((item) => (
 							<Link
 								key={item.to}
