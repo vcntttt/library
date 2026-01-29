@@ -22,33 +22,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       requireEmailVerification: false,
     },
     plugins: [convex({ authConfig })],
-
-    trustedOrigins: async (request) => {
-      const origin = request?.headers.get("origin");
-      const referer = request?.headers.get("referer");
-      const host = request?.headers.get("host");
-      const xfHost = request?.headers.get("x-forwarded-host");
-      const xfProto = request?.headers.get("x-forwarded-proto");
-
-      console.log("[auth] incoming:", {
-        origin,
-        referer,
-        host,
-        xfHost,
-        xfProto,
-        baseOrigin,
-      });
-
-      const list = [
-        baseOrigin,
-        "https://vr-homelab.tailf8b14c.ts.net",
-        "https://*.tailf8b14c.ts.net",
-        "http://localhost:3010",
-        "http://127.0.0.1:3010",
-      ].filter(Boolean);
-
-      console.log("[auth] trustedOrigins list:", list);
-      return list;
-    },
+    advanced: { disableOriginCheck: true }
   });
 };
