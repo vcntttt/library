@@ -7,15 +7,13 @@ import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
 
 const siteUrl = process.env.SITE_URL ?? "";
-const baseOrigin = siteUrl ? new URL(siteUrl).origin : "";
 console.log("[auth] SITE_URL:", siteUrl);
-console.log("[auth] baseOrigin:", baseOrigin);
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
-    baseURL: baseOrigin,
+    baseURL: `http://${siteUrl}`,
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
