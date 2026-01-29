@@ -129,7 +129,7 @@ function LoginPage() {
 									<form.Field name="password">
 										{(field) => (
 											<div className="space-y-2">
-												<Label htmlFor={passwordId}>Contrasena</Label>
+												<Label htmlFor={passwordId}>Contraseña</Label>
 												<Input
 													id={passwordId}
 													type="password"
