@@ -1,6 +1,8 @@
+import { registerSW } from "virtual:pwa-register";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
+import { useEffect } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { env } from "@/env";
 import { authClient } from "@/lib/auth-client";
@@ -22,6 +24,10 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
+				name: "theme-color",
+				content: "#f8fafc",
+			},
+			{
 				title: "Biblioteca",
 			},
 		],
@@ -29,6 +35,10 @@ export const Route = createRootRoute({
 			{
 				rel: "stylesheet",
 				href: appCss,
+			},
+			{
+				rel: "manifest",
+				href: "/manifest.json",
 			},
 		],
 	}),
@@ -43,6 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body suppressHydrationWarning>
+				<PwaRegister />
 				<ConvexBetterAuthProvider authClient={authClient} client={convex}>
 					<ThemeProvider>
 						<Header />
@@ -53,4 +64,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</body>
 		</html>
 	);
+}
+
+function PwaRegister() {
+	useEffect(() => {
+		registerSW({
+			immediate: true,
+		});
+	}, []);
+
+	return null;
 }
