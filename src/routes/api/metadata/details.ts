@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getTokenFromRequest } from "@/lib/auth-server";
+import { getToken } from "@/lib/auth-server";
 import { getMetadataDetails } from "@/lib/metadata/providers";
 import type { MetadataSource } from "@/lib/metadata/types";
 import type { ObraType } from "@/lib/types";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/metadata/details")({
 	server: {
 		handlers: {
 			GET: async ({ request }) => {
-				const token = await getTokenFromRequest(request);
+				const token = await getToken();
 				if (!token) {
 					return new Response(JSON.stringify({ error: "No autorizado." }), {
 						status: 401,

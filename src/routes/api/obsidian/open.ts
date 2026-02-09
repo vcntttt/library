@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getTokenFromRequest } from "@/lib/auth-server";
+import { getToken } from "@/lib/auth-server";
 import { buildObsidianOpenUrl, resolveVaultFile } from "@/lib/obsidian-server";
 
 const jsonHeaders = {
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/api/obsidian/open")({
 	server: {
 		handlers: {
 			GET: async ({ request }) => {
-				const token = await getTokenFromRequest(request);
+				const token = await getToken();
 				if (!token) {
 					return new Response(JSON.stringify({ error: "No autorizado." }), {
 						status: 401,
