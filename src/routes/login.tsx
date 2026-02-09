@@ -6,6 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
+function getErrorMessage(err: unknown) {
+	if (err instanceof Error) return err.message;
+	if (typeof err === "object" && err !== null && "message" in err) {
+		const message = (err as { message?: unknown }).message;
+		if (typeof message === "string") return message;
+	}
+	return "Error al autenticar";
+}
+
 export const Route = createFileRoute("/login")({
 	ssr: false,
 	component: LoginPage,
@@ -46,8 +55,8 @@ function LoginPage() {
 
 				await router.navigate({ to: "/" });
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Error al autenticar");
-				console.error("site url:", process.env.SITE_URL);
+				setError(getErrorMessage(err));
+				console.error("[auth] login failed", err);
 			}
 		},
 	});
