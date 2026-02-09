@@ -43,6 +43,17 @@ if [[ -z "$DOKPLOY_API_KEY" ]]; then
   die "Falta DOKPLOY_API_KEY. Exporta la variable o crea un .env y sourcéalo."
 fi
 
+# Confirmación si hay cambios sin confirmar
+if [[ -n "$(git status --porcelain)" ]]; then
+  info "Hay cambios sin confirmar en el repositorio."
+  git status -sb
+  read -r -p "¿Querés continuar con el despliegue igual? [y/N]: " CONFIRM_DEPLOY
+  case "${CONFIRM_DEPLOY,,}" in
+    y|yes|s|si) ;;
+    *) die "Despliegue cancelado para que puedas commitear primero." ;;
+  esac
+fi
+
 # =========================
 # 1) Convex deploy
 # =========================
@@ -53,9 +64,6 @@ ok "Convex deploy listo"
 # =========================
 # 2) Git push
 # =========================
-info "Git status:"
-git status -sb
-
 # Si no hay upstream, lo seteamos al remoto/branch
 UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null || true)"
 if [[ -z "$UPSTREAM" ]]; then
