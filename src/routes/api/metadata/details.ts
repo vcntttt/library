@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getToken } from "@/lib/auth-server";
+import { getTokenFromRequest } from "@/lib/auth-server";
 import { getMetadataDetails } from "@/lib/metadata/providers";
 import type { MetadataSource } from "@/lib/metadata/types";
 import type { ObraType } from "@/lib/types";
@@ -29,10 +29,17 @@ export const Route = createFileRoute("/api/metadata/details")({
 			GET: async ({ request }) => {
 				const debugId = crypto.randomUUID();
 				const requestUrl = new URL(request.url);
+				const cookieHeader = request.headers.get("cookie") ?? "";
 				const authDebug = {
 					debugId,
 					path: requestUrl.pathname,
-					hasCookie: Boolean(request.headers.get("cookie")),
+					hasCookie: Boolean(cookieHeader),
+					hasSessionCookie:
+						cookieHeader.includes("better-auth.session_token") ||
+						cookieHeader.includes("__Secure-better-auth.session_token"),
+					hasJwtCookie:
+						cookieHeader.includes("better-auth.jwt") ||
+						cookieHeader.includes("__Secure-better-auth.jwt"),
 					hasAuthorization: Boolean(request.headers.get("authorization")),
 					host: request.headers.get("host"),
 					xForwardedHost: request.headers.get("x-forwarded-host"),
@@ -42,7 +49,7 @@ export const Route = createFileRoute("/api/metadata/details")({
 
 				let token: string | undefined;
 				try {
-					token = await getToken();
+					token = await getTokenFromRequest(request);
 				} catch (error) {
 					console.error("[api/metadata/details] getToken failed", {
 						...authDebug,
