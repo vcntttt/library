@@ -127,7 +127,6 @@ export const create = mutation({
     title: v.string(),
     type: obraType,
     status: obraStatus,
-    rating: v.optional(v.number()),
     review: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
@@ -183,10 +182,6 @@ export const create = mutation({
       }
     }
 
-    if (args.rating !== undefined && (args.rating < 1 || args.rating > 5)) {
-      throw new Error('La valoracion debe estar entre 1 y 5')
-    }
-
     if (args.external) {
       const source = args.external.source.trim()
       const id = args.external.id.trim()
@@ -218,7 +213,6 @@ export const create = mutation({
       title: args.title.trim(),
       type: args.type,
       status: args.status,
-      rating: args.rating,
       review: args.review?.trim() || undefined,
       tags:
         args.tags
@@ -253,7 +247,6 @@ export const update = mutation({
       title: v.optional(v.string()),
       type: v.optional(obraType),
       status: v.optional(obraStatus),
-      rating: v.optional(v.number()),
       review: v.optional(v.string()),
       tags: v.optional(v.array(v.string())),
       notes: v.optional(v.string()),
@@ -345,13 +338,6 @@ export const update = mutation({
       if (patch.progress.current > patch.progress.total) {
         throw new Error('El progreso no puede superar el total')
       }
-    }
-
-    if (
-      patch.rating !== undefined &&
-      (patch.rating < 1 || patch.rating > 5)
-    ) {
-      throw new Error('La valoracion debe estar entre 1 y 5')
     }
 
     if (patch.status && patch.status !== existing.status) {

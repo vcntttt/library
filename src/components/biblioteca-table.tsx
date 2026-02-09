@@ -29,11 +29,10 @@ import { cn } from "@/lib/utils";
 import { Search } from "./icons";
 import { ObraCard } from "./obra-card";
 import { ProgressBar } from "./progress-bar";
-import { StarRating } from "./star-rating";
 import { StatusBadge } from "./status-badge";
 import { TypeBadge } from "./type-badge";
 
-type SortKey = "title" | "type" | "status" | "rating" | "updatedAt";
+type SortKey = "title" | "type" | "status" | "updatedAt";
 
 const typeLabels: Record<ObraType | "all", string> = {
 	all: "Todos los tipos",
@@ -96,9 +95,6 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 					break;
 				case "status":
 					comparison = a.status.localeCompare(b.status);
-					break;
-				case "rating":
-					comparison = (a.rating ?? 0) - (b.rating ?? 0);
 					break;
 				case "updatedAt":
 					comparison =
@@ -238,13 +234,6 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 										Estado{" "}
 										{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
 									</TableHead>
-									<TableHead
-										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-										onClick={() => handleSort("rating")}
-									>
-										Valoración{" "}
-										{sortKey === "rating" && (sortDir === "asc" ? "↑" : "↓")}
-									</TableHead>
 									<TableHead className="hidden text-xs uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
 										Etiquetas
 									</TableHead>
@@ -254,7 +243,7 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 								{filteredObras.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={5}
+											colSpan={4}
 											className="h-24 text-center text-muted-foreground"
 										>
 											No se encontraron obras
@@ -341,13 +330,6 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 															/>
 														)}
 													</div>
-												</TableCell>
-												<TableCell>
-													{obra.rating ? (
-														<StarRating rating={obra.rating} size="sm" />
-													) : (
-														"—"
-													)}
 												</TableCell>
 												<TableCell className="hidden sm:table-cell">
 													<div className="flex flex-wrap gap-1">

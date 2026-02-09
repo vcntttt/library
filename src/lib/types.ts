@@ -11,7 +11,6 @@ export interface Obra {
 	title: string;
 	type: ObraType;
 	status: ObraStatus;
-	rating?: number; // 1-5
 	review?: string;
 	tags: string[];
 	notes?: string; // markdown

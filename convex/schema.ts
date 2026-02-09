@@ -18,7 +18,6 @@ export default defineSchema({
       v.literal('finished'),
       v.literal('dropped'),
     ),
-    rating: v.optional(v.number()),
     review: v.optional(v.string()),
     tags: v.array(v.string()),
     notes: v.optional(v.string()),

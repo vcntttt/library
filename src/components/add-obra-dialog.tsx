@@ -25,7 +25,6 @@ import type {
 import type { ObraStatus, ObraType } from "@/lib/types";
 import { api } from "../../convex/_generated/api";
 import { Plus } from "./icons";
-import { StarRating } from "./star-rating";
 
 const obraTypes: { value: ObraType; label: string }[] = [
 	{ value: "book", label: "Libro" },
@@ -119,7 +118,6 @@ export function AddObraDialog() {
 			startedAt: "",
 			finishedAt: "",
 			tags: "",
-			rating: 0,
 			totalProgress: "",
 		},
 		onSubmit: async ({ value }) => {
@@ -147,7 +145,6 @@ export function AddObraDialog() {
 					.split(",")
 					.map((t) => t.trim())
 					.filter(Boolean),
-				rating: value.rating > 0 ? value.rating : undefined,
 				external: selectedMetadata
 					? {
 							source: selectedMetadata.source,
@@ -702,20 +699,6 @@ export function AddObraDialog() {
 										onChange={(e) => field.handleChange(e.target.value)}
 										placeholder="Ej: sci-fi, filosofia, drama"
 										rows={2}
-									/>
-								</div>
-							)}
-						</form.Field>
-
-						<form.Field name="rating">
-							{(field) => (
-								<div className="space-y-2">
-									<Label>Valoración</Label>
-									<StarRating
-										rating={field.state.value}
-										interactive
-										onRatingChange={field.handleChange}
-										size="lg"
 									/>
 								</div>
 							)}

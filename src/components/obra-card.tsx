@@ -4,7 +4,6 @@ import type { Obra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "./icons";
 import { ProgressBar } from "./progress-bar";
-import { StarRating } from "./star-rating";
 import { StatusBadge } from "./status-badge";
 import { TypeBadge } from "./type-badge";
 
@@ -69,7 +68,6 @@ export function ObraCard({
 							{metaLine}
 						</p>
 					)}
-					{obra.rating && <StarRating rating={obra.rating} size="sm" />}
 				</div>
 			</Link>
 		);
@@ -106,10 +104,7 @@ export function ObraCard({
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-3">
-					{obra.rating && <StarRating rating={obra.rating} size="sm" />}
-					<ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-				</div>
+				<ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
 			</Link>
 		);
 	}
@@ -155,7 +150,6 @@ export function ObraCard({
 						)}
 					</div>
 				</div>
-				{obra.rating && <StarRating rating={obra.rating} size="sm" />}
 			</div>
 
 			{showProgress && obra.progress && (

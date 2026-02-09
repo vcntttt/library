@@ -4,7 +4,6 @@ import { useMutation, useQuery } from "convex/react";
 import { Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
-import { StarRating } from "@/components/star-rating";
 import { StatusBadge } from "@/components/status-badge";
 import { TypeBadge } from "@/components/type-badge";
 import {
@@ -439,10 +438,6 @@ function ObraAuthed({
 		await updateObra({ id, patch: { status } });
 	};
 
-	const handleRatingChange = async (rating: number) => {
-		await updateObra({ id, patch: { rating } });
-	};
-
 	const handleDelete = async () => {
 		await removeObra({ id });
 		navigate({ to: "/biblioteca" });
@@ -661,7 +656,7 @@ function ObraAuthed({
 				</div>
 
 				<div className="rounded-lg border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-start">
 						<div className="flex items-start gap-4 min-w-0">
 							{obra.coverUrl && (
 								<div className="h-28 w-20 overflow-hidden rounded-lg bg-muted/60">
@@ -703,14 +698,6 @@ function ObraAuthed({
 									</p>
 								)}
 							</div>
-						</div>
-
-						<div className="flex w-full items-center justify-start gap-3 sm:w-auto sm:justify-end">
-							<StarRating
-								rating={obra.rating}
-								interactive
-								onRatingChange={handleRatingChange}
-							/>
 						</div>
 					</div>
 
