@@ -208,6 +208,12 @@ export function AddObraDialog() {
 				);
 				if (!response.ok) {
 					const payload = await response.json().catch(() => ({}));
+					console.error("[metadata/search] request failed", {
+						status: response.status,
+						statusText: response.statusText,
+						payload,
+						url: response.url,
+					});
 					const message =
 						payload && typeof payload.error === "string"
 							? payload.error

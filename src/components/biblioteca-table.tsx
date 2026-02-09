@@ -119,8 +119,8 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 	return (
 		<div className="space-y-6">
 			<div className="rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="relative w-full sm:w-[240px]">
+				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+					<div className="relative w-full lg:max-w-md">
 						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							placeholder="Buscar por título, autor o etiqueta..."
@@ -129,12 +129,12 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 							className="pl-9 rounded-lg bg-background/70 shadow-sm"
 						/>
 					</div>
-					<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
 						<Select
 							value={typeFilter}
 							onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
 						>
-							<SelectTrigger className="w-full rounded-lg bg-background/70 shadow-sm sm:min-w-[210px]">
+							<SelectTrigger className="w-full rounded-lg bg-background/70 shadow-sm sm:w-[220px]">
 								<span className="truncate">{typeLabels[typeFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -150,7 +150,7 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 							value={statusFilter}
 							onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
 						>
-							<SelectTrigger className="w-full rounded-lg bg-background/70 shadow-sm sm:min-w-[210px]">
+							<SelectTrigger className="w-full rounded-lg bg-background/70 shadow-sm sm:w-[220px]">
 								<span className="truncate">{statusLabels[statusFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>

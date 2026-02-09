@@ -540,6 +540,12 @@ function ObraAuthed({
 			);
 			if (!response.ok) {
 				const payload = await response.json().catch(() => ({}));
+				console.error("[metadata/search] request failed", {
+					status: response.status,
+					statusText: response.statusText,
+					payload,
+					url: response.url,
+				});
 				const message =
 					payload && typeof payload.error === "string"
 						? payload.error
@@ -582,6 +588,14 @@ function ObraAuthed({
 				if (detailsResponse.ok) {
 					const payload = await detailsResponse.json();
 					details = payload?.details as MetadataDetails | undefined;
+				} else {
+					const payload = await detailsResponse.json().catch(() => ({}));
+					console.error("[metadata/details] request failed", {
+						status: detailsResponse.status,
+						statusText: detailsResponse.statusText,
+						payload,
+						url: detailsResponse.url,
+					});
 				}
 			} catch (error) {
 				void error;

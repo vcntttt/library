@@ -26,15 +26,50 @@ export const Route = createFileRoute("/api/metadata/search")({
 	server: {
 		handlers: {
 			GET: async ({ request }) => {
-				const token = await getToken();
-				if (!token) {
-					return new Response(JSON.stringify({ error: "No autorizado." }), {
-						status: 401,
-						headers: jsonHeaders,
+				const debugId = crypto.randomUUID();
+				const requestUrl = new URL(request.url);
+				const authDebug = {
+					debugId,
+					path: requestUrl.pathname,
+					hasCookie: Boolean(request.headers.get("cookie")),
+					hasAuthorization: Boolean(request.headers.get("authorization")),
+					host: request.headers.get("host"),
+					xForwardedHost: request.headers.get("x-forwarded-host"),
+					xForwardedProto: request.headers.get("x-forwarded-proto"),
+					origin: request.headers.get("origin"),
+				};
+
+				let token: string | undefined;
+				try {
+					token = await getToken();
+				} catch (error) {
+					console.error("[api/metadata/search] getToken failed", {
+						...authDebug,
+						error: error instanceof Error ? error.message : String(error),
 					});
+					return new Response(
+						JSON.stringify({
+							error: "No autorizado.",
+							debugId,
+							reason: "token_fetch_failed",
+						}),
+						{ status: 401, headers: jsonHeaders },
+					);
 				}
 
-				const url = new URL(request.url);
+				if (!token) {
+					console.error("[api/metadata/search] missing auth token", authDebug);
+					return new Response(
+						JSON.stringify({
+							error: "No autorizado.",
+							debugId,
+							reason: "token_missing",
+						}),
+						{ status: 401, headers: jsonHeaders },
+					);
+				}
+
+				const url = requestUrl;
 				const query = url.searchParams.get("q")?.trim() ?? "";
 				const typeParam = url.searchParams.get("type")?.trim() ?? "";
 				if (!query || !typeParam || !isObraType(typeParam)) {
