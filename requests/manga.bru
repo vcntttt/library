@@ -1,0 +1,25 @@
+meta {
+  name: manga
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://graphql.anilist.co
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "query": "query ($id: Int) { Media(id: $id) { id idMal title { romaji english native userPreferred } type format status description startDate { year month day } endDate { year month day } season seasonYear seasonInt episodes duration chapters volumes countryOfOrigin isLicensed source hashtag trailer { id site thumbnail } updatedAt coverImage { extraLarge large medium color } bannerImage genres synonyms averageScore meanScore popularity isLocked trending favourites tags { id name description category rank isGeneralSpoiler isMediaSpoiler isAdult } relations { edges { id relationType node { id type format status title { romaji english native userPreferred } siteUrl } } } characters(page: 1, perPage: 10) { pageInfo { total currentPage hasNextPage } edges { id role node { id name { full native userPreferred } } } } staff(page: 1, perPage: 10) { pageInfo { total currentPage hasNextPage } edges { id role node { id name { full native userPreferred } languageV2 } } } studios(isMain: false) { edges { id isMain } nodes { id name isAnimationStudio siteUrl } } isFavourite isFavouriteBlocked isAdult nextAiringEpisode { id airingAt timeUntilAiring episode } airingSchedule(page: 1, perPage: 10) { pageInfo { total currentPage hasNextPage } nodes { id airingAt timeUntilAiring episode } } trends(page: 1, perPage: 10) { pageInfo { total currentPage hasNextPage } nodes { mediaId date trending averageScore popularity inProgress releasing episode } } externalLinks { id url site type language color icon notes isDisabled } streamingEpisodes { title thumbnail url site } rankings { id rank type format year season allTime context } mediaListEntry { id status score progress progressVolumes repeat priority private notes hiddenFromStatusLists startedAt { year month day } completedAt { year month day } createdAt updatedAt } reviews(page: 1, perPage: 5) { pageInfo { total currentPage hasNextPage } nodes { id summary body rating ratingAmount userRating score private siteUrl createdAt updatedAt user { id name } } } recommendations(page: 1, perPage: 5) { pageInfo { total currentPage hasNextPage } nodes { id rating userRating media { id title { romaji english native userPreferred } siteUrl } mediaRecommendation { id title { romaji english native userPreferred } siteUrl } user { id name } } } stats { scoreDistribution { score amount } statusDistribution { status amount } } siteUrl autoCreateForumThread isRecommendationBlocked isReviewBlocked modNotes } }",
+    "variables": {
+      "id": 30013
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
