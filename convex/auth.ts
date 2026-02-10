@@ -8,11 +8,9 @@ import type { DataModel } from "./_generated/dataModel";
 
 const siteUrl = process.env.SITE_URL ?? "";
 const baseUrl =
-	siteUrl.startsWith("http://") || siteUrl.startsWith("https://")
-		? siteUrl
-		: `http://${siteUrl}`;
-console.log("[auth] SITE_URL:", siteUrl);
-console.log("[auth] BASE_URL:", baseUrl);
+  siteUrl.startsWith("http://") || siteUrl.startsWith("https://")
+    ? siteUrl
+    : `http://${siteUrl}`;
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
@@ -25,6 +23,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       requireEmailVerification: false,
     },
     plugins: [convex({ authConfig })],
-    advanced: { disableOriginCheck: true }
+    advanced: { disableOriginCheck: true },
   });
 };
