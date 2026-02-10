@@ -24,6 +24,8 @@ const detailsCache = new Map<
 	{ expiresAt: number; value: MetadataDetails }
 >();
 
+const DETAILS_CACHE_VERSION = "v2";
+
 const providerLastRequest = new Map<MetadataSource, number>();
 
 export const providerByType: Record<ObraType, MetadataSource> = {
@@ -310,6 +312,13 @@ async function getAnilistDetails(
 
 	const media = response.data.Media;
 	const nextEpisode = media.nextAiringEpisode;
+	const latestChapterInfo =
+		obraType === "manga" ? await resolveLatestMangaChapter(media) : undefined;
+	const fallbackChapter = latestChapterInfo?.latestChapter;
+	const resolvedChapter =
+		media.chapters !== undefined && fallbackChapter !== undefined
+			? Math.max(media.chapters, fallbackChapter)
+			: (media.chapters ?? fallbackChapter);
 
 	return {
 		source: "anilist",
@@ -325,7 +334,7 @@ async function getAnilistDetails(
 		seasonYear: media.seasonYear ?? undefined,
 		status: media.status ?? undefined,
 		episodes: media.episodes ?? undefined,
-		chapters: media.chapters ?? undefined,
+		chapters: resolvedChapter,
 		volumes: media.volumes ?? undefined,
 		episodesAired: nextEpisode?.episode
 			? Math.max(nextEpisode.episode - 1, 0)
@@ -333,7 +342,221 @@ async function getAnilistDetails(
 		nextEpisodeDate: nextEpisode?.airingAt
 			? nextEpisode.airingAt * 1000
 			: undefined,
+		latestChapter: resolvedChapter,
+		latestChapterSource: latestChapterInfo?.source,
+		latestChapterCheckedAt: latestChapterInfo?.checkedAt,
+		mangaPlusTitleId: latestChapterInfo?.mangaPlusTitleId,
+		mangaDexId: latestChapterInfo?.mangaDexId,
 	};
+}
+
+type MangaChapterSource = "manga-plus" | "mangadex" | "anilist";
+
+interface MangaLatestChapterInfo {
+	latestChapter?: number;
+	source?: MangaChapterSource;
+	checkedAt: number;
+	mangaPlusTitleId?: string;
+	mangaDexId?: string;
+}
+
+async function resolveLatestMangaChapter(
+	media: AnilistDetailsResponse["data"]["Media"],
+) {
+	const checkedAt = Date.now();
+	const mangaPlusTitleId = extractMangaPlusTitleId(media.externalLinks);
+
+	if (mangaPlusTitleId) {
+		const mangaPlusChapter = await getMangaPlusLatestChapter(mangaPlusTitleId);
+		if (mangaPlusChapter !== undefined) {
+			return {
+				latestChapter: mangaPlusChapter,
+				source: "manga-plus" as const,
+				checkedAt,
+				mangaPlusTitleId,
+			} satisfies MangaLatestChapterInfo;
+		}
+	}
+
+	const mangaDexInfo = await resolveMangaDexLatestChapter(media);
+	if (mangaDexInfo?.latestChapter !== undefined) {
+		return {
+			latestChapter: mangaDexInfo.latestChapter,
+			source: "mangadex" as const,
+			checkedAt,
+			mangaPlusTitleId,
+			mangaDexId: mangaDexInfo.mangaDexId,
+		} satisfies MangaLatestChapterInfo;
+	}
+
+	if (media.chapters !== undefined) {
+		return {
+			latestChapter: media.chapters,
+			source: "anilist" as const,
+			checkedAt,
+			mangaPlusTitleId,
+			mangaDexId: mangaDexInfo?.mangaDexId,
+		} satisfies MangaLatestChapterInfo;
+	}
+
+	if (mangaPlusTitleId || mangaDexInfo?.mangaDexId) {
+		return {
+			checkedAt,
+			mangaPlusTitleId,
+			mangaDexId: mangaDexInfo?.mangaDexId,
+		};
+	}
+
+	return undefined;
+}
+
+function extractMangaPlusTitleId(
+	externalLinks?: Array<{ site?: string; url?: string }> | null,
+) {
+	if (!externalLinks?.length) return undefined;
+
+	for (const link of externalLinks) {
+		if (!link?.url) continue;
+		if (!link.site?.toLowerCase().includes("manga plus")) continue;
+		const match = link.url.match(/\/titles\/(\d+)/i);
+		if (match?.[1]) return match[1];
+	}
+
+	return undefined;
+}
+
+async function getMangaPlusLatestChapter(titleId: string) {
+	try {
+		const response = await fetchJson<MangaPlusTitleDetailResponse>(
+			`https://jumpg-webapi.tokyo-cdn.com/api/title_detailV3?title_id=${encodeURIComponent(titleId)}&format=json`,
+		);
+		const groups = response?.success?.titleDetailView?.chapterListGroup ?? [];
+		const chapters = groups.flatMap((group) => [
+			...(group.firstChapterList ?? []),
+			...(group.midChapterList ?? []),
+			...(group.lastChapterList ?? []),
+		]);
+		const numbers = chapters
+			.map((chapter) => {
+				return (
+					parseChapterNumber(chapter.name) ??
+					parseChapterNumber(chapter.subTitle)
+				);
+			})
+			.filter((value): value is number => value !== undefined);
+
+		if (!numbers.length) return undefined;
+		return Math.max(...numbers);
+	} catch (error) {
+		void error;
+		return undefined;
+	}
+}
+
+async function resolveMangaDexLatestChapter(
+	media: AnilistDetailsResponse["data"]["Media"],
+) {
+	const primaryTitle =
+		media.title.english ?? media.title.romaji ?? media.title.native ?? "";
+	if (!primaryTitle) return undefined;
+
+	try {
+		const searchUrl = new URL("https://api.mangadex.org/manga");
+		searchUrl.searchParams.set("title", primaryTitle);
+		searchUrl.searchParams.set("limit", "20");
+
+		const response = await fetchJson<MangaDexSearchResponse>(
+			searchUrl.toString(),
+		);
+		const candidates = response.data ?? [];
+		const selected = pickMangaDexCandidate(candidates, media);
+		if (!selected) return undefined;
+
+		const latestChapter =
+			parseChapterNumber(selected.attributes?.lastChapter) ??
+			(await getMangaDexLatestFromChapterFeed(selected.id));
+
+		return {
+			latestChapter,
+			mangaDexId: selected.id,
+		};
+	} catch (error) {
+		void error;
+		return undefined;
+	}
+}
+
+function pickMangaDexCandidate(
+	candidates: MangaDexManga[],
+	media: AnilistDetailsResponse["data"]["Media"],
+) {
+	if (!candidates.length) return undefined;
+
+	const anilistId = String(media.id);
+	const malId = media.idMal ? String(media.idMal) : undefined;
+
+	const byAnilistLink = candidates.find(
+		(candidate) => candidate.attributes?.links?.al === anilistId,
+	);
+	if (byAnilistLink) return byAnilistLink;
+
+	if (malId) {
+		const byMalLink = candidates.find(
+			(candidate) => candidate.attributes?.links?.mal === malId,
+		);
+		if (byMalLink) return byMalLink;
+	}
+
+	const normalizedTarget = normalizeTitle(
+		media.title.english ?? media.title.romaji ?? media.title.native,
+	);
+	if (!normalizedTarget) return undefined;
+
+	return candidates.find((candidate) => {
+		const titles = [
+			...Object.values(candidate.attributes?.title ?? {}),
+			...(candidate.attributes?.altTitles ?? []).flatMap((entry) =>
+				Object.values(entry),
+			),
+		];
+		return titles.some((title) => normalizeTitle(title) === normalizedTarget);
+	});
+}
+
+function normalizeTitle(value?: string) {
+	if (!value) return "";
+	return value
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "")
+		.trim();
+}
+
+async function getMangaDexLatestFromChapterFeed(mangaId: string) {
+	const url = new URL("https://api.mangadex.org/chapter");
+	url.searchParams.set("manga", mangaId);
+	url.searchParams.set("limit", "10");
+	url.searchParams.set("order[readableAt]", "desc");
+
+	try {
+		const response = await fetchJson<MangaDexChapterResponse>(url.toString());
+		const chapterNumbers = (response.data ?? [])
+			.map((chapter) => parseChapterNumber(chapter.attributes?.chapter))
+			.filter((value): value is number => value !== undefined);
+
+		if (!chapterNumbers.length) return undefined;
+		return Math.max(...chapterNumbers);
+	} catch (error) {
+		void error;
+		return undefined;
+	}
+}
+
+function parseChapterNumber(value?: string | null) {
+	if (!value) return undefined;
+	const match = value.match(/(\d+(?:\.\d+)?)/);
+	if (!match?.[1]) return undefined;
+	const parsed = Number(match[1]);
+	return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export async function getMetadataDetails(
@@ -341,9 +564,16 @@ export async function getMetadataDetails(
 	id: string,
 	obraType?: ObraType,
 ) {
-	const cacheKey = `${source}:${id}`;
+	const cacheKey = `${DETAILS_CACHE_VERSION}:${source}:${id}:${obraType ?? ""}`;
 	const cached = detailsCache.get(cacheKey);
-	if (cached && cached.expiresAt > Date.now()) {
+	const shouldBypassCachedManga =
+		source === "anilist" &&
+		obraType === "manga" &&
+		cached?.value.status === "RELEASING" &&
+		cached.value.latestChapter === undefined &&
+		cached.value.chapters === undefined;
+
+	if (cached && cached.expiresAt > Date.now() && !shouldBypassCachedManga) {
 		return cached.value;
 	}
 
@@ -510,6 +740,48 @@ interface TmdbWatchProviders {
 	};
 }
 
+interface MangaPlusTitleDetailResponse {
+	success?: {
+		titleDetailView?: {
+			chapterListGroup?: Array<{
+				firstChapterList?: MangaPlusChapter[];
+				midChapterList?: MangaPlusChapter[];
+				lastChapterList?: MangaPlusChapter[];
+			}>;
+		};
+	};
+}
+
+interface MangaPlusChapter {
+	name?: string;
+	subTitle?: string;
+}
+
+interface MangaDexSearchResponse {
+	data?: MangaDexManga[];
+}
+
+interface MangaDexManga {
+	id: string;
+	attributes?: {
+		title?: Record<string, string>;
+		altTitles?: Array<Record<string, string>>;
+		lastChapter?: string | null;
+		links?: {
+			al?: string;
+			mal?: string;
+		};
+	};
+}
+
+interface MangaDexChapterResponse {
+	data?: Array<{
+		attributes?: {
+			chapter?: string | null;
+		};
+	}>;
+}
+
 interface AnilistResponse {
 	data: {
 		Page: {
@@ -557,6 +829,7 @@ interface AnilistDetailsResponse {
 	data: {
 		Media: {
 			id: number;
+			idMal?: number;
 			title: {
 				romaji?: string;
 				english?: string;
@@ -591,6 +864,10 @@ interface AnilistDetailsResponse {
 				episode?: number;
 				airingAt?: number;
 			} | null;
+			externalLinks?: Array<{
+				site?: string;
+				url?: string;
+			}>;
 		};
 	};
 }
@@ -693,6 +970,7 @@ const ANILIST_DETAILS_QUERY = `
 query ($id: Int) {
   Media(id: $id) {
     id
+    idMal
     title {
       romaji
       english
@@ -726,6 +1004,10 @@ query ($id: Int) {
     nextAiringEpisode {
       episode
       airingAt
+    }
+    externalLinks {
+      site
+      url
     }
   }
 }

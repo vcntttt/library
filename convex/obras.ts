@@ -29,6 +29,12 @@ type MetadataInput = {
   seasonYear?: number | null
   runtime?: number | null
   watchProviders?: Array<string | null> | null
+  latestChapter?: number | null
+  latestChapterSource?: string | null
+  latestChapterCheckedAt?: number | null
+  lastNotifiedChapter?: number | null
+  mangaPlusTitleId?: string | null
+  mangaDexId?: string | null
 } | null
 
 const sanitizeMetadata = (metadata?: MetadataInput) => {
@@ -51,6 +57,12 @@ const sanitizeMetadata = (metadata?: MetadataInput) => {
           .map((provider) => provider?.trim())
           .filter((provider): provider is string => Boolean(provider))
       : undefined,
+    latestChapter: metadata.latestChapter ?? undefined,
+    latestChapterSource: metadata.latestChapterSource ?? undefined,
+    latestChapterCheckedAt: metadata.latestChapterCheckedAt ?? undefined,
+    lastNotifiedChapter: metadata.lastNotifiedChapter ?? undefined,
+    mangaPlusTitleId: metadata.mangaPlusTitleId?.trim() || undefined,
+    mangaDexId: metadata.mangaDexId?.trim() || undefined,
   }
 }
 
@@ -151,6 +163,12 @@ export const create = mutation({
         seasonYear: v.optional(v.number()),
         runtime: v.optional(v.number()),
         watchProviders: v.optional(v.array(v.string())),
+        latestChapter: v.optional(v.number()),
+        latestChapterSource: v.optional(v.string()),
+        latestChapterCheckedAt: v.optional(v.number()),
+        lastNotifiedChapter: v.optional(v.number()),
+        mangaPlusTitleId: v.optional(v.string()),
+        mangaDexId: v.optional(v.string()),
       }),
     ),
     coverUrl: v.optional(v.string()),
@@ -271,6 +289,12 @@ export const update = mutation({
           seasonYear: v.optional(v.number()),
           runtime: v.optional(v.number()),
           watchProviders: v.optional(v.array(v.string())),
+          latestChapter: v.optional(v.number()),
+          latestChapterSource: v.optional(v.string()),
+          latestChapterCheckedAt: v.optional(v.number()),
+          lastNotifiedChapter: v.optional(v.number()),
+          mangaPlusTitleId: v.optional(v.string()),
+          mangaDexId: v.optional(v.string()),
         }),
       ),
       coverUrl: v.optional(v.string()),

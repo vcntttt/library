@@ -35,6 +35,12 @@ export interface Obra {
 		seasonYear?: number;
 		runtime?: number;
 		watchProviders?: string[];
+		latestChapter?: number;
+		latestChapterSource?: "manga-plus" | "mangadex" | "anilist";
+		latestChapterCheckedAt?: number;
+		lastNotifiedChapter?: number;
+		mangaPlusTitleId?: string;
+		mangaDexId?: string;
 	};
 	// Progress tracking
 	progress?: {

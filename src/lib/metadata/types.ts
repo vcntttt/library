@@ -23,6 +23,11 @@ export interface MetadataSearchResult {
 	seasonYear?: number;
 	runtime?: number;
 	watchProviders?: string[];
+	latestChapter?: number;
+	latestChapterSource?: "manga-plus" | "mangadex" | "anilist";
+	latestChapterCheckedAt?: number;
+	mangaPlusTitleId?: string;
+	mangaDexId?: string;
 }
 
 export interface MetadataDetails {
@@ -44,4 +49,9 @@ export interface MetadataDetails {
 	seasonYear?: number;
 	runtime?: number;
 	watchProviders?: string[];
+	latestChapter?: number;
+	latestChapterSource?: "manga-plus" | "mangadex" | "anilist";
+	latestChapterCheckedAt?: number;
+	mangaPlusTitleId?: string;
+	mangaDexId?: string;
 }
