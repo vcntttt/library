@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -51,13 +52,43 @@ const statusLabels: Record<ObraStatus | "all", string> = {
 	dropped: "Abandonada",
 };
 
-export function BibliotecaTable({ obras }: { obras: Obra[] }) {
+const VIEW_STORAGE_KEY = "library:biblioteca:view";
+const MOBILE_LIST_SKELETON_KEYS = ["m1", "m2", "m3", "m4"];
+const DESKTOP_LIST_SKELETON_KEYS = ["d1", "d2", "d3", "d4", "d5", "d6"];
+const GRID_SKELETON_KEYS = [
+	"g1",
+	"g2",
+	"g3",
+	"g4",
+	"g5",
+	"g6",
+	"g7",
+	"g8",
+	"g9",
+	"g10",
+];
+
+export function BibliotecaTable({
+	obras,
+	isLoading = false,
+}: {
+	obras: Obra[];
+	isLoading?: boolean;
+}) {
 	const [search, setSearch] = useState("");
 	const [typeFilter, setTypeFilter] = useState<ObraType | "all">("all");
 	const [statusFilter, setStatusFilter] = useState<ObraStatus | "all">("all");
 	const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-	const [view, setView] = useState<"list" | "grid">("list");
+	const [view, setView] = useState<"list" | "grid">(() => {
+		if (typeof window === "undefined") return "list";
+		const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
+		return stored === "grid" ? "grid" : "list";
+	});
+
+	useEffect(() => {
+		window.localStorage.setItem(VIEW_STORAGE_KEY, view);
+	}, [view]);
 
 	const filteredObras = useMemo(() => {
 		let result = [...obras];
@@ -196,7 +227,25 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 			{view === "list" ? (
 				<>
 					<div className="sm:hidden">
-						{filteredObras.length === 0 ? (
+						{isLoading ? (
+							<div className="grid gap-3">
+								{MOBILE_LIST_SKELETON_KEYS.map((key) => (
+									<div
+										key={key}
+										className="rounded-lg border border-border/60 bg-card/70 p-3"
+									>
+										<div className="flex items-start gap-3">
+											<Skeleton className="h-16 w-12 rounded-md" />
+											<div className="min-w-0 flex-1 space-y-2">
+												<Skeleton className="h-4 w-3/4" />
+												<Skeleton className="h-3 w-1/2" />
+												<Skeleton className="h-3 w-2/3" />
+											</div>
+										</div>
+									</div>
+								))}
+							</div>
+						) : filteredObras.length === 0 ? (
 							<div className="rounded-lg border border-border/60 bg-card/70 py-10 text-center">
 								<p className="text-sm text-muted-foreground">
 									No se encontraron obras
@@ -240,7 +289,36 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredObras.length === 0 ? (
+								{isLoading ? (
+									DESKTOP_LIST_SKELETON_KEYS.map((key) => (
+										<TableRow key={key}>
+											<TableCell>
+												<div className="flex items-center gap-3">
+													<Skeleton className="h-12 w-8 rounded-md" />
+													<div className="min-w-0 space-y-2">
+														<Skeleton className="h-4 w-44" />
+														<Skeleton className="h-3 w-28" />
+													</div>
+												</div>
+											</TableCell>
+											<TableCell>
+												<Skeleton className="h-5 w-20 rounded-full" />
+											</TableCell>
+											<TableCell>
+												<div className="space-y-2">
+													<Skeleton className="h-5 w-24 rounded-full" />
+													<Skeleton className="h-2 w-28" />
+												</div>
+											</TableCell>
+											<TableCell className="hidden sm:table-cell">
+												<div className="flex gap-1">
+													<Skeleton className="h-5 w-14 rounded-full" />
+													<Skeleton className="h-5 w-12 rounded-full" />
+												</div>
+											</TableCell>
+										</TableRow>
+									))
+								) : filteredObras.length === 0 ? (
 									<TableRow>
 										<TableCell
 											colSpan={4}
@@ -358,7 +436,23 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 				</>
 			) : (
 				<div className="space-y-4">
-					{filteredObras.length === 0 ? (
+					{isLoading ? (
+						<div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+							{GRID_SKELETON_KEYS.map((key) => (
+								<div
+									key={key}
+									className="overflow-hidden rounded-lg border border-border/60 bg-card/70"
+								>
+									<Skeleton className="aspect-[4/5] w-full" />
+									<div className="space-y-2 p-2.5">
+										<Skeleton className="h-4 w-20" />
+										<Skeleton className="h-4 w-3/4" />
+										<Skeleton className="h-3 w-1/2" />
+									</div>
+								</div>
+							))}
+						</div>
+					) : filteredObras.length === 0 ? (
 						<div className="rounded-lg border border-dashed border-border/60 bg-card/60 py-10 text-center">
 							<p className="text-sm text-muted-foreground">
 								No se encontraron obras
@@ -375,7 +469,9 @@ export function BibliotecaTable({ obras }: { obras: Obra[] }) {
 			)}
 
 			<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-				Mostrando {filteredObras.length} de {obras.length} obras
+				{isLoading
+					? "Cargando obras..."
+					: `Mostrando ${filteredObras.length} de ${obras.length} obras`}
 			</p>
 		</div>
 	);

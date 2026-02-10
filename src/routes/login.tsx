@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 
 function getErrorMessage(err: unknown) {
@@ -62,11 +63,7 @@ function LoginPage() {
 	});
 
 	if (isPending || session === undefined) {
-		return (
-			<div className="container mx-auto p-4 md:p-6">
-				<p className="text-sm text-muted-foreground">Cargando...</p>
-			</div>
-		);
+		return <LoginPageSkeleton />;
 	}
 
 	if (session) {
@@ -202,6 +199,34 @@ function LoginPage() {
 							</>
 						)}
 					</form.Subscribe>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function LoginPageSkeleton() {
+	return (
+		<div className="min-h-[calc(100vh-4rem)]">
+			<div className="container mx-auto max-w-md p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				<div className="rounded-2xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
+					<div className="space-y-2">
+						<Skeleton className="h-3 w-28" />
+						<Skeleton className="h-8 w-44" />
+						<Skeleton className="h-4 w-72 max-w-full" />
+					</div>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Skeleton className="h-4 w-20" />
+							<Skeleton className="h-10 w-full rounded-md" />
+						</div>
+						<div className="space-y-2">
+							<Skeleton className="h-4 w-24" />
+							<Skeleton className="h-10 w-full rounded-md" />
+						</div>
+						<Skeleton className="h-10 w-full rounded-md" />
+					</div>
+					<Skeleton className="h-4 w-44" />
 				</div>
 			</div>
 		</div>

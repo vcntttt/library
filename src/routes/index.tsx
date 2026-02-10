@@ -5,6 +5,7 @@ import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
 import { StatusIcons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
 import { cn } from "@/lib/utils";
@@ -18,11 +19,7 @@ export const Route = createFileRoute("/")({
 function DashboardPage() {
 	const { data: session, isPending } = authClient.useSession();
 	if (isPending || session === undefined) {
-		return (
-			<div className="container mx-auto p-4 md:p-6">
-				<p className="text-sm text-muted-foreground">Cargando...</p>
-			</div>
-		);
+		return <DashboardPageSkeleton />;
 	}
 
 	if (session === null) {
@@ -44,23 +41,69 @@ function DashboardPage() {
 	return <DashboardAuthed />;
 }
 
+function DashboardPageSkeleton() {
+	return (
+		<div className="min-h-[calc(100vh-4rem)]">
+			<div className="container mx-auto space-y-8 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+					<div className="space-y-3 max-w-2xl">
+						<Skeleton className="h-3 w-32" />
+						<Skeleton className="h-10 w-52 sm:w-64" />
+						<Skeleton className="h-4 w-80 max-w-full" />
+					</div>
+					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+						<Skeleton className="h-8 w-28 rounded-md" />
+						<Skeleton className="h-10 w-36 rounded-md" />
+					</div>
+				</div>
+
+				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					{["s1", "s2", "s3"].map((key) => (
+						<div
+							key={key}
+							className="rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm space-y-3"
+						>
+							<div className="flex items-start justify-between">
+								<div className="space-y-2">
+									<Skeleton className="h-3 w-24" />
+									<Skeleton className="h-8 w-10" />
+								</div>
+								<Skeleton className="h-10 w-10 rounded-full" />
+							</div>
+							<Skeleton className="h-3 w-36" />
+						</div>
+					))}
+				</div>
+
+				<div className="space-y-3">
+					<Skeleton className="h-5 w-24" />
+					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{["c1", "c2", "c3"].map((key) => (
+							<div
+								key={key}
+								className="rounded-lg border border-border/60 bg-card/70 p-3"
+							>
+								<div className="flex items-start gap-3">
+									<Skeleton className="h-16 w-12 rounded-md" />
+									<div className="min-w-0 flex-1 space-y-2">
+										<Skeleton className="h-4 w-3/4" />
+										<Skeleton className="h-3 w-1/2" />
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 function DashboardAuthed() {
 	const docs = useQuery(api.obras.list, {});
 	const obras = (docs ?? []).map(obraFromDoc);
 	const [view, setView] = useState<"list" | "grid">("list");
 	const isGridView = view === "grid";
-	const now = Date.now();
-	const formatRecentLabel = (timestamp: number) => {
-		const diffMs = now - timestamp;
-		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-		if (diffDays <= 0) return "Actualizado hoy";
-		if (diffDays === 1) return "Actualizado ayer";
-		if (diffDays < 7) return `Actualizado hace ${diffDays} dias`;
-		return `Actualizado ${new Date(timestamp).toLocaleDateString()}`;
-	};
-	const recent = [...obras]
-		.sort((a, b) => b.updatedAt - a.updatedAt)
-		.slice(0, 6);
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
 	const backlog = obras.filter((w) => w.status === "backlog");
@@ -173,14 +216,6 @@ function DashboardAuthed() {
 						);
 					})}
 				</div>
-
-				<DashboardSection
-					title="Recientes"
-					obras={recent}
-					variant={isGridView ? "grid" : "compact"}
-					emptyMessage="Aún no hay actividad reciente."
-					getSecondaryText={(obra) => formatRecentLabel(obra.updatedAt)}
-				/>
 
 				<DashboardSection
 					title="En progreso"
