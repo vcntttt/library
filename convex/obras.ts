@@ -143,6 +143,7 @@ export const create = mutation({
     tags: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
     obsidianPath: v.optional(v.string()),
+    readingUrl: v.optional(v.string()),
     external: v.optional(
       v.object({
         source: v.string(),
@@ -239,6 +240,7 @@ export const create = mutation({
           .slice(0, 20) ?? [],
       notes: args.notes?.trim() || undefined,
       obsidianPath: args.obsidianPath?.trim() || undefined,
+      readingUrl: args.readingUrl?.trim() || undefined,
       external: args.external
         ? {
             source: args.external.source.trim(),
@@ -269,6 +271,7 @@ export const update = mutation({
       tags: v.optional(v.array(v.string())),
       notes: v.optional(v.string()),
       obsidianPath: v.optional(v.string()),
+      readingUrl: v.optional(v.string()),
       external: v.optional(
         v.object({
           source: v.string(),
@@ -333,6 +336,8 @@ export const update = mutation({
     if (patch.notes !== undefined) patch.notes = patch.notes?.trim() || undefined
     if (patch.obsidianPath !== undefined)
       patch.obsidianPath = patch.obsidianPath?.trim() || undefined
+    if (patch.readingUrl !== undefined)
+      patch.readingUrl = patch.readingUrl?.trim() || undefined
     if (patch.external !== undefined) {
       const source = patch.external?.source?.trim()
       const id = patch.external?.id?.trim()

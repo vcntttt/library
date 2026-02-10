@@ -15,6 +15,7 @@ export interface Obra {
 	tags: string[];
 	notes?: string; // markdown
 	obsidianPath?: string;
+	readingUrl?: string;
 	coverUrl?: string;
 	creator?: string; // author, director, studio
 	year?: number;

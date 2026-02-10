@@ -22,6 +22,7 @@ export default defineSchema({
     tags: v.array(v.string()),
     notes: v.optional(v.string()),
     obsidianPath: v.optional(v.string()),
+    readingUrl: v.optional(v.string()),
     external: v.optional(
       v.object({
         source: v.string(),
