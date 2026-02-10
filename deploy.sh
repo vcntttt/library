@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Carga variables desde .env si existe (en la misma carpeta del script)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/.env"
+  set +a
+fi
+
 # =========================
 # Config
 # =========================
-DOKPLOY_BASE_URL="${DOKPLOY_BASE_URL:-http://192.168.1.8:3000}"
-DOKPLOY_API_KEY="${DOKPLOY_API_KEY:-libraryIKlSXuIGpQBArRAUQiDCyeAotnvDJUJZGjhcgCueEiNuXhKmkFcbPqzFMYhLCMBH}"
-DOKPLOY_APP_ID="${DOKPLOY_APP_ID:-Ckr5KEOg_XT7ZrbCLz12X}"
+DOKPLOY_BASE_URL="${DOKPLOY_BASE_URL:-}"
+DOKPLOY_API_KEY="${DOKPLOY_API_KEY:-}"
+DOKPLOY_APP_ID="${DOKPLOY_APP_ID:-}"
 
 # Convex
 CONVEX_CMD="${CONVEX_CMD:-bunx convex deploy}"
@@ -39,9 +48,9 @@ require_cmd bunx
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "No estás dentro de un repo git."
 
-if [[ -z "$DOKPLOY_API_KEY" ]]; then
-  die "Falta DOKPLOY_API_KEY. Exporta la variable o crea un .env y sourcéalo."
-fi
+[[ -n "$DOKPLOY_BASE_URL" ]] || die "Falta DOKPLOY_BASE_URL. Definila en .env o exportala."
+[[ -n "$DOKPLOY_API_KEY" ]] || die "Falta DOKPLOY_API_KEY. Definila en .env o exportala."
+[[ -n "$DOKPLOY_APP_ID" ]] || die "Falta DOKPLOY_APP_ID. Definila en .env o exportala."
 
 # Confirmación si hay cambios sin confirmar
 if [[ -n "$(git status --porcelain)" ]]; then
