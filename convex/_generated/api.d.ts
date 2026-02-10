@@ -9,7 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as mangaReleases from "../mangaReleases.js";
 import type * as obras from "../obras.js";
 
 import type {
@@ -20,7 +22,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  crons: typeof crons;
   http: typeof http;
+  mangaReleases: typeof mangaReleases;
   obras: typeof obras;
 }>;
 
