@@ -20,16 +20,18 @@ function BibliotecaPage() {
 
 	if (session === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6 space-y-4">
-				<h1 className="text-2xl font-semibold tracking-tight font-serif">
-					Biblioteca
-				</h1>
-				<p className="text-sm text-muted-foreground">
-					Inicia sesión para ver tu biblioteca.
-				</p>
-				<Link to="/login" className="text-sm underline underline-offset-4">
-					Ir a login
-				</Link>
+			<div className="container mx-auto p-4 md:p-6">
+				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
+					<h1 className="text-2xl font-semibold tracking-tight font-serif">
+						Biblioteca
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						Inicia sesión para ver tu biblioteca.
+					</p>
+					<Link to="/login" className="text-sm underline underline-offset-4">
+						Ir a login
+					</Link>
+				</div>
 			</div>
 		);
 	}
@@ -63,7 +65,7 @@ function BibliotecaAuthed() {
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="container mx-auto space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+			<div className="container mx-auto space-y-6 p-4 pb-24 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 					<div className="space-y-3">
 						<p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
@@ -76,10 +78,16 @@ function BibliotecaAuthed() {
 							Busca, filtra y ordena todas tus obras.
 						</p>
 					</div>
-					<AddObraDialog />
+					<div className="hidden sm:block">
+						<AddObraDialog />
+					</div>
 				</div>
 
 				<BibliotecaTable obras={obras} isLoading={isLoading} />
+
+				<div className="fixed bottom-5 right-4 z-40 sm:hidden">
+					<AddObraDialog triggerMode="fab" />
+				</div>
 			</div>
 		</div>
 	);

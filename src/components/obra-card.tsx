@@ -32,7 +32,7 @@ export function ObraCard({
 				to="/obra/$obraId"
 				params={{ obraId: obra.id }}
 				className={cn(
-					"group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
+					"group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card/70 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
 					className,
 				)}
 			>
@@ -40,7 +40,7 @@ export function ObraCard({
 					{obra.coverUrl ? (
 						<img
 							src={obra.coverUrl}
-							alt=""
+							alt={`Portada de ${obra.title}`}
 							className="h-full w-full object-cover"
 							loading="lazy"
 						/>
@@ -59,14 +59,12 @@ export function ObraCard({
 						{obra.title}
 					</h3>
 					{obra.creator && (
-						<p className="text-[0.7rem] text-muted-foreground truncate">
+						<p className="truncate text-xs text-muted-foreground">
 							{obra.creator}
 						</p>
 					)}
 					{metaLine && (
-						<p className="text-[0.7rem] text-muted-foreground truncate">
-							{metaLine}
-						</p>
+						<p className="truncate text-xs text-muted-foreground">{metaLine}</p>
 					)}
 				</div>
 			</Link>
@@ -79,7 +77,7 @@ export function ObraCard({
 				to="/obra/$obraId"
 				params={{ obraId: obra.id }}
 				className={cn(
-					"group flex items-center justify-between rounded-lg border border-border/60 bg-card/70 px-4 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
+					"group flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-4 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
 					className,
 				)}
 			>
@@ -88,7 +86,7 @@ export function ObraCard({
 						<div className="h-10 w-7 overflow-hidden rounded-md bg-muted/60">
 							<img
 								src={obra.coverUrl}
-								alt=""
+								alt={`Portada de ${obra.title}`}
 								className="h-full w-full object-cover"
 								loading="lazy"
 							/>
@@ -114,17 +112,17 @@ export function ObraCard({
 			to="/obra/$obraId"
 			params={{ obraId: obra.id }}
 			className={cn(
-				"group flex flex-col rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
+				"group flex flex-col rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md",
 				className,
 			)}
 		>
 			<div className="flex items-start justify-between gap-3">
 				<div className="flex items-start gap-3 min-w-0 flex-1">
 					{obra.coverUrl && (
-						<div className="h-16 w-12 overflow-hidden rounded-lg bg-muted/60">
+						<div className="h-16 w-12 overflow-hidden rounded-md bg-muted/60">
 							<img
 								src={obra.coverUrl}
-								alt=""
+								alt={`Portada de ${obra.title}`}
 								className="h-full w-full object-cover"
 								loading="lazy"
 							/>

@@ -74,7 +74,7 @@ function LoginPage() {
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
 			<div className="container mx-auto max-w-md p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="rounded-2xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
+				<div className="rounded-xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
 					<form.Subscribe selector={(state) => state.values.mode}>
 						{(mode) => (
 							<>
@@ -152,7 +152,11 @@ function LoginPage() {
 										)}
 									</form.Field>
 
-									{error && <p className="text-sm text-destructive">{error}</p>}
+									{error && (
+										<p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+											{error}
+										</p>
+									)}
 
 									<form.Subscribe selector={(state) => state.isSubmitting}>
 										{(isSubmitting) => (
@@ -175,24 +179,24 @@ function LoginPage() {
 									{mode === "signup" ? (
 										<button
 											type="button"
-											className="underline underline-offset-4"
+											className="inline-flex h-10 items-center rounded-md px-2 underline underline-offset-4 transition-colors hover:bg-muted/50"
 											onClick={() => {
 												setError(null);
 												form.setFieldValue("mode", "signin");
 											}}
 										>
-											Ya tienes cuenta? Inicia sesión
+											¿Ya tienes cuenta? Inicia sesión
 										</button>
 									) : (
 										<button
 											type="button"
-											className="underline underline-offset-4"
+											className="inline-flex h-10 items-center rounded-md px-2 underline underline-offset-4 transition-colors hover:bg-muted/50"
 											onClick={() => {
 												setError(null);
 												form.setFieldValue("mode", "signup");
 											}}
 										>
-											No tienes cuenta? Crea una
+											¿No tienes cuenta? Crea una
 										</button>
 									)}
 								</div>
@@ -209,7 +213,7 @@ function LoginPageSkeleton() {
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
 			<div className="container mx-auto max-w-md p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="rounded-2xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
+				<div className="rounded-xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-4">
 					<div className="space-y-2">
 						<Skeleton className="h-3 w-28" />
 						<Skeleton className="h-8 w-44" />

@@ -31,6 +31,11 @@ export const Route = createRootRoute({
 		],
 		links: [
 			{
+				rel: "icon",
+				type: "image/svg+xml",
+				href: "/library.svg",
+			},
+			{
 				rel: "stylesheet",
 				href: appCss,
 			},

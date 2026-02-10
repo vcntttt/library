@@ -73,11 +73,11 @@ export function UserMenu() {
 				render={
 					<Button
 						variant="ghost"
-						className="gap-2 rounded-full px-2 py-1.5 hover:bg-muted/60"
+						className="h-11 gap-2 rounded-full px-3 hover:bg-muted/60"
 					/>
 				}
 			>
-				<span className="relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-muted/40 text-[0.6rem] font-semibold text-muted-foreground">
+				<span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-muted/40 text-[0.65rem] font-semibold text-muted-foreground">
 					{user?.image ? (
 						<img
 							src={user.image}
@@ -99,7 +99,7 @@ export function UserMenu() {
 			<DropdownMenuContent
 				align="end"
 				sideOffset={8}
-				className="w-64 rounded-2xl border border-border/60 bg-card/95 p-2 shadow-lg"
+				className="w-64 rounded-xl border border-border/60 bg-card/95 p-2 shadow-lg"
 			>
 				<DropdownMenuGroup>
 					<DropdownMenuLabel className="space-y-1 px-2 py-2">

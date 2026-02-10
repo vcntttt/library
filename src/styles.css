@@ -29,12 +29,10 @@
     --chart-2: oklch(0.56 0.12 150);
     --chart-3: oklch(0.55 0.12 260);
     --chart-4: oklch(0.7 0.1 90);
-    --chart-5: oklch(0.6 0.1 210);
-    --radius: 0.75rem;
-    --glow-1: rgba(180, 120, 90, 0.16);
-    --glow-2: rgba(120, 140, 120, 0.12);
-    --sidebar: oklch(0.98 0.015 85);
-    --sidebar-foreground: oklch(0.2 0.02 40);
+	--chart-5: oklch(0.6 0.1 210);
+	--radius: 0.75rem;
+	--sidebar: oklch(0.98 0.015 85);
+	--sidebar-foreground: oklch(0.2 0.02 40);
     --sidebar-primary: oklch(0.45 0.14 35);
     --sidebar-primary-foreground: oklch(0.985 0.015 85);
     --sidebar-accent: oklch(0.93 0.02 85);
@@ -144,4 +142,15 @@
   html {
     @apply font-sans;
     }
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
 }

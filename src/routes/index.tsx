@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { LayoutGrid, List } from "lucide-react";
 import { useState } from "react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
@@ -24,16 +25,18 @@ function DashboardPage() {
 
 	if (session === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6 space-y-4">
-				<h1 className="text-2xl font-semibold tracking-tight font-serif">
-					Biblioteca
-				</h1>
-				<p className="text-sm text-muted-foreground">
-					Inicia sesión para ver tu biblioteca.
-				</p>
-				<Link to="/login" className="text-sm underline underline-offset-4">
-					Ir a login
-				</Link>
+			<div className="container mx-auto p-4 md:p-6">
+				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
+					<h1 className="text-2xl font-semibold tracking-tight font-serif">
+						Biblioteca
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						Inicia sesión para ver tu biblioteca.
+					</p>
+					<Link to="/login" className="text-sm underline underline-offset-4">
+						Ir a login
+					</Link>
+				</div>
 			</div>
 		);
 	}
@@ -61,7 +64,7 @@ function DashboardPageSkeleton() {
 					{["s1", "s2", "s3"].map((key) => (
 						<div
 							key={key}
-							className="rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm space-y-3"
+							className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm space-y-3"
 						>
 							<div className="flex items-start justify-between">
 								<div className="space-y-2">
@@ -81,7 +84,7 @@ function DashboardPageSkeleton() {
 						{["c1", "c2", "c3"].map((key) => (
 							<div
 								key={key}
-								className="rounded-lg border border-border/60 bg-card/70 p-3"
+								className="rounded-xl border border-border/60 bg-card/70 p-3"
 							>
 								<div className="flex items-start gap-3">
 									<Skeleton className="h-16 w-12 rounded-md" />
@@ -153,31 +156,33 @@ function DashboardAuthed() {
 						</p>
 					</div>
 					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-						<div className="inline-flex items-center overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm">
+						<div className="inline-flex items-center overflow-hidden rounded-xl border border-border/60 bg-card/70 shadow-sm">
 							<Button
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-8 rounded-none border-r border-border/60 px-3 text-xs",
+									"h-10 rounded-none border-r border-border/60 px-3 text-xs",
 									view === "list"
 										? "bg-foreground/10 text-foreground"
 										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
 								)}
 								onClick={() => setView("list")}
 							>
+								<List className="h-3.5 w-3.5" />
 								Lista
 							</Button>
 							<Button
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-8 rounded-none px-3 text-xs",
+									"h-10 rounded-none px-3 text-xs",
 									view === "grid"
 										? "bg-foreground/10 text-foreground"
 										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
 								)}
 								onClick={() => setView("grid")}
 							>
+								<LayoutGrid className="h-3.5 w-3.5" />
 								Grid
 							</Button>
 						</div>
@@ -191,7 +196,7 @@ function DashboardAuthed() {
 						return (
 							<div
 								key={stat.label}
-								className="rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm"
+								className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm"
 							>
 								<div className="flex items-center justify-between">
 									<div>

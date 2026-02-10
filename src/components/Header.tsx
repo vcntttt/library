@@ -1,13 +1,21 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BookOpen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "./toggle-theme";
 import { UserMenu } from "./user-menu";
 
 const navItems = [
-	{ to: "/", label: "Panel" },
-	{ to: "/biblioteca", label: "Biblioteca" },
+	{
+		to: "/",
+		label: "Panel",
+		isActive: (pathname: string) => pathname === "/",
+	},
+	{
+		to: "/biblioteca",
+		label: "Biblioteca",
+		isActive: (pathname: string) =>
+			pathname.startsWith("/biblioteca") || pathname.startsWith("/obra/"),
+	},
 ] as const;
 
 export default function Header() {
@@ -18,7 +26,7 @@ export default function Header() {
 			<div className="container mx-auto flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-0">
 				<Link to="/" className="flex items-center gap-3">
 					<span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-						<BookOpen className="h-4 w-4" />
+						<img src="/library.svg" alt="Logo Biblioteca" className="h-4 w-4" />
 					</span>
 					<div className="leading-tight">
 						<span className="block font-serif text-lg font-semibold tracking-tight">
@@ -37,8 +45,8 @@ export default function Header() {
 								key={item.to}
 								to={item.to}
 								className={cn(
-									"rounded-full px-4 py-1.5 text-sm font-medium transition-all",
-									pathname === item.to
+									"inline-flex h-11 items-center rounded-full px-4 text-sm font-medium transition-colors",
+									item.isActive(pathname)
 										? "bg-primary text-primary-foreground shadow-sm"
 										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
 								)}
