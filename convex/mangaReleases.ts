@@ -1,6 +1,6 @@
 import { internal } from './_generated/api'
-import { internalAction, internalMutation, internalQuery } from './_generated/server'
-import type { Doc } from './_generated/dataModel'
+import { action, internalAction, internalMutation, internalQuery } from './_generated/server'
+import type { Doc, Id } from './_generated/dataModel'
 import { v } from 'convex/values'
 
 type MangaChapterSource = 'manga-plus' | 'mangadex' | 'anilist'
@@ -24,6 +24,47 @@ interface AniListMangaSnapshot {
   latestChapterCheckedAt: number
   mangaPlusTitleId?: string
   mangaDexId?: string
+}
+
+interface MangaReleaseNotificationPayload {
+  type: 'manga.release'
+  eventId: string
+  obraId: string
+  anilistId: string
+  title: string
+  chapter: number
+  source: MangaChapterSource
+  url?: string
+  detectedAt: number
+}
+
+interface ReleaseCheckOptions {
+  onlyObraId?: Id<'obras'>
+  forceNotify?: boolean
+}
+
+interface ReleaseCheckResult {
+  checked: number
+  updated: number
+  enqueued: number
+}
+
+interface ReleaseCheckRunner {
+  runQuery: <TArgs, TResult>(
+    functionReference: unknown,
+    args: TArgs,
+  ) => Promise<TResult>
+  runMutation: <TArgs, TResult>(
+    functionReference: unknown,
+    args: TArgs,
+  ) => Promise<TResult>
+}
+
+interface NotificationEventResult {
+  eventId: string
+  payload: MangaReleaseNotificationPayload
+  attempts: number
+  lastAttemptAt?: number
 }
 
 export const listTrackedManga = internalQuery({
@@ -113,62 +154,225 @@ export const markChapterNotified = internalMutation({
 
 export const checkForNewChapters = internalAction({
   args: {},
-  handler: async (ctx) => {
-    const tracked = await ctx.runQuery(internal.mangaReleases.listTrackedManga, {})
-    const discordToken = process.env.DISCORD_BOT_TOKEN
-    const discordChannelId = process.env.DISCORD_CHANNEL_ID
-    const notificationsEnabled = Boolean(discordToken && discordChannelId)
+  handler: async (ctx) =>
+    runReleaseCheck(ctx as unknown as ReleaseCheckRunner),
+})
 
-    let checked = 0
-    let updated = 0
-    let notified = 0
+export const enqueueReleaseNotification = internalMutation({
+  args: {
+    payload: v.object({
+      type: v.literal('manga.release'),
+      eventId: v.string(),
+      obraId: v.string(),
+      anilistId: v.string(),
+      title: v.string(),
+      chapter: v.number(),
+      source: v.union(
+        v.literal('manga-plus'),
+        v.literal('mangadex'),
+        v.literal('anilist'),
+      ),
+      url: v.optional(v.string()),
+      detectedAt: v.number(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('notificationEvents')
+      .withIndex('by_eventId', (q) => q.eq('eventId', args.payload.eventId))
+      .first()
 
-    for (const manga of tracked) {
-      checked += 1
-      const externalId = manga.external?.id
-      if (!externalId) continue
-
-      const snapshot = await fetchAniListMangaSnapshot(externalId)
-      if (!snapshot) continue
-
-      await ctx.runMutation(internal.mangaReleases.saveMangaSnapshot, {
-        id: manga._id,
-        chapters: snapshot.chapters,
-        volumes: snapshot.volumes,
-        publicationStatus: snapshot.status,
-        latestChapter: snapshot.latestChapter,
-        latestChapterSource: snapshot.latestChapterSource,
-        latestChapterCheckedAt: snapshot.latestChapterCheckedAt,
-        mangaPlusTitleId: snapshot.mangaPlusTitleId,
-        mangaDexId: snapshot.mangaDexId,
-      })
-      updated += 1
-
-      if (!notificationsEnabled) continue
-      if (snapshot.status !== 'RELEASING') continue
-
-      const currentChapter = snapshot.latestChapter
-      if (currentChapter === undefined) continue
-
-      const lastNotified = manga.metadata?.lastNotifiedChapter ?? 0
-      if (currentChapter <= lastNotified) continue
-
-      const message = buildDiscordMessage(manga, snapshot)
-      const sent = await sendDiscordMessage(discordToken!, discordChannelId!, message)
-      if (!sent) continue
-
-      await ctx.runMutation(internal.mangaReleases.markChapterNotified, {
-        id: manga._id,
-        chapter: currentChapter,
-      })
-      notified += 1
+    if (existing) {
+      return {
+        enqueued: false,
+        eventId: existing.eventId,
+      }
     }
 
+    const now = Date.now()
+    await ctx.db.insert('notificationEvents', {
+      eventType: 'manga.release',
+      eventId: args.payload.eventId,
+      obraId: args.payload.obraId,
+      anilistId: args.payload.anilistId,
+      title: args.payload.title,
+      chapter: args.payload.chapter,
+      source: args.payload.source,
+      url: args.payload.url,
+      detectedAt: args.payload.detectedAt,
+      status: 'pending',
+      attempts: 0,
+      createdAt: now,
+      updatedAt: now,
+    })
+
     return {
-      checked,
-      updated,
-      notified,
-      notificationsEnabled,
+      enqueued: true,
+      eventId: args.payload.eventId,
+    }
+  },
+})
+
+export const pullNotificationEvents = internalMutation({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(args.limit ?? 10, 50))
+    const events = await ctx.db
+      .query('notificationEvents')
+      .withIndex('by_status_createdAt', (q) => q.eq('status', 'pending'))
+      .take(limit)
+
+    const now = Date.now()
+    const result: NotificationEventResult[] = []
+
+    for (const event of events) {
+      const attempts = event.attempts + 1
+      await ctx.db.patch(event._id, {
+        attempts,
+        lastAttemptAt: now,
+        updatedAt: now,
+      })
+
+      result.push({
+        eventId: event.eventId,
+        attempts,
+        lastAttemptAt: now,
+        payload: {
+          type: event.eventType,
+          eventId: event.eventId,
+          obraId: event.obraId,
+          anilistId: event.anilistId,
+          title: event.title,
+          chapter: event.chapter,
+          source: event.source,
+          url: event.url,
+          detectedAt: event.detectedAt,
+        },
+      })
+    }
+
+    return { events: result }
+  },
+})
+
+export const ackNotificationEvent = internalMutation({
+  args: {
+    eventId: v.string(),
+    status: v.union(v.literal('delivered'), v.literal('failed')),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const event = await ctx.db
+      .query('notificationEvents')
+      .withIndex('by_eventId', (q) => q.eq('eventId', args.eventId))
+      .first()
+
+    if (!event) {
+      return { ok: false, reason: 'not_found' as const }
+    }
+
+    const now = Date.now()
+
+    if (args.status === 'failed') {
+      await ctx.db.patch(event._id, {
+        status: 'pending',
+        lastError: args.error?.trim() || 'error-desconocido',
+        updatedAt: now,
+      })
+      return { ok: true, status: 'pending' as const }
+    }
+
+    await ctx.db.patch(event._id, {
+      status: 'delivered',
+      deliveredAt: now,
+      lastError: undefined,
+      updatedAt: now,
+    })
+
+    if (event.obraId.startsWith('manual-test')) {
+      return { ok: true, status: 'delivered' as const }
+    }
+
+    const obra = await ctx.db.get(event.obraId as Id<'obras'>)
+    if (!obra || obra.type !== 'manga') {
+      return { ok: true, status: 'delivered' as const }
+    }
+
+    const metadata = {
+      ...(obra.metadata ?? {}),
+      lastNotifiedChapter: event.chapter,
+      latestChapter:
+        obra.metadata?.latestChapter !== undefined
+          ? Math.max(obra.metadata.latestChapter, event.chapter)
+          : event.chapter,
+      latestChapterCheckedAt: obra.metadata?.latestChapterCheckedAt ?? now,
+    }
+
+    await ctx.db.patch(obra._id, {
+      metadata: compactMetadata(metadata),
+      updatedAt: now,
+    })
+
+    return { ok: true, status: 'delivered' as const }
+  },
+})
+
+export const manualRunReleaseCheck = action({
+  args: {
+    token: v.string(),
+    obraId: v.optional(v.id('obras')),
+    forceNotify: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    assertManualToken(args.token)
+    return runReleaseCheck(ctx as unknown as ReleaseCheckRunner, {
+      onlyObraId: args.obraId,
+      forceNotify: args.forceNotify,
+    } as ReleaseCheckOptions)
+  },
+})
+
+export const manualSendTestNotification = action({
+  args: {
+    token: v.string(),
+    title: v.optional(v.string()),
+    chapter: v.optional(v.number()),
+    source: v.optional(v.string()),
+    url: v.optional(v.string()),
+  },
+  handler: async (_ctx, args) => {
+    assertManualToken(args.token)
+
+    const chapter = args.chapter ?? 999
+    const source =
+      args.source === 'manga-plus' ||
+      args.source === 'mangadex' ||
+      args.source === 'anilist'
+        ? args.source
+        : 'anilist'
+
+    const payload: MangaReleaseNotificationPayload = {
+      type: 'manga.release',
+      eventId: `manual:${Date.now()}`,
+      obraId: 'manual-test',
+      anilistId: 'manual-test',
+      title: args.title?.trim() || 'Manga de prueba',
+      chapter,
+      source,
+      url: args.url?.trim() || undefined,
+      detectedAt: Date.now(),
+    }
+
+    await _ctx.runMutation(internal.mangaReleases.enqueueReleaseNotification, {
+      payload,
+    })
+
+    return {
+      ok: true,
+      queued: true,
+      payload,
     }
   },
 })
@@ -179,59 +383,102 @@ function compactMetadata(metadata: Record<string, unknown>) {
   )
 }
 
-function buildDiscordMessage(obra: Doc<'obras'>, snapshot: AniListMangaSnapshot) {
-  const chapterLabel = Number.isInteger(snapshot.latestChapter)
-    ? String(snapshot.latestChapter)
-    : String(snapshot.latestChapter ?? '')
-  const sourceLabel =
-    snapshot.latestChapterSource === 'manga-plus'
-      ? 'MANGA Plus'
-      : snapshot.latestChapterSource === 'mangadex'
-        ? 'MangaDex'
-        : 'AniList'
+function buildNotificationPayload(
+  obra: Doc<'obras'>,
+  snapshot: AniListMangaSnapshot,
+): MangaReleaseNotificationPayload | null {
+  const chapter = snapshot.latestChapter
+  if (chapter === undefined) return null
+
   const preferredUrl = snapshot.mangaPlusTitleId
     ? `https://mangaplus.shueisha.co.jp/titles/${snapshot.mangaPlusTitleId}`
     : snapshot.siteUrl
 
-  return [
-    '📚 **Nuevo capítulo detectado**',
-    `**${obra.title || snapshot.title}** · capítulo **${chapterLabel}**`,
-    `Fuente: ${sourceLabel}`,
-    preferredUrl,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  return {
+    type: 'manga.release',
+    eventId: `${obra._id}:${chapter}`,
+    obraId: String(obra._id),
+    anilistId: snapshot.anilistId,
+    title: obra.title || snapshot.title,
+    chapter,
+    source: snapshot.latestChapterSource ?? 'anilist',
+    url: preferredUrl,
+    detectedAt: Date.now(),
+  }
 }
 
-async function sendDiscordMessage(token: string, channelId: string, content: string) {
-  try {
-    const response = await fetch(
-      `https://discord.com/api/v10/channels/${encodeURIComponent(channelId)}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bot ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
-      },
-    )
+function assertManualToken(token: string) {
+  const expected = process.env.MANGA_RELEASES_MANUAL_TOKEN
+  if (!expected) {
+    throw new Error('Falta MANGA_RELEASES_MANUAL_TOKEN en variables de entorno.')
+  }
 
-    if (!response.ok) {
-      const payload = await response.text().catch(() => '')
-      console.error('[mangaReleases] discord send failed', {
-        status: response.status,
-        payload,
-      })
-      return false
-    }
+  if (token !== expected) {
+    throw new Error('Token manual invalido.')
+  }
+}
 
-    return true
-  } catch (error) {
-    console.error('[mangaReleases] discord send error', {
-      error: error instanceof Error ? error.message : String(error),
+async function runReleaseCheck(
+  ctx: ReleaseCheckRunner,
+  options: ReleaseCheckOptions = {},
+): Promise<ReleaseCheckResult> {
+  const tracked = await ctx.runQuery<
+    Record<string, never>,
+    Array<Doc<'obras'>>
+  >(internal.mangaReleases.listTrackedManga, {})
+
+  const mangas = options.onlyObraId
+    ? tracked.filter((obra) => obra._id === options.onlyObraId)
+    : tracked
+
+  let checked = 0
+  let updated = 0
+  let enqueued = 0
+
+  for (const manga of mangas) {
+    checked += 1
+    const externalId = manga.external?.id
+    if (!externalId) continue
+
+    const snapshot = await fetchAniListMangaSnapshot(externalId)
+    if (!snapshot) continue
+
+    await ctx.runMutation(internal.mangaReleases.saveMangaSnapshot, {
+      id: manga._id,
+      chapters: snapshot.chapters,
+      volumes: snapshot.volumes,
+      publicationStatus: snapshot.status,
+      latestChapter: snapshot.latestChapter,
+      latestChapterSource: snapshot.latestChapterSource,
+      latestChapterCheckedAt: snapshot.latestChapterCheckedAt,
+      mangaPlusTitleId: snapshot.mangaPlusTitleId,
+      mangaDexId: snapshot.mangaDexId,
     })
-    return false
+    updated += 1
+
+    if (snapshot.status !== 'RELEASING') continue
+
+    const payload = buildNotificationPayload(manga, snapshot)
+    if (!payload) continue
+
+    const lastNotified = manga.metadata?.lastNotifiedChapter ?? 0
+    if (!options.forceNotify && payload.chapter <= lastNotified) continue
+
+    const enqueueResult = (await ctx.runMutation(
+      internal.mangaReleases.enqueueReleaseNotification,
+      {
+        payload,
+      },
+    )) as { enqueued: boolean }
+    if (!enqueueResult.enqueued) continue
+
+    enqueued += 1
+  }
+
+  return {
+    checked,
+    updated,
+    enqueued,
   }
 }
 

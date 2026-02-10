@@ -42,12 +42,12 @@ export default defineSchema({
         seasonYear: v.optional(v.number()),
         runtime: v.optional(v.number()),
         watchProviders: v.optional(v.array(v.string())),
-		latestChapter: v.optional(v.number()),
-		latestChapterSource: v.optional(v.string()),
-		latestChapterCheckedAt: v.optional(v.number()),
-		lastNotifiedChapter: v.optional(v.number()),
-		mangaPlusTitleId: v.optional(v.string()),
-		mangaDexId: v.optional(v.string()),
+        latestChapter: v.optional(v.number()),
+        latestChapterSource: v.optional(v.string()),
+        latestChapterCheckedAt: v.optional(v.number()),
+        lastNotifiedChapter: v.optional(v.number()),
+        mangaPlusTitleId: v.optional(v.string()),
+        mangaDexId: v.optional(v.string()),
       }),
     ),
     coverUrl: v.optional(v.string()),
@@ -67,4 +67,28 @@ export default defineSchema({
     .index('by_user_updatedAt', ['userTokenIdentifier', 'updatedAt'])
     .index('by_user_status_updatedAt', ['userTokenIdentifier', 'status', 'updatedAt'])
     .index('by_user_type_updatedAt', ['userTokenIdentifier', 'type', 'updatedAt']),
+  notificationEvents: defineTable({
+    eventType: v.literal('manga.release'),
+    eventId: v.string(),
+    obraId: v.string(),
+    anilistId: v.string(),
+    title: v.string(),
+    chapter: v.number(),
+    source: v.union(
+      v.literal('manga-plus'),
+      v.literal('mangadex'),
+      v.literal('anilist'),
+    ),
+    url: v.optional(v.string()),
+    detectedAt: v.number(),
+    status: v.union(v.literal('pending'), v.literal('delivered')),
+    attempts: v.number(),
+    lastAttemptAt: v.optional(v.number()),
+    deliveredAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_eventId', ['eventId'])
+    .index('by_status_createdAt', ['status', 'createdAt']),
 })
