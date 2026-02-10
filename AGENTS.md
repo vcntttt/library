@@ -11,6 +11,11 @@ This file is guidance for agentic coding tools working in this repo.
 - Lint/format: Biome
 - Package manager/runtime: Bun
 
+## External integrations
+- Discord bot repo: `~/dev/alfred`.
+- When the task involves Discord notifications or bot behavior, you can and should review/edit that repo as part of the implementation.
+- Treat `~/dev/alfred` as the canonical bot runtime for notification delivery and operational bot logic when applicable.
+
 ## Skill map (OpenCode)
 
 Use these skills intentionally; load them when the task matches.
