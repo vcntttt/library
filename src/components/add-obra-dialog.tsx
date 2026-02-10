@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
+	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
@@ -94,6 +96,17 @@ export function AddObraDialog() {
 	const [isSearchingMetadata, setIsSearchingMetadata] = useState(false);
 	const [isLoadingMetadataDetails, setIsLoadingMetadataDetails] =
 		useState(false);
+	const [isMetadataPreviewOpen, setIsMetadataPreviewOpen] = useState(false);
+	const [previewResult, setPreviewResult] =
+		useState<MetadataSearchResult | null>(null);
+	const [previewDetails, setPreviewDetails] = useState<MetadataDetails | null>(
+		null,
+	);
+	const [previewError, setPreviewError] = useState<string | null>(null);
+	const [isLoadingPreviewDetails, setIsLoadingPreviewDetails] = useState(false);
+	const [lastMetadataSearchUrl, setLastMetadataSearchUrl] = useState<
+		string | null
+	>(null);
 	const [activeType, setActiveType] = useState<ObraType | "">("");
 	const metadataAbortRef = useRef<AbortController | null>(null);
 	const metadataDebounceRef = useRef<number | null>(null);
@@ -165,7 +178,12 @@ export function AddObraDialog() {
 			setMetadataResults([]);
 			setSelectedMetadata(null);
 			setMetadataDetails(null);
+			setIsMetadataPreviewOpen(false);
+			setPreviewResult(null);
+			setPreviewDetails(null);
+			setPreviewError(null);
 			setMetadataError(null);
+			setLastMetadataSearchUrl(null);
 			setIsSearchingMetadata(false);
 			setIsLoadingMetadataDetails(false);
 			setActiveType("");
@@ -206,6 +224,7 @@ export function AddObraDialog() {
 					)}&q=${encodeURIComponent(query)}`,
 					{ signal: controller.signal },
 				);
+				setLastMetadataSearchUrl(response.url);
 				if (!response.ok) {
 					const payload = await response.json().catch(() => ({}));
 					console.error("[metadata/search] request failed", {
@@ -263,33 +282,24 @@ export function AddObraDialog() {
 			setMetadataResults([]);
 			setSelectedMetadata(null);
 			setMetadataDetails(null);
+			setIsMetadataPreviewOpen(false);
+			setPreviewResult(null);
+			setPreviewDetails(null);
+			setPreviewError(null);
 			setMetadataError(null);
+			setLastMetadataSearchUrl(null);
 			setIsSearchingMetadata(false);
 			setIsLoadingMetadataDetails(false);
 			setActiveType("");
 		}
 	};
 
-	const handleSelectMetadata = async (result: MetadataSearchResult) => {
-		setSelectedMetadata(result);
-		setMetadataResults([]);
-		setMetadataError(null);
-		setMetadataDetails(null);
-		form.setFieldValue("title", result.title);
-		setMetadataQuery(result.title);
-		if (result.creator) {
-			form.setFieldValue("creator", result.creator);
-		}
-		if (result.year) {
-			form.setFieldValue("year", String(result.year));
-		}
-
-		const totalFromSearch = getTotalFromMetadata(result);
-		if (totalFromSearch) {
-			form.setFieldValue("totalProgress", String(totalFromSearch));
-		}
-
-		setIsLoadingMetadataDetails(true);
+	const handleOpenMetadataPreview = async (result: MetadataSearchResult) => {
+		setIsMetadataPreviewOpen(true);
+		setPreviewResult(result);
+		setPreviewDetails(null);
+		setPreviewError(null);
+		setIsLoadingPreviewDetails(true);
 		try {
 			const response = await fetch(
 				`/api/metadata/details?source=${encodeURIComponent(
@@ -309,37 +319,182 @@ export function AddObraDialog() {
 
 			const payload = await response.json();
 			const details = payload?.details as MetadataDetails | undefined;
-			if (details) {
-				setMetadataDetails(details);
-				const totalFromDetails = getTotalFromMetadata(details);
-				if (totalFromDetails) {
-					form.setFieldValue("totalProgress", String(totalFromDetails));
-				}
-				if (details.creator) {
-					form.setFieldValue("creator", details.creator);
-				}
-				if (details.year) {
-					form.setFieldValue("year", String(details.year));
-				}
-			}
+			if (details) setPreviewDetails(details);
 		} catch (error) {
-			setMetadataError(
+			setPreviewError(
 				error instanceof Error ? error.message : "No se pudo cargar metadatos.",
 			);
 		} finally {
-			setIsLoadingMetadataDetails(false);
+			setIsLoadingPreviewDetails(false);
 		}
 	};
+
+	const handleSelectMetadata = () => {
+		if (!previewResult) return;
+
+		const nextMetadata = previewDetails ?? previewResult;
+		setSelectedMetadata(previewResult);
+		setMetadataDetails(previewDetails);
+		setMetadataResults([]);
+		setMetadataError(null);
+		setIsMetadataPreviewOpen(false);
+		form.setFieldValue("title", nextMetadata.title ?? previewResult.title);
+		setMetadataQuery(nextMetadata.title ?? previewResult.title);
+		if (nextMetadata.creator) {
+			form.setFieldValue("creator", nextMetadata.creator);
+		}
+		if (nextMetadata.year) {
+			form.setFieldValue("year", String(nextMetadata.year));
+		}
+
+		const total = getTotalFromMetadata(nextMetadata);
+		if (total) {
+			form.setFieldValue("totalProgress", String(total));
+		}
+	};
+
+	const previewMetadata = previewResult
+		? {
+				...previewResult,
+				...previewDetails,
+				title: previewDetails?.title ?? previewResult.title,
+			}
+		: null;
+
+	const previewRows: Array<{
+		label: string;
+		value?: string;
+		showLoading?: boolean;
+	}> = [];
+	const mangaChapterPreview = previewMetadata
+		? (previewMetadata.latestChapter ?? previewMetadata.chapters)
+		: undefined;
+
+	if (previewMetadata) {
+		previewRows.push({
+			label: "Título",
+			value: previewMetadata.title,
+			showLoading: true,
+		});
+		previewRows.push({
+			label: "Creador",
+			value: previewMetadata.creator,
+			showLoading: true,
+		});
+		previewRows.push({
+			label: "Año",
+			value: previewMetadata.year ? String(previewMetadata.year) : undefined,
+			showLoading: true,
+		});
+		previewRows.push({
+			label: "Páginas",
+			value:
+				previewMetadata.pages !== undefined
+					? previewMetadata.pages.toLocaleString()
+					: undefined,
+			showLoading: activeType === "book",
+		});
+		previewRows.push({
+			label: "Temporadas",
+			value:
+				previewMetadata.seasons !== undefined
+					? previewMetadata.seasons.toLocaleString()
+					: undefined,
+			showLoading: activeType === "series",
+		});
+		previewRows.push({
+			label: "Episodios",
+			value:
+				previewMetadata.episodes !== undefined
+					? previewMetadata.episodes.toLocaleString()
+					: undefined,
+			showLoading: activeType === "series" || activeType === "anime",
+		});
+		previewRows.push({
+			label: "Episodios emitidos",
+			value:
+				previewMetadata.episodesAired !== undefined
+					? previewMetadata.episodesAired.toLocaleString()
+					: undefined,
+			showLoading: activeType === "series" || activeType === "anime",
+		});
+		previewRows.push({
+			label: "Próximo episodio",
+			value:
+				previewMetadata.nextEpisodeDate !== undefined
+					? new Date(previewMetadata.nextEpisodeDate).toLocaleString()
+					: undefined,
+			showLoading: activeType === "series" || activeType === "anime",
+		});
+		previewRows.push({
+			label: "Estado",
+			value: previewMetadata.status,
+			showLoading: true,
+		});
+		previewRows.push({
+			label: "Último capítulo",
+			value:
+				mangaChapterPreview !== undefined
+					? mangaChapterPreview.toLocaleString()
+					: undefined,
+			showLoading: activeType === "manga",
+		});
+		previewRows.push({
+			label: "Volúmenes",
+			value:
+				previewMetadata.volumes !== undefined
+					? previewMetadata.volumes.toLocaleString()
+					: undefined,
+			showLoading: activeType === "manga",
+		});
+		previewRows.push({
+			label: "Temporada (raw)",
+			value: previewMetadata.season,
+			showLoading: activeType === "anime",
+		});
+		previewRows.push({
+			label: "Año de temporada",
+			value:
+				previewMetadata.seasonYear !== undefined
+					? String(previewMetadata.seasonYear)
+					: undefined,
+			showLoading: activeType === "anime",
+		});
+		previewRows.push({
+			label: "Duración",
+			value:
+				previewMetadata.runtime !== undefined
+					? `${previewMetadata.runtime} min`
+					: undefined,
+			showLoading: activeType === "movie",
+		});
+		previewRows.push({
+			label: "Plataformas",
+			value: previewMetadata.watchProviders?.length
+				? previewMetadata.watchProviders.join(", ")
+				: undefined,
+			showLoading: activeType === "movie",
+		});
+	}
+
+	const requestDebugSearch =
+		activeType && metadataQuery.trim().length >= 3
+			? `/api/metadata/search?type=${encodeURIComponent(activeType)}&q=${encodeURIComponent(metadataQuery.trim())}`
+			: null;
+	const requestDebugDetails = previewResult
+		? `/api/metadata/details?source=${encodeURIComponent(previewResult.source)}&id=${encodeURIComponent(previewResult.id)}&type=${encodeURIComponent(activeType || "")}`
+		: null;
 
 	const getTotalFromMetadata = (
 		metadata: Pick<
 			MetadataSearchResult,
-			"pages" | "episodes" | "chapters"
+			"pages" | "episodes" | "chapters" | "latestChapter"
 		> | null,
 	) => {
 		if (!metadata) return undefined;
 		if (activeType === "book") return metadata.pages;
-		if (activeType === "manga") return metadata.chapters;
+		if (activeType === "manga")
+			return metadata.latestChapter ?? metadata.chapters;
 		if (activeType === "series" || activeType === "anime")
 			return metadata.episodes;
 		return undefined;
@@ -362,6 +517,11 @@ export function AddObraDialog() {
 			seasonYear: source.seasonYear ?? undefined,
 			runtime: source.runtime ?? undefined,
 			watchProviders: source.watchProviders ?? undefined,
+			latestChapter: source.latestChapter ?? undefined,
+			latestChapterSource: source.latestChapterSource ?? undefined,
+			latestChapterCheckedAt: source.latestChapterCheckedAt ?? undefined,
+			mangaPlusTitleId: source.mangaPlusTitleId ?? undefined,
+			mangaDexId: source.mangaDexId ?? undefined,
 		};
 
 		const hasData = Object.values(payload).some((value) => value !== undefined);
@@ -405,6 +565,11 @@ export function AddObraDialog() {
 										setIsLoadingMetadataDetails(false);
 										setMetadataResults([]);
 										setMetadataError(null);
+										setLastMetadataSearchUrl(null);
+										setIsMetadataPreviewOpen(false);
+										setPreviewResult(null);
+										setPreviewDetails(null);
+										setPreviewError(null);
 									}}
 								>
 									<SelectTrigger id={typeId}>
@@ -527,7 +692,7 @@ export function AddObraDialog() {
 												type="button"
 												key={`${result.source}-${result.id}`}
 												className="w-full text-left rounded-xl border border-border/60 bg-muted/40 px-3 py-2 transition hover:bg-muted/60"
-												onClick={() => handleSelectMetadata(result)}
+												onClick={() => handleOpenMetadataPreview(result)}
 											>
 												<div className="flex items-center gap-3">
 													{result.coverUrl ? (
@@ -739,6 +904,123 @@ export function AddObraDialog() {
 						</form.Subscribe>
 					</div>
 				</form>
+				<Dialog
+					open={isMetadataPreviewOpen}
+					onOpenChange={setIsMetadataPreviewOpen}
+				>
+					<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg">
+						<DialogHeader>
+							<DialogTitle>Preview de metadata</DialogTitle>
+							<DialogDescription>
+								Revisa toda la metadata disponible antes de seleccionar la obra.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="space-y-4">
+							{isLoadingPreviewDetails && (
+								<p className="text-sm text-muted-foreground">
+									Cargando detalles...
+								</p>
+							)}
+							{previewError && (
+								<p className="text-sm text-destructive">{previewError}</p>
+							)}
+							{previewMetadata && (
+								<>
+									{previewMetadata.coverUrl && (
+										<img
+											src={previewMetadata.coverUrl}
+											alt=""
+											className="h-44 w-32 rounded-md object-cover"
+											loading="lazy"
+										/>
+									)}
+									<div className="grid gap-2 sm:grid-cols-2">
+										{previewRows
+											.filter(
+												(row) =>
+													Boolean(row.value) ||
+													(isLoadingPreviewDetails && row.showLoading),
+											)
+											.map((row) => (
+												<div
+													key={`${row.label}-${row.value}`}
+													className="text-sm"
+												>
+													<span className="text-muted-foreground">
+														{row.label}:
+													</span>{" "}
+													{row.value ? (
+														<span>{row.value}</span>
+													) : isLoadingPreviewDetails && row.showLoading ? (
+														<span className="inline-block h-3.5 w-28 animate-pulse rounded bg-muted-foreground/25 align-middle" />
+													) : null}
+												</div>
+											))}
+									</div>
+									{!isLoadingPreviewDetails &&
+										activeType === "manga" &&
+										mangaChapterPreview === undefined && (
+											<p className="text-sm text-muted-foreground">
+												Último capítulo: No disponible en el proveedor.
+											</p>
+										)}
+									<div className="space-y-2">
+										<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+											Request debug
+										</p>
+										{(lastMetadataSearchUrl || requestDebugSearch) && (
+											<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
+												{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
+											</pre>
+										)}
+										{requestDebugDetails && (
+											<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
+												{`GET ${requestDebugDetails}`}
+											</pre>
+										)}
+										{previewResult?.source === "anilist" && (
+											<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+												{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
+													{
+														query:
+															"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
+														variables: { id: Number(previewResult.id) },
+													},
+													null,
+													2,
+												)}`}
+											</pre>
+										)}
+									</div>
+									<details>
+										<summary className="cursor-pointer text-sm text-muted-foreground">
+											Ver JSON completo
+										</summary>
+										<pre className="mt-2 rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+											{JSON.stringify(previewMetadata, null, 2)}
+										</pre>
+									</details>
+								</>
+							)}
+						</div>
+						<DialogFooter>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setIsMetadataPreviewOpen(false)}
+							>
+								Cerrar
+							</Button>
+							<Button
+								type="button"
+								disabled={!previewResult || isLoadingPreviewDetails}
+								onClick={handleSelectMetadata}
+							>
+								Usar metadatos
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
 			</DialogContent>
 		</Dialog>
 	);
