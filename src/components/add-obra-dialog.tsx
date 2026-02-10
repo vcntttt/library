@@ -82,7 +82,15 @@ const parseDateInput = (value: string) => {
 	return Number.isNaN(timestamp) ? undefined : timestamp;
 };
 
-export function AddObraDialog() {
+interface AddObraDialogProps {
+	triggerMode?: "default" | "fab";
+	className?: string;
+}
+
+export function AddObraDialog({
+	triggerMode = "default",
+	className,
+}: AddObraDialogProps = {}) {
 	const [open, setOpen] = useState(false);
 	const [metadataQuery, setMetadataQuery] = useState("");
 	const [metadataResults, setMetadataResults] = useState<
@@ -117,6 +125,7 @@ export function AddObraDialog() {
 	const yearId = useId();
 	const startedAtId = useId();
 	const finishedAtId = useId();
+	const readingUrlId = useId();
 	const totalId = useId();
 	const tagsId = useId();
 	const createObra = useMutation(api.obras.create);
@@ -130,6 +139,7 @@ export function AddObraDialog() {
 			year: "",
 			startedAt: "",
 			finishedAt: "",
+			readingUrl: "",
 			tags: "",
 			totalProgress: "",
 		},
@@ -154,6 +164,7 @@ export function AddObraDialog() {
 				year,
 				startedAt,
 				finishedAt,
+				readingUrl: value.readingUrl.trim() || undefined,
 				tags: value.tags
 					.split(",")
 					.map((t) => t.trim())
@@ -531,12 +542,36 @@ export function AddObraDialog() {
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogTrigger
-				render={<Button size="sm" className="gap-1.5 shadow-sm" />}
+				render={
+					triggerMode === "fab" ? (
+						<Button
+							size="icon-lg"
+							className={`group size-14 rounded-full shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 ${className ?? ""}`}
+							aria-label="Agregar nueva obra"
+						/>
+					) : (
+						<Button
+							size="lg"
+							className={`group h-10 gap-2 rounded-full px-4 font-semibold shadow-md shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 ${className ?? ""}`}
+							aria-label="Agregar nueva obra"
+						/>
+					)
+				}
 			>
-				<Plus className="h-4 w-4" />
-				Agregar obra
+				<Plus
+					className={
+						triggerMode === "fab"
+							? "h-5 w-5 transition-transform group-hover:rotate-90"
+							: "h-4 w-4 transition-transform group-hover:rotate-90"
+					}
+				/>
+				{triggerMode === "default" ? (
+					"Agregar obra"
+				) : (
+					<span className="sr-only">Agregar obra</span>
+				)}
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-lg rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto">
+			<DialogContent className="sm:max-w-lg rounded-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-lg font-semibold font-serif">
 						Nueva obra
@@ -698,7 +733,7 @@ export function AddObraDialog() {
 													{result.coverUrl ? (
 														<img
 															src={result.coverUrl}
-															alt=""
+															alt={`Portada de ${result.title}`}
 															className="h-12 w-9 rounded-md object-cover"
 															loading="lazy"
 														/>
@@ -874,6 +909,23 @@ export function AddObraDialog() {
 								</div>
 							)}
 						</form.Field>
+
+						<form.Field name="readingUrl">
+							{(field) => (
+								<div className="space-y-2">
+									<Label htmlFor={readingUrlId}>Link personal para leer</Label>
+									<Input
+										id={readingUrlId}
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										placeholder="https://cubari.moe/..."
+									/>
+									<p className="text-xs text-muted-foreground">
+										Se abre tal cual para que sigas leyendo donde prefieras.
+									</p>
+								</div>
+							)}
+						</form.Field>
 					</div>
 
 					<div className="flex justify-end gap-2 pt-2">
@@ -908,9 +960,9 @@ export function AddObraDialog() {
 					open={isMetadataPreviewOpen}
 					onOpenChange={setIsMetadataPreviewOpen}
 				>
-					<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg">
+					<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl">
 						<DialogHeader>
-							<DialogTitle>Preview de metadata</DialogTitle>
+							<DialogTitle>Vista previa de metadatos</DialogTitle>
 							<DialogDescription>
 								Revisa toda la metadata disponible antes de seleccionar la obra.
 							</DialogDescription>
@@ -929,7 +981,7 @@ export function AddObraDialog() {
 									{previewMetadata.coverUrl && (
 										<img
 											src={previewMetadata.coverUrl}
-											alt=""
+											alt={`Portada de ${previewMetadata.title}`}
 											className="h-44 w-32 rounded-md object-cover"
 											loading="lazy"
 										/>
@@ -964,34 +1016,36 @@ export function AddObraDialog() {
 												Último capítulo: No disponible en el proveedor.
 											</p>
 										)}
-									<div className="space-y-2">
-										<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+									<details>
+										<summary className="cursor-pointer text-sm text-muted-foreground">
 											Request debug
-										</p>
-										{(lastMetadataSearchUrl || requestDebugSearch) && (
-											<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
-												{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
-											</pre>
-										)}
-										{requestDebugDetails && (
-											<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
-												{`GET ${requestDebugDetails}`}
-											</pre>
-										)}
-										{previewResult?.source === "anilist" && (
-											<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
-												{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
-													{
-														query:
-															"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
-														variables: { id: Number(previewResult.id) },
-													},
-													null,
-													2,
-												)}`}
-											</pre>
-										)}
-									</div>
+										</summary>
+										<div className="mt-2 space-y-2">
+											{(lastMetadataSearchUrl || requestDebugSearch) && (
+												<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
+													{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
+												</pre>
+											)}
+											{requestDebugDetails && (
+												<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
+													{`GET ${requestDebugDetails}`}
+												</pre>
+											)}
+											{previewResult?.source === "anilist" && (
+												<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+													{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
+														{
+															query:
+																"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
+															variables: { id: Number(previewResult.id) },
+														},
+														null,
+														2,
+													)}`}
+												</pre>
+											)}
+										</div>
+									</details>
 									<details>
 										<summary className="cursor-pointer text-sm text-muted-foreground">
 											Ver JSON completo

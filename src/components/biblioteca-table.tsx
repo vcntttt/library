@@ -1,6 +1,7 @@
 "use client";
 
 import { Link } from "@tanstack/react-router";
+import { ExternalLink, LayoutGrid, List } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,14 @@ const GRID_SKELETON_KEYS = [
 	"g9",
 	"g10",
 ];
+
+const normalizeReadingUrl = (value?: string) => {
+	if (!value) return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	if (/^https?:\/\//i.test(trimmed)) return trimmed;
+	return `https://${trimmed}`;
+};
 
 export function BibliotecaTable({
 	obras,
@@ -149,11 +158,12 @@ export function BibliotecaTable({
 
 	return (
 		<div className="space-y-6">
-			<div className="rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm">
+			<div className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm">
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 					<div className="relative w-full lg:max-w-md">
 						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
+							aria-label="Buscar obras"
 							placeholder="Buscar por título, autor o etiqueta..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
@@ -192,31 +202,33 @@ export function BibliotecaTable({
 								<SelectItem value="dropped">Abandonada</SelectItem>
 							</SelectContent>
 						</Select>
-						<div className="hidden items-center overflow-hidden rounded-lg border border-border/60 bg-card/70 shadow-sm sm:inline-flex">
+						<div className="inline-flex w-full items-center overflow-hidden rounded-xl border border-border/60 bg-card/70 shadow-sm sm:w-auto">
 							<Button
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-8 rounded-none border-r border-border/60 px-3 text-xs",
+									"h-10 flex-1 rounded-none border-r border-border/60 px-3 text-xs sm:flex-none",
 									view === "list"
 										? "bg-foreground/10 text-foreground"
 										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
 								)}
 								onClick={() => setView("list")}
 							>
+								<List className="h-3.5 w-3.5" />
 								Lista
 							</Button>
 							<Button
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-8 rounded-none px-3 text-xs",
+									"h-10 flex-1 rounded-none px-3 text-xs sm:flex-none",
 									view === "grid"
 										? "bg-foreground/10 text-foreground"
 										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
 								)}
 								onClick={() => setView("grid")}
 							>
+								<LayoutGrid className="h-3.5 w-3.5" />
 								Grid
 							</Button>
 						</div>
@@ -232,7 +244,7 @@ export function BibliotecaTable({
 								{MOBILE_LIST_SKELETON_KEYS.map((key) => (
 									<div
 										key={key}
-										className="rounded-lg border border-border/60 bg-card/70 p-3"
+										className="rounded-xl border border-border/60 bg-card/70 p-3"
 									>
 										<div className="flex items-start gap-3">
 											<Skeleton className="h-16 w-12 rounded-md" />
@@ -246,45 +258,77 @@ export function BibliotecaTable({
 								))}
 							</div>
 						) : filteredObras.length === 0 ? (
-							<div className="rounded-lg border border-border/60 bg-card/70 py-10 text-center">
-								<p className="text-sm text-muted-foreground">
+							<div className="rounded-xl border border-border/60 bg-card/70 px-4 py-10 text-center">
+								<p className="text-sm font-medium text-foreground">
 									No se encontraron obras
+								</p>
+								<p className="mt-1 text-xs text-muted-foreground">
+									Prueba quitando filtros o buscando otro término.
 								</p>
 							</div>
 						) : (
 							<div className="grid gap-3">
-								{filteredObras.map((obra) => (
-									<ObraCard key={obra.id} obra={obra} variant="grid" />
-								))}
+								{filteredObras.map((obra) => {
+									const readingUrl = normalizeReadingUrl(obra.readingUrl);
+									return (
+										<div key={obra.id} className="space-y-2">
+											<ObraCard obra={obra} variant="default" />
+											{readingUrl && (
+												<a
+													href={readingUrl}
+													target="_blank"
+													rel="noreferrer"
+													className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+												>
+													<ExternalLink className="h-3.5 w-3.5" />
+													Ir a leer
+												</a>
+											)}
+										</div>
+									);
+								})}
 							</div>
 						)}
 					</div>
-					<div className="hidden rounded-lg border border-border/60 bg-card/70 shadow-sm overflow-hidden sm:block">
+					<div className="hidden rounded-xl border border-border/60 bg-card/70 shadow-sm overflow-hidden sm:block">
 						<Table>
 							<TableHeader>
 								<TableRow className="bg-muted/40 hover:bg-muted/40">
-									<TableHead
-										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-										onClick={() => handleSort("title")}
-									>
-										Título{" "}
-										{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
+									<TableHead className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+										<button
+											type="button"
+											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
+											onClick={() => handleSort("title")}
+										>
+											Título
+											{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
+										</button>
 									</TableHead>
-									<TableHead
-										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-										onClick={() => handleSort("type")}
-									>
-										Tipo {sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
+									<TableHead className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+										<button
+											type="button"
+											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
+											onClick={() => handleSort("type")}
+										>
+											Tipo
+											{sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
+										</button>
 									</TableHead>
-									<TableHead
-										className="cursor-pointer select-none text-xs uppercase tracking-[0.2em] text-muted-foreground"
-										onClick={() => handleSort("status")}
-									>
-										Estado{" "}
-										{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
+									<TableHead className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+										<button
+											type="button"
+											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
+											onClick={() => handleSort("status")}
+										>
+											Estado
+											{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
+										</button>
 									</TableHead>
 									<TableHead className="hidden text-xs uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
 										Etiquetas
+									</TableHead>
+									<TableHead className="text-right text-xs uppercase tracking-[0.2em] text-muted-foreground">
+										Leer
 									</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -316,15 +360,22 @@ export function BibliotecaTable({
 													<Skeleton className="h-5 w-12 rounded-full" />
 												</div>
 											</TableCell>
+											<TableCell className="text-right">
+												<Skeleton className="ml-auto h-8 w-20 rounded-md" />
+											</TableCell>
 										</TableRow>
 									))
 								) : filteredObras.length === 0 ? (
 									<TableRow>
-										<TableCell
-											colSpan={4}
-											className="h-24 text-center text-muted-foreground"
-										>
-											No se encontraron obras
+										<TableCell colSpan={5} className="h-24">
+											<div className="text-center">
+												<p className="text-sm font-medium text-foreground">
+													No se encontraron obras
+												</p>
+												<p className="mt-1 text-xs text-muted-foreground">
+													Prueba quitando filtros o cambiando el orden.
+												</p>
+											</div>
 										</TableCell>
 									</TableRow>
 								) : (
@@ -336,6 +387,7 @@ export function BibliotecaTable({
 										const showUpToDateBadge = isObraUpToDate(obra);
 										const showProgress =
 											obra.type !== "movie" && (obra.progress?.total ?? 0) > 0;
+										const readingUrl = normalizeReadingUrl(obra.readingUrl);
 										return (
 											<TableRow
 												key={obra.id}
@@ -347,7 +399,7 @@ export function BibliotecaTable({
 															<div className="h-12 w-8 overflow-hidden rounded-md bg-muted/60">
 																<img
 																	src={obra.coverUrl}
-																	alt=""
+																	alt={`Portada de ${obra.title}`}
 																	className="h-full w-full object-cover"
 																	loading="lazy"
 																/>
@@ -426,6 +478,23 @@ export function BibliotecaTable({
 														)}
 													</div>
 												</TableCell>
+												<TableCell className="text-right">
+													{readingUrl ? (
+														<a
+															href={readingUrl}
+															target="_blank"
+															rel="noreferrer"
+															className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+														>
+															<ExternalLink className="h-3.5 w-3.5" />
+															Ir a leer
+														</a>
+													) : (
+														<span className="text-xs text-muted-foreground">
+															-
+														</span>
+													)}
+												</TableCell>
 											</TableRow>
 										);
 									})
@@ -441,7 +510,7 @@ export function BibliotecaTable({
 							{GRID_SKELETON_KEYS.map((key) => (
 								<div
 									key={key}
-									className="overflow-hidden rounded-lg border border-border/60 bg-card/70"
+									className="overflow-hidden rounded-xl border border-border/60 bg-card/70"
 								>
 									<Skeleton className="aspect-[4/5] w-full" />
 									<div className="space-y-2 p-2.5">
@@ -453,16 +522,35 @@ export function BibliotecaTable({
 							))}
 						</div>
 					) : filteredObras.length === 0 ? (
-						<div className="rounded-lg border border-dashed border-border/60 bg-card/60 py-10 text-center">
-							<p className="text-sm text-muted-foreground">
+						<div className="rounded-xl border border-dashed border-border/60 bg-card/60 py-10 text-center">
+							<p className="text-sm font-medium text-foreground">
 								No se encontraron obras
+							</p>
+							<p className="mt-1 text-xs text-muted-foreground">
+								Prueba con otros filtros o cambia a vista de lista.
 							</p>
 						</div>
 					) : (
 						<div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-							{filteredObras.map((obra) => (
-								<ObraCard key={obra.id} obra={obra} variant="grid" />
-							))}
+							{filteredObras.map((obra) => {
+								const readingUrl = normalizeReadingUrl(obra.readingUrl);
+								return (
+									<div key={obra.id} className="space-y-2">
+										<ObraCard obra={obra} variant="grid" />
+										{readingUrl && (
+											<a
+												href={readingUrl}
+												target="_blank"
+												rel="noreferrer"
+												className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+											>
+												<ExternalLink className="h-3.5 w-3.5" />
+												Ir a leer
+											</a>
+										)}
+									</div>
+								);
+							})}
 						</div>
 					)}
 				</div>

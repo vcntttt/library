@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { Minus, Plus } from "lucide-react";
+import { ExternalLink, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { StatusBadge } from "@/components/status-badge";
@@ -164,6 +164,13 @@ const parseDateInput = (value: string) => {
 	return Number.isNaN(timestamp) ? undefined : timestamp;
 };
 
+const normalizeReadingUrl = (value: string) => {
+	const trimmed = value.trim();
+	if (!trimmed) return "";
+	if (/^https?:\/\//i.test(trimmed)) return trimmed;
+	return `https://${trimmed}`;
+};
+
 export const Route = createFileRoute("/obra/$obraId")({
 	ssr: false,
 	component: ObraPage,
@@ -181,13 +188,15 @@ function ObraPage() {
 
 	if (session === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6 space-y-3">
-				<p className="text-sm text-muted-foreground">
-					Inicia sesión para ver esta obra.
-				</p>
-				<Link to="/login" className="text-sm underline underline-offset-4">
-					Ir a login
-				</Link>
+			<div className="container mx-auto p-4 md:p-6">
+				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
+					<p className="text-sm text-muted-foreground">
+						Inicia sesión para ver esta obra.
+					</p>
+					<Link to="/login" className="text-sm underline underline-offset-4">
+						Ir a login
+					</Link>
+				</div>
 			</div>
 		);
 	}
@@ -204,9 +213,9 @@ function ObraPageSkeleton() {
 					<Skeleton className="h-8 w-24 rounded-md" />
 				</div>
 
-				<div className="rounded-lg border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
+				<div className="rounded-xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
 					<div className="flex items-start gap-4">
-						<Skeleton className="h-28 w-20 rounded-lg" />
+						<Skeleton className="h-28 w-20 rounded-md" />
 						<div className="space-y-2 min-w-0 flex-1">
 							<div className="flex gap-2">
 								<Skeleton className="h-5 w-16 rounded-full" />
@@ -217,7 +226,7 @@ function ObraPageSkeleton() {
 						</div>
 					</div>
 
-					<div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 space-y-3">
+					<div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 space-y-3">
 						<div className="flex items-center justify-between">
 							<Skeleton className="h-4 w-24" />
 							<Skeleton className="h-3 w-40" />
@@ -229,7 +238,7 @@ function ObraPageSkeleton() {
 						</div>
 					</div>
 
-					<div className="rounded-lg border border-border/60 bg-card/60 p-4 space-y-4">
+					<div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
 						<Skeleton className="h-4 w-20" />
 						<Skeleton className="h-6 w-32" />
 						<div className="flex items-center gap-3">
@@ -283,6 +292,7 @@ function ObraAuthed({
 	const form = useForm({
 		defaultValues: {
 			obsidianPath: "",
+			readingUrl: "",
 			startedAt: "",
 			finishedAt: "",
 			review: "",
@@ -309,6 +319,7 @@ function ObraAuthed({
 
 			const patch: Record<string, unknown> = {
 				obsidianPath: value.obsidianPath.trim() || undefined,
+				readingUrl: value.readingUrl.trim() || undefined,
 				startedAt: parseDateInput(value.startedAt),
 				finishedAt: parseDateInput(value.finishedAt),
 				review: value.review.trim() || undefined,
@@ -341,6 +352,7 @@ function ObraAuthed({
 		}
 		form.reset({
 			obsidianPath: doc.obsidianPath ?? "",
+			readingUrl: doc.readingUrl ?? "",
 			startedAt: formatDateInput(doc.startedAt),
 			finishedAt: formatDateInput(doc.finishedAt),
 			review: doc.review ?? "",
@@ -364,11 +376,16 @@ function ObraAuthed({
 
 	if (doc === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6 space-y-4">
-				<p className="text-sm text-muted-foreground">Obra no encontrada.</p>
-				<Link to="/biblioteca" className="text-sm underline underline-offset-3">
-					Volver a la biblioteca
-				</Link>
+			<div className="container mx-auto p-4 md:p-6">
+				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
+					<p className="text-sm text-muted-foreground">Obra no encontrada.</p>
+					<Link
+						to="/biblioteca"
+						className="text-sm underline underline-offset-3"
+					>
+						Volver a la biblioteca
+					</Link>
+				</div>
 			</div>
 		);
 	}
@@ -473,7 +490,8 @@ function ObraAuthed({
 		if (
 			obra.type === "manga" &&
 			metadata.latestChapter !== undefined &&
-			metadata.chapters !== undefined
+			metadata.chapters !== undefined &&
+			metadata.chapters !== metadata.latestChapter
 		) {
 			metadataItems.push({
 				label: "Capítulos totales",
@@ -603,6 +621,12 @@ function ObraAuthed({
 		} finally {
 			setIsOpeningObsidian(false);
 		}
+	};
+
+	const handleOpenReadingLink = (urlValue: string) => {
+		const nextUrl = normalizeReadingUrl(urlValue);
+		if (!nextUrl) return;
+		window.open(nextUrl, "_blank", "noopener,noreferrer");
 	};
 
 	const handleMetadataOpenChange = (nextOpen: boolean) => {
@@ -888,44 +912,60 @@ function ObraAuthed({
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<Link
 						to="/biblioteca"
-						className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+						className="inline-flex h-10 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
 					</Link>
 
-					<AlertDialog>
-						<AlertDialogTrigger
-							render={<Button variant="outline" size="sm" className="gap-2" />}
-						>
-							<Trash2 className="h-4 w-4" />
-							Eliminar
-						</AlertDialogTrigger>
-						<AlertDialogContent>
-							<AlertDialogHeader>
-								<AlertDialogTitle>Eliminar obra?</AlertDialogTitle>
-								<AlertDialogDescription>
-									Esto no se puede deshacer.
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter>
-								<AlertDialogCancel>Cancelar</AlertDialogCancel>
-								<AlertDialogAction onClick={handleDelete}>
-									Eliminar
-								</AlertDialogAction>
-							</AlertDialogFooter>
-						</AlertDialogContent>
-					</AlertDialog>
+					<div className="flex items-center gap-2">
+						{obra.readingUrl && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-10 gap-2"
+								onClick={() => handleOpenReadingLink(obra.readingUrl ?? "")}
+							>
+								<ExternalLink className="h-4 w-4" />
+								Ir a leer
+							</Button>
+						)}
+						<AlertDialog>
+							<AlertDialogTrigger
+								render={
+									<Button variant="outline" size="sm" className="h-10 gap-2" />
+								}
+							>
+								<Trash2 className="h-4 w-4" />
+								Eliminar
+							</AlertDialogTrigger>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>¿Eliminar obra?</AlertDialogTitle>
+									<AlertDialogDescription>
+										Esto no se puede deshacer.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel>Cancelar</AlertDialogCancel>
+									<AlertDialogAction onClick={handleDelete}>
+										Eliminar
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+					</div>
 				</div>
 
-				<div className="rounded-lg border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
+				<div className="rounded-xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-start">
 						<div className="flex items-start gap-4 min-w-0">
 							{obra.coverUrl && (
-								<div className="h-28 w-20 overflow-hidden rounded-lg bg-muted/60">
+								<div className="h-28 w-20 overflow-hidden rounded-md bg-muted/60">
 									<img
 										src={obra.coverUrl}
-										alt=""
+										alt={`Portada de ${obra.title}`}
 										className="h-full w-full object-cover"
 										loading="lazy"
 									/>
@@ -964,7 +1004,7 @@ function ObraAuthed({
 						</div>
 					</div>
 
-					<div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
+					<div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
 						<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
 							<p className="text-sm font-medium">Ficha técnica</p>
 							<p className="text-xs text-muted-foreground">
@@ -996,7 +1036,7 @@ function ObraAuthed({
 						className="space-y-6"
 					>
 						{hasProgress && (
-							<section className="rounded-lg border border-border/60 bg-card/60 p-4 space-y-4">
+							<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
 								<p className="text-sm font-medium">Progreso</p>
 								<div className="grid gap-4 sm:grid-cols-3">
 									<div className="space-y-3">
@@ -1222,7 +1262,7 @@ function ObraAuthed({
 								</div>
 							</section>
 						)}
-						<section className="rounded-lg border border-border/60 bg-card/60 p-4 space-y-4">
+						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
 							<p className="text-sm font-medium">Metadatos y Obsidian</p>
 							<div className="space-y-2">
 								<Label>Metadatos</Label>
@@ -1235,7 +1275,7 @@ function ObraAuthed({
 									>
 										Buscar metadatos
 									</DialogTrigger>
-									<DialogContent className="sm:max-w-lg rounded-lg">
+									<DialogContent className="sm:max-w-lg rounded-xl">
 										<DialogHeader>
 											<DialogTitle className="text-lg font-semibold font-serif">
 												Buscar metadatos
@@ -1283,7 +1323,7 @@ function ObraAuthed({
 														return (
 															<div
 																key={`${result.source}-${result.id}`}
-																className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/40 px-3 py-2"
+																className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-2"
 															>
 																<div className="min-w-0">
 																	<p className="text-sm font-medium truncate">
@@ -1303,7 +1343,7 @@ function ObraAuthed({
 																		handleOpenMetadataPreview(result)
 																	}
 																>
-																	Preview
+																	Vista previa
 																</Button>
 															</div>
 														);
@@ -1314,9 +1354,9 @@ function ObraAuthed({
 												open={isMetadataPreviewOpen}
 												onOpenChange={setIsMetadataPreviewOpen}
 											>
-												<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg">
+												<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl">
 													<DialogHeader>
-														<DialogTitle>Preview de metadata</DialogTitle>
+														<DialogTitle>Vista previa de metadatos</DialogTitle>
 														<DialogDescription>
 															Revisa toda la metadata disponible antes de
 															aplicarla.
@@ -1338,7 +1378,7 @@ function ObraAuthed({
 																{previewMetadata.coverUrl && (
 																	<img
 																		src={previewMetadata.coverUrl}
-																		alt=""
+																		alt={`Portada de ${previewMetadata.title}`}
 																		className="h-44 w-32 rounded-md object-cover"
 																		loading="lazy"
 																	/>
@@ -1376,37 +1416,39 @@ function ObraAuthed({
 																			proveedor.
 																		</p>
 																	)}
-																<div className="space-y-2">
-																	<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+																<details>
+																	<summary className="cursor-pointer text-sm text-muted-foreground">
 																		Request debug
-																	</p>
-																	{(lastMetadataSearchUrl ||
-																		requestDebugSearch) && (
-																		<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
-																			{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
-																		</pre>
-																	)}
-																	{requestDebugDetails && (
-																		<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
-																			{`GET ${requestDebugDetails}`}
-																		</pre>
-																	)}
-																	{previewResult?.source === "anilist" && (
-																		<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
-																			{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
-																				{
-																					query:
-																						"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
-																					variables: {
-																						id: Number(previewResult.id),
+																	</summary>
+																	<div className="mt-2 space-y-2">
+																		{(lastMetadataSearchUrl ||
+																			requestDebugSearch) && (
+																			<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
+																				{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
+																			</pre>
+																		)}
+																		{requestDebugDetails && (
+																			<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
+																				{`GET ${requestDebugDetails}`}
+																			</pre>
+																		)}
+																		{previewResult?.source === "anilist" && (
+																			<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+																				{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
+																					{
+																						query:
+																							"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
+																						variables: {
+																							id: Number(previewResult.id),
+																						},
 																					},
-																				},
-																				null,
-																				2,
-																			)}`}
-																		</pre>
-																	)}
-																</div>
+																					null,
+																					2,
+																				)}`}
+																			</pre>
+																		)}
+																	</div>
+																</details>
 																<details>
 																	<summary className="cursor-pointer text-sm text-muted-foreground">
 																		Ver JSON completo
@@ -1491,8 +1533,38 @@ function ObraAuthed({
 									<p className="text-sm text-destructive">{obsidianError}</p>
 								)}
 							</div>
+							<div className="space-y-2">
+								<Label>Lectura personal</Label>
+								<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+									<form.Field name="readingUrl">
+										{(field) => (
+											<Input
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+												placeholder="https://cubari.moe/..."
+												className="flex-1"
+											/>
+										)}
+									</form.Field>
+									<form.Subscribe selector={(state) => state.values.readingUrl}>
+										{(readingUrl) => (
+											<Button
+												type="button"
+												variant="outline"
+												disabled={!readingUrl.trim()}
+												onClick={() => handleOpenReadingLink(readingUrl)}
+											>
+												Ir a leer
+											</Button>
+										)}
+									</form.Subscribe>
+								</div>
+								<p className="text-xs text-muted-foreground">
+									Guarda tu link personal del sitio donde lees los capítulos.
+								</p>
+							</div>
 						</section>
-						<section className="rounded-lg border border-border/60 bg-card/60 p-4 space-y-4">
+						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
 							<p className="text-sm font-medium">Estado y fechas</p>
 							<div className="space-y-2">
 								<Label>Estado</Label>
@@ -1541,7 +1613,7 @@ function ObraAuthed({
 							</div>
 						</section>
 
-						<section className="rounded-lg border border-border/60 bg-card/60 p-4 space-y-4">
+						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
 							<p className="text-sm font-medium">Notas y reseña</p>
 							<div className="grid gap-4 sm:grid-cols-2">
 								<div className="space-y-2">
