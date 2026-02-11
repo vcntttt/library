@@ -344,18 +344,21 @@ export function AddObraDialog({
 		if (!previewResult) return;
 
 		const nextMetadata = previewDetails ?? previewResult;
+		const resolvedTitle = nextMetadata.title ?? previewResult.title;
+		const resolvedCreator = nextMetadata.creator ?? previewResult.creator;
+		const resolvedYear = nextMetadata.year ?? previewResult.year;
 		setSelectedMetadata(previewResult);
 		setMetadataDetails(previewDetails);
 		setMetadataResults([]);
 		setMetadataError(null);
 		setIsMetadataPreviewOpen(false);
-		form.setFieldValue("title", nextMetadata.title ?? previewResult.title);
-		setMetadataQuery(nextMetadata.title ?? previewResult.title);
-		if (nextMetadata.creator) {
-			form.setFieldValue("creator", nextMetadata.creator);
+		form.setFieldValue("title", resolvedTitle);
+		setMetadataQuery(resolvedTitle);
+		if (resolvedCreator) {
+			form.setFieldValue("creator", resolvedCreator);
 		}
-		if (nextMetadata.year) {
-			form.setFieldValue("year", String(nextMetadata.year));
+		if (resolvedYear) {
+			form.setFieldValue("year", String(resolvedYear));
 		}
 
 		const total = getTotalFromMetadata(nextMetadata);

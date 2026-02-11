@@ -329,6 +329,7 @@ async function getAnilistDetails(
 			media.title.native ??
 			undefined,
 		creator: getAnilistCreator(media, obraType),
+		year: media.startDate?.year ?? undefined,
 		coverUrl: media.coverImage?.extraLarge ?? media.coverImage?.large,
 		season: media.season ?? undefined,
 		seasonYear: media.seasonYear ?? undefined,
@@ -839,6 +840,9 @@ interface AnilistDetailsResponse {
 				extraLarge?: string;
 				large?: string;
 			};
+			startDate?: {
+				year?: number;
+			};
 			studios?: {
 				nodes?: Array<{
 					name?: string;
@@ -979,6 +983,9 @@ query ($id: Int) {
     coverImage {
       extraLarge
       large
+    }
+    startDate {
+      year
     }
     studios(isMain: true) {
       nodes {
