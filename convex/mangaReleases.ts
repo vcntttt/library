@@ -390,9 +390,7 @@ function buildNotificationPayload(
   const chapter = snapshot.latestChapter
   if (chapter === undefined) return null
 
-  const preferredUrl = snapshot.mangaPlusTitleId
-    ? `https://mangaplus.shueisha.co.jp/titles/${snapshot.mangaPlusTitleId}`
-    : snapshot.siteUrl
+  const preferredUrl = normalizeReadingUrl(obra.readingUrl)
 
   return {
     type: 'manga.release',
@@ -405,6 +403,14 @@ function buildNotificationPayload(
     url: preferredUrl,
     detectedAt: Date.now(),
   }
+}
+
+function normalizeReadingUrl(value?: string) {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
 }
 
 function assertManualToken(token: string) {
@@ -461,8 +467,15 @@ async function runReleaseCheck(
     const payload = buildNotificationPayload(manga, snapshot)
     if (!payload) continue
 
-    const lastNotified = manga.metadata?.lastNotifiedChapter ?? 0
-    if (!options.forceNotify && payload.chapter <= lastNotified) continue
+    const lastNotified = manga.metadata?.lastNotifiedChapter
+    const knownLatest = manga.metadata?.latestChapter
+    const knownChapters = manga.metadata?.chapters
+    const knownBaseline = Math.max(
+      lastNotified ?? 0,
+      knownLatest ?? 0,
+      knownChapters ?? 0,
+    )
+    if (!options.forceNotify && payload.chapter <= knownBaseline) continue
 
     const enqueueResult = (await ctx.runMutation(
       internal.mangaReleases.enqueueReleaseNotification,
