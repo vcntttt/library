@@ -1,6 +1,5 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
@@ -39,6 +38,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { useMutation, useQuery } from "@/lib/api/client";
+import { api } from "@/lib/api/definitions";
 import { authClient } from "@/lib/auth-client";
 import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
 import type {
@@ -49,7 +50,6 @@ import type {
 import { obraFromDoc } from "@/lib/obras";
 import type { ObraId, ObraStatus, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { api } from "../../../convex/_generated/api";
 
 const statusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",

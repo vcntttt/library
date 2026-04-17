@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { BibliotecaTable } from "@/components/biblioteca-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@/lib/api/client";
+import { api } from "@/lib/api/definitions";
 import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
-import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/biblioteca")({
 	ssr: false,

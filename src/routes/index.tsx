@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { LayoutGrid, List } from "lucide-react";
 import { useState } from "react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
@@ -7,10 +6,11 @@ import { DashboardSection } from "@/components/dashboard-section";
 import { StatusIcons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@/lib/api/client";
+import { api } from "@/lib/api/definitions";
 import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
 import { cn } from "@/lib/utils";
-import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/")({
 	ssr: false,

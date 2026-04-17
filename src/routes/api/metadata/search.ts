@@ -1,12 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getTokenFromRequest } from "@/lib/auth-server";
+import { requireSessionFromRequest } from "@/lib/auth-server";
 import { providerByType, searchMetadata } from "@/lib/metadata/providers";
 import type { MetadataSource } from "@/lib/metadata/types";
+import { json, jsonError } from "@/lib/server/http";
+import { ensureAppRuntimeStarted } from "@/lib/server/runtime";
 import type { ObraType } from "@/lib/types";
-
-const jsonHeaders = {
-	"Content-Type": "application/json",
-};
 
 const obraTypes = ["book", "movie", "series", "anime", "manga"] as const;
 const metadataSources = [
@@ -26,64 +24,18 @@ export const Route = createFileRoute("/api/metadata/search")({
 	server: {
 		handlers: {
 			GET: async ({ request }) => {
-				const debugId = crypto.randomUUID();
-				const requestUrl = new URL(request.url);
-				const cookieHeader = request.headers.get("cookie") ?? "";
-				const authDebug = {
-					debugId,
-					path: requestUrl.pathname,
-					hasCookie: Boolean(cookieHeader),
-					hasSessionCookie:
-						cookieHeader.includes("better-auth.session_token") ||
-						cookieHeader.includes("__Secure-better-auth.session_token"),
-					hasJwtCookie:
-						cookieHeader.includes("better-auth.jwt") ||
-						cookieHeader.includes("__Secure-better-auth.jwt"),
-					hasAuthorization: Boolean(request.headers.get("authorization")),
-					host: request.headers.get("host"),
-					xForwardedHost: request.headers.get("x-forwarded-host"),
-					xForwardedProto: request.headers.get("x-forwarded-proto"),
-					origin: request.headers.get("origin"),
-				};
-
-				let token: string | undefined;
+				ensureAppRuntimeStarted();
 				try {
-					token = await getTokenFromRequest(request);
-				} catch (error) {
-					console.error("[api/metadata/search] getToken failed", {
-						...authDebug,
-						error: error instanceof Error ? error.message : String(error),
-					});
-					return new Response(
-						JSON.stringify({
-							error: "No autorizado.",
-							debugId,
-							reason: "token_fetch_failed",
-						}),
-						{ status: 401, headers: jsonHeaders },
-					);
+					await requireSessionFromRequest(request);
+				} catch {
+					return jsonError("No autorizado.", 401);
 				}
 
-				if (!token) {
-					console.error("[api/metadata/search] missing auth token", authDebug);
-					return new Response(
-						JSON.stringify({
-							error: "No autorizado.",
-							debugId,
-							reason: "token_missing",
-						}),
-						{ status: 401, headers: jsonHeaders },
-					);
-				}
-
-				const url = requestUrl;
+				const url = new URL(request.url);
 				const query = url.searchParams.get("q")?.trim() ?? "";
 				const typeParam = url.searchParams.get("type")?.trim() ?? "";
 				if (!query || !typeParam || !isObraType(typeParam)) {
-					return new Response(
-						JSON.stringify({ error: "Parametros invalidos." }),
-						{ status: 400, headers: jsonHeaders },
-					);
+					return jsonError("Parametros invalidos.");
 				}
 
 				const providerParam = url.searchParams.get("provider")?.trim() ?? "";
@@ -93,27 +45,17 @@ export const Route = createFileRoute("/api/metadata/search")({
 						: null
 					: providerByType[typeParam];
 				if (!provider) {
-					return new Response(JSON.stringify({ error: "Provider invalido." }), {
-						status: 400,
-						headers: jsonHeaders,
-					});
+					return jsonError("Provider invalido.");
 				}
 
 				try {
 					const results = await searchMetadata(provider, query, typeParam);
-					return new Response(JSON.stringify({ provider, results }), {
-						status: 200,
-						headers: jsonHeaders,
-					});
+					return json({ provider, results });
 				} catch (error) {
-					return new Response(
-						JSON.stringify({
-							error:
-								error instanceof Error
-									? error.message
-									: "No se pudo consultar metadatos.",
-						}),
-						{ status: 400, headers: jsonHeaders },
+					return jsonError(
+						error instanceof Error
+							? error.message
+							: "No se pudo consultar metadatos.",
 					);
 				}
 			},

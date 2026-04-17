@@ -1,5 +1,4 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "convex/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +19,13 @@ import {
 	SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useMutation } from "@/lib/api/client";
+import { api } from "@/lib/api/definitions";
 import type {
 	MetadataDetails,
 	MetadataSearchResult,
 } from "@/lib/metadata/types";
 import type { ObraStatus, ObraType } from "@/lib/types";
-import { api } from "../../convex/_generated/api";
 import { Plus } from "./icons";
 
 const obraTypes: { value: ObraType; label: string }[] = [

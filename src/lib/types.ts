@@ -4,7 +4,40 @@ export type ObraType = "book" | "movie" | "series" | "anime" | "manga";
 
 export type ObraStatus = "backlog" | "in-progress" | "finished" | "dropped";
 
-export type ObraId = import("../../convex/_generated/dataModel").Id<"obras">;
+export type MangaChapterSource = "manga-plus" | "mangadex" | "anilist";
+
+export type ObraId = string;
+
+export interface ObraMetadata {
+	pages?: number;
+	seasons?: number;
+	episodes?: number;
+	episodesAired?: number;
+	nextEpisodeDate?: number;
+	status?: string;
+	chapters?: number;
+	volumes?: number;
+	season?: string;
+	seasonYear?: number;
+	runtime?: number;
+	watchProviders?: string[];
+	latestChapter?: number;
+	latestChapterSource?: MangaChapterSource;
+	latestChapterCheckedAt?: number;
+	lastNotifiedChapter?: number;
+	mangaPlusTitleId?: string;
+	mangaDexId?: string;
+}
+
+export interface ObraProgress {
+	current: number;
+	total: number;
+}
+
+export interface ExternalReference {
+	source: MetadataSource;
+	id: string;
+}
 
 export interface Obra {
 	id: ObraId;
@@ -13,44 +46,55 @@ export interface Obra {
 	status: ObraStatus;
 	review?: string;
 	tags: string[];
-	notes?: string; // markdown
+	notes?: string;
 	obsidianPath?: string;
 	readingUrl?: string;
 	coverUrl?: string;
-	creator?: string; // author, director, studio
+	creator?: string;
 	year?: number;
-	external?: {
-		source: MetadataSource;
-		id: string;
-	};
-	metadata?: {
-		pages?: number;
-		seasons?: number;
-		episodes?: number;
-		episodesAired?: number;
-		nextEpisodeDate?: number;
-		status?: string;
-		chapters?: number;
-		volumes?: number;
-		season?: string;
-		seasonYear?: number;
-		runtime?: number;
-		watchProviders?: string[];
-		latestChapter?: number;
-		latestChapterSource?: "manga-plus" | "mangadex" | "anilist";
-		latestChapterCheckedAt?: number;
-		lastNotifiedChapter?: number;
-		mangaPlusTitleId?: string;
-		mangaDexId?: string;
-	};
-	// Progress tracking
-	progress?: {
-		current: number;
-		total: number;
-	};
-	// Dates
+	external?: ExternalReference;
+	metadata?: ObraMetadata;
+	progress?: ObraProgress;
 	startedAt?: number;
 	finishedAt?: number;
 	createdAt: number;
 	updatedAt: number;
+}
+
+export interface CreateObraInput {
+	title: string;
+	type: ObraType;
+	status: ObraStatus;
+	review?: string;
+	tags?: string[];
+	notes?: string;
+	obsidianPath?: string;
+	readingUrl?: string;
+	external?: ExternalReference;
+	metadata?: ObraMetadata;
+	coverUrl?: string;
+	creator?: string;
+	year?: number;
+	progress?: ObraProgress;
+	startedAt?: number;
+	finishedAt?: number;
+}
+
+export interface UpdateObraPatch {
+	title?: string;
+	type?: ObraType;
+	status?: ObraStatus;
+	review?: string;
+	tags?: string[];
+	notes?: string;
+	obsidianPath?: string;
+	readingUrl?: string;
+	external?: ExternalReference;
+	metadata?: ObraMetadata;
+	coverUrl?: string;
+	creator?: string;
+	year?: number;
+	progress?: ObraProgress;
+	startedAt?: number;
+	finishedAt?: number;
 }
