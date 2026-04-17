@@ -1,29 +1,15 @@
-import { convexBetterAuthReactStart } from "@convex-dev/better-auth/react-start";
-import { getToken as getTokenFromHeaders } from "@convex-dev/better-auth/utils";
-import { env } from "@/env";
+import { auth } from "@/lib/server/auth";
 
-export const {
-	handler,
-	getToken,
-	fetchAuthQuery,
-	fetchAuthMutation,
-	fetchAuthAction,
-} = convexBetterAuthReactStart({
-	convexUrl: env.VITE_CONVEX_URL,
-	convexSiteUrl: env.VITE_CONVEX_SITE_URL,
-});
+export const handler = (request: Request) => auth.handler(request);
 
-export const getTokenFromRequest = async (request: Request) => {
-	const forwardedHeaders = new Headers();
-	const cookie = request.headers.get("cookie");
-	if (cookie) {
-		forwardedHeaders.set("cookie", cookie);
+export const getSessionFromRequest = (request: Request) =>
+	auth.api.getSession({ headers: request.headers });
+
+export async function requireSessionFromRequest(request: Request) {
+	const session = await getSessionFromRequest(request);
+	if (!session) {
+		throw new Error("No autorizado.");
 	}
 
-	const { token } = await getTokenFromHeaders(
-		env.VITE_CONVEX_SITE_URL,
-		forwardedHeaders,
-	);
-
-	return token;
-};
+	return session;
+}

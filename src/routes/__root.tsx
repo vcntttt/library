@@ -1,15 +1,9 @@
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { ConvexReactClient } from "convex/react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { env } from "@/env";
-import { authClient } from "@/lib/auth-client";
+import { getQueryClient } from "@/lib/query-client";
 import Header from "../components/Header";
 import appCss from "../styles.css?url";
-
-const convex = new ConvexReactClient(env.VITE_CONVEX_URL, {
-	expectAuth: true,
-});
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -50,18 +44,20 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const queryClient = getQueryClient();
+
 	return (
 		<html lang="es" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>
 			<body suppressHydrationWarning>
-				<ConvexBetterAuthProvider authClient={authClient} client={convex}>
+				<QueryClientProvider client={queryClient}>
 					<ThemeProvider>
 						<Header />
 						{children}
 					</ThemeProvider>
-				</ConvexBetterAuthProvider>
+				</QueryClientProvider>
 				<Scripts />
 			</body>
 		</html>
