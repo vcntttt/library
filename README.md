@@ -23,7 +23,7 @@ No es una red social: no hay feeds, recomendaciones, algoritmos ni perfiles publ
 - Uso rapido (registrar algo no debe generar friccion)
 - Markdown como base (texto plano, compatible con Obsidian)
 
-Nota: el prototipo actual esta construido sobre Convex (cloud) para iterar rapido. El foco es mantener la experiencia privada via autenticacion y control de acceso.
+Nota: la app ahora corre sobre PostgreSQL local con Better Auth y una API propia en TanStack Start. El foco sigue siendo privacidad, control de acceso y cero dependencia de servicios cloud para el backend.
 
 ## Funcionalidades (concepto + prototipo)
 
@@ -69,8 +69,9 @@ Estado actual: el modelo ya contempla `notes`/`review`, pero la UI todavia es ba
 
 - React + TanStack Router (file-based en `src/routes`)
 - Vite
-- Convex (backend)
-- Better Auth (auth) + Convex Better Auth
+- TanStack Start server routes (backend)
+- PostgreSQL + Drizzle ORM
+- Better Auth (auth)
 - Tailwind CSS + shadcn/ui
 - Vitest (tests)
 - Biome (lint/format)
@@ -78,7 +79,7 @@ Estado actual: el modelo ya contempla `notes`/`review`, pero la UI todavia es ba
 ## Privacidad y acceso
 
 - La app es privada: requiere login.
-- Auth: Better Auth integrado con Convex.
+- Auth: Better Auth sobre PostgreSQL.
 - Objetivo: que cada usuario vea solo sus datos (multi-usuario real) o, alternativamente, modo single-user con sign-up deshabilitado. Esto se decide al aterrizar el modelo de acceso.
 
 ## Desarrollo local
@@ -89,24 +90,48 @@ Instalar deps:
 bun install
 ```
 
-Levantar web + Convex en paralelo:
+Levantar la app:
 
 ```bash
 bun run dev
 ```
 
-### Variables de entorno (Convex)
+`bun run dev` ahora:
 
-Configurar en `.env.local`:
+- levanta el PostgreSQL compartido de `~/dev/postgres`
+- aplica migraciones de Drizzle
+- arranca Vite en `http://localhost:3000`
 
-- `VITE_CONVEX_URL`
-- `CONVEX_DEPLOYMENT`
+La DB local ya no vive en este repo. Se espera un PostgreSQL compartido corriendo en `~/dev/postgres`.
 
-Cuando se integre Better Auth, tambien se usa:
+### Variables de entorno
 
-- `VITE_CONVEX_SITE_URL` (Convex HTTP Actions URL; termina en `.convex.site`)
+Configurar en `.env.local` o copiar desde `.env.example`:
 
-Atajo: `npx convex init` puede setearlas automaticamente.
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `VITE_SITE_URL`
+- `OBSIDIAN_VAULT_PATH`
+- `TMDB_API_KEY`
+- `ALFRED_NOTIFY_SECRET`
+- `ALFRED_NOTIFY_URL`
+
+Opcional:
+
+- `MANGA_RELEASE_WORKER_INTERVAL_MS`
+
+### PostgreSQL local
+
+La base local corre en el stack compartido `~/dev/postgres` usando estas credenciales por defecto:
+
+- host: `127.0.0.1`
+- puerto: `5432`
+- db: `library`
+- user: `postgres`
+- password: `postgres`
+
+`bun run db:down` apaga esa instancia compartida completa, no solo esta app.
 
 ## Scripts
 
@@ -117,6 +142,11 @@ bun run test
 bun run lint
 bun run format
 bun run check
+bun run db:up
+bun run db:down
+bun run db:logs
+bun run db:generate
+bun run db:migrate
 ```
 
 ## Filosofia de datos (direccion)
@@ -125,7 +155,7 @@ bun run check
 - Markdown guarda pensamiento
 - Datos exportables, respaldables y legibles por humanos (sin lock-in)
 
-Nota: el concepto original contemplaba SQLite + archivos Markdown. Hoy priorizamos Convex para velocidad; export/import a Markdown queda como objetivo para evitar lock-in.
+Nota: el concepto original contemplaba SQLite + archivos Markdown. Hoy priorizamos PostgreSQL local para mantener estructura y consultas fuertes sin lock-in cloud; export/import a Markdown sigue siendo objetivo.
 
 ## No-objetivos
 
@@ -140,7 +170,7 @@ Prototipo inicial, en evolucion constante como sistema personal.
 
 ## Roadmap (corto)
 
-- Autenticacion (Better Auth) + proteccion de funciones Convex
+- Autenticacion (Better Auth) + proteccion de rutas/API
 - UI de notas Markdown + review
 - Progreso editable (current/total) y fechas (inicio/termino)
 - Etiquetas/filtros mas potentes
