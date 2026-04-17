@@ -13,10 +13,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
+import { Route as ApiObrasRouteImport } from './routes/api/obras'
 import { Route as ApiObsidianOpenRouteImport } from './routes/api/obsidian/open'
+import { Route as ApiObrasObraIdRouteImport } from './routes/api/obras/$obraId'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
+import { Route as InternalAlfredNotificationsAckRouteImport } from './routes/internal/alfred/notifications/ack'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -38,10 +42,20 @@ const ObraObraIdRoute = ObraObraIdRouteImport.update({
   path: '/obra/$obraId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiObrasRoute = ApiObrasRouteImport.update({
+  id: '/api/obras',
+  path: '/api/obras',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiObsidianOpenRoute = ApiObsidianOpenRouteImport.update({
   id: '/api/obsidian/open',
   path: '/api/obsidian/open',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiObrasObraIdRoute = ApiObrasObraIdRouteImport.update({
+  id: '/$obraId',
+  path: '/$obraId',
+  getParentRoute: () => ApiObrasRoute,
 } as any)
 const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
   id: '/api/metadata/search',
@@ -58,37 +72,61 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InternalAlfredNotificationsPullRoute =
+  InternalAlfredNotificationsPullRouteImport.update({
+    id: '/internal/alfred/notifications/pull',
+    path: '/internal/alfred/notifications/pull',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const InternalAlfredNotificationsAckRoute =
+  InternalAlfredNotificationsAckRouteImport.update({
+    id: '/internal/alfred/notifications/ack',
+    path: '/internal/alfred/notifications/ack',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/login': typeof LoginRoute
+  '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/api/obsidian/open': typeof ApiObsidianOpenRoute
+  '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
+  '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/login': typeof LoginRoute
+  '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/api/obsidian/open': typeof ApiObsidianOpenRoute
+  '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
+  '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/login': typeof LoginRoute
+  '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/api/obsidian/open': typeof ApiObsidianOpenRoute
+  '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
+  '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,42 +134,57 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/login'
+    | '/api/obras'
     | '/obra/$obraId'
     | '/api/auth/$'
     | '/api/metadata/details'
     | '/api/metadata/search'
+    | '/api/obras/$obraId'
     | '/api/obsidian/open'
+    | '/internal/alfred/notifications/ack'
+    | '/internal/alfred/notifications/pull'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/biblioteca'
     | '/login'
+    | '/api/obras'
     | '/obra/$obraId'
     | '/api/auth/$'
     | '/api/metadata/details'
     | '/api/metadata/search'
+    | '/api/obras/$obraId'
     | '/api/obsidian/open'
+    | '/internal/alfred/notifications/ack'
+    | '/internal/alfred/notifications/pull'
   id:
     | '__root__'
     | '/'
     | '/biblioteca'
     | '/login'
+    | '/api/obras'
     | '/obra/$obraId'
     | '/api/auth/$'
     | '/api/metadata/details'
     | '/api/metadata/search'
+    | '/api/obras/$obraId'
     | '/api/obsidian/open'
+    | '/internal/alfred/notifications/ack'
+    | '/internal/alfred/notifications/pull'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BibliotecaRoute: typeof BibliotecaRoute
   LoginRoute: typeof LoginRoute
+  ApiObrasRoute: typeof ApiObrasRouteWithChildren
   ObraObraIdRoute: typeof ObraObraIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
   ApiObsidianOpenRoute: typeof ApiObsidianOpenRoute
+  InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
+  InternalAlfredNotificationsPullRoute: typeof InternalAlfredNotificationsPullRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,12 +217,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ObraObraIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/obras': {
+      id: '/api/obras'
+      path: '/api/obras'
+      fullPath: '/api/obras'
+      preLoaderRoute: typeof ApiObrasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/obsidian/open': {
       id: '/api/obsidian/open'
       path: '/api/obsidian/open'
       fullPath: '/api/obsidian/open'
       preLoaderRoute: typeof ApiObsidianOpenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/obras/$obraId': {
+      id: '/api/obras/$obraId'
+      path: '/$obraId'
+      fullPath: '/api/obras/$obraId'
+      preLoaderRoute: typeof ApiObrasObraIdRouteImport
+      parentRoute: typeof ApiObrasRoute
     }
     '/api/metadata/search': {
       id: '/api/metadata/search'
@@ -192,18 +259,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/internal/alfred/notifications/pull': {
+      id: '/internal/alfred/notifications/pull'
+      path: '/internal/alfred/notifications/pull'
+      fullPath: '/internal/alfred/notifications/pull'
+      preLoaderRoute: typeof InternalAlfredNotificationsPullRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/internal/alfred/notifications/ack': {
+      id: '/internal/alfred/notifications/ack'
+      path: '/internal/alfred/notifications/ack'
+      fullPath: '/internal/alfred/notifications/ack'
+      preLoaderRoute: typeof InternalAlfredNotificationsAckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface ApiObrasRouteChildren {
+  ApiObrasObraIdRoute: typeof ApiObrasObraIdRoute
+}
+
+const ApiObrasRouteChildren: ApiObrasRouteChildren = {
+  ApiObrasObraIdRoute: ApiObrasObraIdRoute,
+}
+
+const ApiObrasRouteWithChildren = ApiObrasRoute._addFileChildren(
+  ApiObrasRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
   LoginRoute: LoginRoute,
+  ApiObrasRoute: ApiObrasRouteWithChildren,
   ObraObraIdRoute: ObraObraIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
   ApiObsidianOpenRoute: ApiObsidianOpenRoute,
+  InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,
+  InternalAlfredNotificationsPullRoute: InternalAlfredNotificationsPullRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
