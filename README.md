@@ -149,6 +149,28 @@ bun run db:generate
 bun run db:migrate
 ```
 
+## Producción
+
+Para deploy en Dokploy ahora necesitás un PostgreSQL accesible desde la app y estas variables en el entorno de runtime:
+
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `VITE_SITE_URL`
+- `OBSIDIAN_VAULT_PATH`
+- `TMDB_API_KEY`
+- `ALFRED_NOTIFY_SECRET`
+- `ALFRED_NOTIFY_URL`
+- `MANGA_RELEASE_WORKER_INTERVAL_MS` opcional
+
+Variables viejas para eliminar del deploy:
+
+- `VITE_CONVEX_URL`
+- `VITE_CONVEX_SITE_URL`
+- cualquier `CONVEX_*`
+
+La imagen ahora corre `Drizzle` migrations al arrancar antes de levantar el server. Eso significa que Dokploy solo tiene que construir y arrancar el contenedor con los env vars correctos; ya no hay un paso separado de Convex.
+
 ## Filosofia de datos (direccion)
 
 - La base de datos guarda estructura

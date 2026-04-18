@@ -14,9 +14,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+COPY bun.lock package.json ./
+RUN bun install --production --frozen-lockfile
+
 COPY --from=build /app/.output ./.output
+COPY drizzle ./drizzle
+COPY scripts ./scripts
 
 EXPOSE 3000
 
-CMD ["bun", ".output/server/index.mjs"]
-
+CMD ["sh", "./scripts/start.sh"]

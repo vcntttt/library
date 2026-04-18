@@ -17,9 +17,6 @@ DOKPLOY_BASE_URL="${DOKPLOY_BASE_URL:-}"
 DOKPLOY_API_KEY="${DOKPLOY_API_KEY:-}"
 DOKPLOY_APP_ID="${DOKPLOY_APP_ID:-}"
 
-# Convex
-CONVEX_CMD="${CONVEX_CMD:-bunx convex deploy}"
-
 # Git
 GIT_REMOTE="${GIT_REMOTE:-origin}"
 BRANCH="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
@@ -44,8 +41,6 @@ require_cmd() {
 require_cmd git
 require_cmd curl
 require_cmd jq
-require_cmd bunx
-
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "No estás dentro de un repo git."
 
 [[ -n "$DOKPLOY_BASE_URL" ]] || die "Falta DOKPLOY_BASE_URL. Definila en .env o exportala."
@@ -64,14 +59,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 # =========================
-# 1) Convex deploy
-# =========================
-info "Convex: $CONVEX_CMD"
-eval "$CONVEX_CMD"
-ok "Convex deploy listo"
-
-# =========================
-# 2) Git push
+# 1) Git push
 # =========================
 # Si no hay upstream, lo seteamos al remoto/branch
 UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null || true)"
@@ -86,7 +74,7 @@ fi
 ok "Git push listo"
 
 # =========================
-# 3) Trigger Dokploy deploy
+# 2) Trigger Dokploy deploy
 # =========================
 info "Dokploy deploy: appId=$DOKPLOY_APP_ID"
 RESP="$(curl -sS -X POST \
