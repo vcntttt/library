@@ -21,7 +21,7 @@ No es una red social: no hay feeds, recomendaciones, algoritmos ni perfiles publ
 - Modelo unificado (una sola entidad: "Obra" con distintos tipos)
 - Reflexion sobre metricas (las notas importan mas que los numeros)
 - Uso rapido (registrar algo no debe generar friccion)
-- Markdown como base (texto plano, compatible con Obsidian)
+- Texto libre como base para notas y reflexion
 
 Nota: la app ahora corre sobre PostgreSQL local con Better Auth y una API propia en TanStack Start. El foco sigue siendo privacidad, control de acceso y cero dependencia de servicios cloud para el backend.
 
@@ -53,7 +53,7 @@ Campos comunes:
 
 ### Notas
 
-- Notas libres por obra en Markdown
+- Notas libres por obra
 - Citas/highlights y reflexiones personales
 - Pensado para exportar/importar facilmente
 
@@ -63,7 +63,7 @@ Estado actual: el modelo ya contempla `notes`/`review`, pero la UI todavia es ba
 
 - Dashboard: en progreso, recientes, backlog
 - Biblioteca: tabla tipo Notion con filtros y columnas ordenables
-- Detalle de obra: metadatos, controles de progreso, editor Markdown
+- Detalle de obra: metadatos, controles de progreso, editor de texto
 
 ## Stack (este repo)
 
@@ -112,7 +112,6 @@ Configurar en `.env.local` o copiar desde `.env.example`:
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 - `VITE_SITE_URL`
-- `OBSIDIAN_VAULT_PATH`
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
@@ -157,7 +156,6 @@ Para deploy en Dokploy ahora necesitás un PostgreSQL accesible desde la app y e
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 - `VITE_SITE_URL`
-- `OBSIDIAN_VAULT_PATH`
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
@@ -174,10 +172,10 @@ La imagen ahora corre `Drizzle` migrations al arrancar antes de levantar el serv
 ## Filosofia de datos (direccion)
 
 - La base de datos guarda estructura
-- Markdown guarda pensamiento
+- El texto libre guarda pensamiento
 - Datos exportables, respaldables y legibles por humanos (sin lock-in)
 
-Nota: el concepto original contemplaba SQLite + archivos Markdown. Hoy priorizamos PostgreSQL local para mantener estructura y consultas fuertes sin lock-in cloud; export/import a Markdown sigue siendo objetivo.
+Nota: el concepto original contemplaba SQLite + archivos locales. Hoy priorizamos PostgreSQL local para mantener estructura y consultas fuertes sin lock-in cloud; export/import estructurado sigue siendo una posibilidad futura.
 
 ## No-objetivos
 
@@ -193,7 +191,7 @@ Prototipo inicial, en evolucion constante como sistema personal.
 ## Roadmap (corto)
 
 - Autenticacion (Better Auth) + proteccion de rutas/API
-- UI de notas Markdown + review
+- UI de notas y review
 - Progreso editable (current/total) y fechas (inicio/termino)
 - Etiquetas/filtros mas potentes
-- Export/import a carpeta Markdown (Obsidian-friendly)
+- Export/import de datos estructurados
