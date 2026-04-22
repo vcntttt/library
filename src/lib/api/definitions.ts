@@ -10,6 +10,8 @@ export interface QueryDescriptor<TArgs, TData> {
 	kind: "query";
 	path: (args: TArgs) => string;
 	queryKey: (args: TArgs) => readonly unknown[];
+	refetchInterval?: number;
+	refetchIntervalInBackground?: boolean;
 	__response?: TData;
 }
 
@@ -69,11 +71,15 @@ export const api = {
 			kind: "query",
 			path: (args: ListObrasArgs) => withSearchParams("/api/obras", args),
 			queryKey: (args: ListObrasArgs) => ["obras", "list", args] as const,
+			refetchInterval: 15_000,
+			refetchIntervalInBackground: true,
 		}),
 		get: defineQuery<GetObraArgs, Obra | null>({
 			kind: "query",
 			path: ({ id }: GetObraArgs) => `/api/obras/${id}`,
 			queryKey: ({ id }: GetObraArgs) => ["obras", "detail", id] as const,
+			refetchInterval: 15_000,
+			refetchIntervalInBackground: true,
 		}),
 		create: defineMutation<CreateObraInput, Obra>({
 			kind: "mutation",

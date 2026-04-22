@@ -159,9 +159,6 @@ function VariantA() {
 						<h1 className="font-serif text-2xl font-semibold tracking-tight">
 							Biblioteca
 						</h1>
-						<span className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
-							Archivo personal
-						</span>
 					</div>
 					<nav className="flex gap-8">
 						{(

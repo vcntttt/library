@@ -1,4 +1,5 @@
 import type { Obra } from "@/lib/types";
+import { formatDateShort } from "@/lib/utils";
 
 const statusLabels: Record<string, string> = {
 	"Returning Series": "En emisión",
@@ -109,9 +110,7 @@ export const getMangaReleaseSummary = (obra: Obra) => {
 	}
 	if (metadata?.latestChapterCheckedAt) {
 		parts.push(
-			`Última verificación ${new Date(
-				metadata.latestChapterCheckedAt,
-			).toLocaleString()}`,
+			`Última verificación ${formatDateShort(metadata.latestChapterCheckedAt)}`,
 		);
 	}
 

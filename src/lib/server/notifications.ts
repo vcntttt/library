@@ -176,15 +176,11 @@ export async function ackNotificationEvent(
 	});
 
 	if (obra) {
-		const metadata: ObraMetadata = {
-			...(obra.metadata ?? {}),
-			lastNotifiedChapter: event.chapter,
-			latestChapter:
-				typeof obra.metadata?.latestChapter === "number"
-					? Math.max(obra.metadata.latestChapter, event.chapter)
-					: event.chapter,
-			latestChapterCheckedAt: obra.metadata?.latestChapterCheckedAt ?? now,
-		};
+		const metadata = mergeAcknowledgedMangaMetadata(
+			obra.metadata ?? undefined,
+			event.chapter,
+			now,
+		);
 
 		await db
 			.update(obras)
@@ -276,4 +272,24 @@ function mergeMangaMetadata(
 	}
 
 	return merged;
+}
+
+export function mergeAcknowledgedMangaMetadata(
+	existing: ObraMetadata | undefined,
+	chapter: number,
+	now: number,
+): ObraMetadata {
+	const nextChapter = Math.max(
+		typeof existing?.latestChapter === "number" ? existing.latestChapter : 0,
+		typeof existing?.chapters === "number" ? existing.chapters : 0,
+		chapter,
+	);
+
+	return {
+		...(existing ?? {}),
+		chapters: nextChapter,
+		latestChapter: nextChapter,
+		lastNotifiedChapter: chapter,
+		latestChapterCheckedAt: existing?.latestChapterCheckedAt ?? now,
+	};
 }

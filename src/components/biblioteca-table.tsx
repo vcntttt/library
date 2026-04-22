@@ -154,16 +154,16 @@ export function BibliotecaTable({
 
 	return (
 		<div className="space-y-6">
-			<div className="border border-[#D6D0C7] bg-white p-4">
+			<div className="border border-border bg-card p-4">
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 					<div className="relative w-full lg:max-w-md">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C8279]" />
+						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							aria-label="Buscar obras"
 							placeholder="Buscar por título, autor o etiqueta..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="pl-9 border-[#D6D0C7] bg-[#F5F2EB] rounded-none shadow-none focus-visible:ring-[#B85C38]"
+							className="pl-9 border-border bg-background rounded-none shadow-none focus-visible:ring-primary"
 						/>
 					</div>
 					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
@@ -171,7 +171,7 @@ export function BibliotecaTable({
 							value={typeFilter}
 							onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
 						>
-							<SelectTrigger className="w-full border-[#D6D0C7] bg-[#F5F2EB] rounded-none shadow-none sm:w-[220px]">
+							<SelectTrigger className="w-full border-border bg-background rounded-none shadow-none sm:w-[220px]">
 								<span className="truncate">{typeLabels[typeFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -187,7 +187,7 @@ export function BibliotecaTable({
 							value={statusFilter}
 							onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
 						>
-							<SelectTrigger className="w-full border-[#D6D0C7] bg-[#F5F2EB] rounded-none shadow-none sm:w-[220px]">
+							<SelectTrigger className="w-full border-border bg-background rounded-none shadow-none sm:w-[220px]">
 								<span className="truncate">{statusLabels[statusFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -198,15 +198,15 @@ export function BibliotecaTable({
 								<SelectItem value="dropped">Abandonada</SelectItem>
 							</SelectContent>
 						</Select>
-						<div className="inline-flex w-full items-center overflow-hidden border border-[#D6D0C7] bg-white sm:w-auto">
+						<div className="inline-flex w-full items-center overflow-hidden border border-border bg-card sm:w-auto">
 							<Button
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-10 flex-1 rounded-none border-r border-[#D6D0C7] px-3 text-xs sm:flex-none",
+									"h-10 flex-1 rounded-none border-r border-border px-3 text-xs sm:flex-none",
 									view === "list"
-										? "bg-[#1A1A1A] text-[#F5F2EB]"
-										: "text-[#8C8279] hover:bg-[#EDE9E1] hover:text-[#1A1A1A]",
+										? "bg-foreground text-background"
+										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
 								onClick={() => setView("list")}
 							>
@@ -219,8 +219,8 @@ export function BibliotecaTable({
 								className={cn(
 									"h-10 flex-1 rounded-none px-3 text-xs sm:flex-none",
 									view === "grid"
-										? "bg-[#1A1A1A] text-[#F5F2EB]"
-										: "text-[#8C8279] hover:bg-[#EDE9E1] hover:text-[#1A1A1A]",
+										? "bg-foreground text-background"
+										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
 								onClick={() => setView("grid")}
 							>
@@ -238,10 +238,7 @@ export function BibliotecaTable({
 						{isLoading ? (
 							<div className="grid gap-3">
 								{MOBILE_LIST_SKELETON_KEYS.map((key) => (
-									<div
-										key={key}
-										className="border border-[#D6D0C7] bg-white p-3"
-									>
+									<div key={key} className="border border-border bg-card p-3">
 										<div className="flex items-start gap-3">
 											<Skeleton className="h-16 w-12 rounded-none" />
 											<div className="min-w-0 flex-1 space-y-2">
@@ -254,11 +251,11 @@ export function BibliotecaTable({
 								))}
 							</div>
 						) : filteredObras.length === 0 ? (
-							<div className="border border-[#D6D0C7] bg-white px-4 py-10 text-center">
-								<p className="text-sm font-medium text-[#1A1A1A]">
+							<div className="border border-border bg-card px-4 py-10 text-center">
+								<p className="text-sm font-medium text-card-foreground">
 									No se encontraron obras
 								</p>
-								<p className="mt-1 text-xs text-[#8C8279]">
+								<p className="mt-1 text-xs text-muted-foreground">
 									Prueba quitando filtros o buscando otro término.
 								</p>
 							</div>
@@ -274,7 +271,7 @@ export function BibliotecaTable({
 													href={readingUrl}
 													target="_blank"
 													rel="noreferrer"
-													className="inline-flex h-9 items-center gap-1.5 border border-[#D6D0C7] bg-white px-3 text-xs text-[#8C8279] transition-colors hover:border-[#B85C38] hover:text-[#1A1A1A]"
+													className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 												>
 													<ExternalLink className="h-3.5 w-3.5" />
 													Ir a leer
@@ -286,44 +283,44 @@ export function BibliotecaTable({
 							</div>
 						)}
 					</div>
-					<div className="hidden border border-[#D6D0C7] bg-white shadow-sm overflow-hidden sm:block">
+					<div className="hidden border border-border bg-card shadow-sm overflow-hidden sm:block">
 						<Table>
 							<TableHeader>
-								<TableRow className="bg-[#EDE9E1] hover:bg-[#EDE9E1]">
-									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279]">
+								<TableRow className="bg-muted hover:bg-muted">
+									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
 										<button
 											type="button"
-											className="inline-flex items-center gap-1 text-left transition-colors hover:text-[#1A1A1A]"
+											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
 											onClick={() => handleSort("title")}
 										>
 											Título
 											{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279]">
+									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
 										<button
 											type="button"
-											className="inline-flex items-center gap-1 text-left transition-colors hover:text-[#1A1A1A]"
+											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
 											onClick={() => handleSort("type")}
 										>
 											Tipo
 											{sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279]">
+									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
 										<button
 											type="button"
-											className="inline-flex items-center gap-1 text-left transition-colors hover:text-[#1A1A1A]"
+											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
 											onClick={() => handleSort("status")}
 										>
 											Estado
 											{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="hidden text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279] sm:table-cell">
+									<TableHead className="hidden text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
 										Etiquetas
 									</TableHead>
-									<TableHead className="text-right text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279]">
+									<TableHead className="text-right text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
 										Leer
 									</TableHead>
 								</TableRow>
@@ -336,8 +333,8 @@ export function BibliotecaTable({
 												<div className="flex items-center gap-3">
 													<Skeleton className="h-12 w-8 rounded-none" />
 													<div className="min-w-0 space-y-2">
-														<Skeleton className="h-4 w-44" />
-														<Skeleton className="h-3 w-28" />
+														<Skeleton className="h-4 w-44 rounded-none" />
+														<Skeleton className="h-3 w-28 rounded-none" />
 													</div>
 												</div>
 											</TableCell>
@@ -365,10 +362,10 @@ export function BibliotecaTable({
 									<TableRow>
 										<TableCell colSpan={5} className="h-24">
 											<div className="text-center">
-												<p className="text-sm font-medium text-[#1A1A1A]">
+												<p className="text-sm font-medium text-card-foreground">
 													No se encontraron obras
 												</p>
-												<p className="mt-1 text-xs text-[#8C8279]">
+												<p className="mt-1 text-xs text-muted-foreground">
 													Prueba quitando filtros o cambiando el orden.
 												</p>
 											</div>
@@ -387,12 +384,12 @@ export function BibliotecaTable({
 										return (
 											<TableRow
 												key={obra.id}
-												className="group transition-colors hover:bg-[#EDE9E1]/50"
+												className="group transition-colors hover:bg-muted/50"
 											>
 												<TableCell>
 													<div className="flex items-center gap-3">
 														{obra.coverUrl && (
-															<div className="h-12 w-8 overflow-hidden bg-[#F5F2EB]">
+															<div className="h-12 w-8 overflow-hidden bg-background">
 																<img
 																	src={obra.coverUrl}
 																	alt={`Portada de ${obra.title}`}
@@ -407,17 +404,17 @@ export function BibliotecaTable({
 																params={{
 																	obraId: obra.id,
 																}}
-																className="font-medium text-[#1A1A1A] hover:text-[#B85C38] transition-colors"
+																className="font-medium text-foreground hover:text-primary transition-colors"
 															>
 																{obra.title}
 															</Link>
 															{obra.creator && (
-																<p className="text-sm text-[#8C8279]">
+																<p className="text-sm text-muted-foreground">
 																	{obra.creator}
 																</p>
 															)}
 															{metaLine && (
-																<p className="text-xs text-[#8C8279]">
+																<p className="text-xs text-muted-foreground">
 																	{metaLine}
 																</p>
 															)}
@@ -464,13 +461,13 @@ export function BibliotecaTable({
 														{obra.tags.slice(0, 2).map((tag: string) => (
 															<span
 																key={tag}
-																className="text-xs text-[#8C8279] border-b border-[#D6D0C7] pb-0.5"
+																className="text-xs text-muted-foreground border-b border-border pb-0.5"
 															>
 																{tag}
 															</span>
 														))}
 														{obra.tags.length > 2 && (
-															<span className="text-xs text-[#8C8279]">
+															<span className="text-xs text-muted-foreground">
 																+{obra.tags.length - 2}
 															</span>
 														)}
@@ -482,13 +479,15 @@ export function BibliotecaTable({
 															href={readingUrl}
 															target="_blank"
 															rel="noreferrer"
-															className="inline-flex h-9 items-center gap-1.5 border border-[#D6D0C7] bg-white px-3 text-xs text-[#8C8279] transition-colors hover:border-[#B85C38] hover:text-[#1A1A1A]"
+															className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 														>
 															<ExternalLink className="h-3.5 w-3.5" />
 															Ir a leer
 														</a>
 													) : (
-														<span className="text-xs text-[#8C8279]">-</span>
+														<span className="text-xs text-muted-foreground">
+															-
+														</span>
 													)}
 												</TableCell>
 											</TableRow>
@@ -506,7 +505,7 @@ export function BibliotecaTable({
 							{GRID_SKELETON_KEYS.map((key) => (
 								<div
 									key={key}
-									className="overflow-hidden border border-[#D6D0C7] bg-white"
+									className="overflow-hidden border border-border bg-card"
 								>
 									<Skeleton className="aspect-[4/5] w-full rounded-none" />
 									<div className="space-y-2 p-3">
@@ -518,11 +517,11 @@ export function BibliotecaTable({
 							))}
 						</div>
 					) : filteredObras.length === 0 ? (
-						<div className="border border-dashed border-[#D6D0C7] bg-white py-10 text-center">
-							<p className="text-sm font-medium text-[#1A1A1A]">
+						<div className="border border-dashed border-border bg-card py-10 text-center">
+							<p className="text-sm font-medium text-card-foreground">
 								No se encontraron obras
 							</p>
-							<p className="mt-1 text-xs text-[#8C8279]">
+							<p className="mt-1 text-xs text-muted-foreground">
 								Prueba con otros filtros o cambia a vista de lista.
 							</p>
 						</div>
@@ -538,7 +537,7 @@ export function BibliotecaTable({
 												href={readingUrl}
 												target="_blank"
 												rel="noreferrer"
-												className="inline-flex h-9 items-center gap-1.5 border border-[#D6D0C7] bg-white px-3 text-xs text-[#8C8279] transition-colors hover:border-[#B85C38] hover:text-[#1A1A1A]"
+												className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 											>
 												<ExternalLink className="h-3.5 w-3.5" />
 												Ir a leer
@@ -552,7 +551,7 @@ export function BibliotecaTable({
 				</div>
 			)}
 
-			<p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279]">
+			<p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
 				{isLoading
 					? "Cargando obras..."
 					: `Mostrando ${filteredObras.length} de ${obras.length} obras`}

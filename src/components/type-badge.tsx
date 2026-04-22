@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 import { TypeIcons } from "./icons";
 
 const typeColors: Record<ObraType, string> = {
-	book: "border-[#3A5A40]/30 text-[#3A5A40] dark:text-[#7AA080]",
-	movie: "border-[#4A4E69]/30 text-[#4A4E69] dark:text-[#8A8EA9]",
-	series: "border-[#BC6C25]/30 text-[#BC6C25]",
-	anime: "border-[#9A3B2E]/30 text-[#9A3B2E]",
-	manga: "border-[#B85C38]/30 text-[#B85C38]",
+	book: "border-emerald-700/30 text-emerald-700 dark:text-emerald-300",
+	movie: "border-slate-700/30 text-slate-700 dark:text-slate-300",
+	series: "border-amber-700/30 text-amber-700 dark:text-amber-300",
+	anime: "border-destructive/30 text-destructive",
+	manga: "border-primary/30 text-primary",
 };
 
 const typeLabels: Record<ObraType, string> = {

@@ -21,11 +21,11 @@ function BibliotecaPage() {
 	if (session === null) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
-				<div className="max-w-lg border border-[#D6D0C7] bg-white p-6 space-y-3">
+				<div className="max-w-lg border border-border bg-card p-6 space-y-3">
 					<h1 className="text-2xl font-semibold tracking-tight font-serif">
 						Biblioteca
 					</h1>
-					<p className="text-sm text-[#8C8279]">
+					<p className="text-sm text-muted-foreground">
 						Inicia sesión para ver tu biblioteca.
 					</p>
 					<Link
@@ -46,7 +46,7 @@ function BibliotecaPageSkeleton() {
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
 			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-[#D6D0C7] pb-4">
+				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-border pb-4">
 					<div className="space-y-3">
 						<Skeleton className="h-3 w-28 rounded-none" />
 						<Skeleton className="h-10 w-56 sm:w-72 rounded-none" />
@@ -71,13 +71,13 @@ function BibliotecaAuthed() {
 			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-[#D6D0C7] pb-4">
 					<div className="space-y-3">
-						<p className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
+						<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
 							Colección completa
 						</p>
 						<h1 className="text-3xl font-semibold tracking-tight font-serif sm:text-4xl">
 							Biblioteca
 						</h1>
-						<p className="text-sm text-[#8C8279]">
+						<p className="text-sm text-muted-foreground">
 							Busca, filtra y ordena todas tus obras.
 						</p>
 					</div>

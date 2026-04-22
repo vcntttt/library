@@ -41,11 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery } from "@/lib/api/client";
 import { api } from "@/lib/api/definitions";
 import { authClient } from "@/lib/auth-client";
-import {
-	getMangaReleaseSummary,
-	isMetadataOngoing,
-	isObraUpToDate,
-} from "@/lib/metadata/format";
+import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
 import type {
 	MetadataDetails,
 	MetadataSearchResult,
@@ -53,7 +49,7 @@ import type {
 } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import type { ObraId, ObraStatus, ObraType } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, formatDateShort } from "@/lib/utils";
 
 const statusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
@@ -193,13 +189,13 @@ function ObraPage() {
 	if (session === null) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
-				<div className="max-w-lg border border-[#D6D0C7] bg-white p-6 space-y-3">
-					<p className="text-sm text-[#8C8279]">
+				<div className="max-w-lg border border-border bg-card p-6 space-y-3">
+					<p className="text-sm text-muted-foreground">
 						Inicia sesión para ver esta obra.
 					</p>
 					<Link
 						to="/login"
-						className="text-sm underline underline-offset-4 text-[#B85C38]"
+						className="text-sm underline underline-offset-4 text-primary"
 					>
 						Ir a login
 					</Link>
@@ -220,7 +216,7 @@ function ObraPageSkeleton() {
 					<Skeleton className="h-8 w-24 rounded-none" />
 				</div>
 
-				<div className="border border-[#D6D0C7] bg-white p-6 space-y-8">
+				<div className="border border-border bg-card p-6 space-y-8">
 					<div className="flex items-start gap-6">
 						<Skeleton className="h-40 w-28 rounded-none shrink-0" />
 						<div className="space-y-3 min-w-0 flex-1">
@@ -233,7 +229,7 @@ function ObraPageSkeleton() {
 						</div>
 					</div>
 
-					<div className="border border-[#D6D0C7] bg-[#F5F2EB] px-5 py-4 space-y-3">
+					<div className="border border-border bg-background px-5 py-4 space-y-3">
 						<div className="flex items-center justify-between">
 							<Skeleton className="h-4 w-24 rounded-none" />
 							<Skeleton className="h-3 w-40 rounded-none" />
@@ -245,7 +241,7 @@ function ObraPageSkeleton() {
 						</div>
 					</div>
 
-					<div className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+					<div className="border border-border bg-card p-5 space-y-4">
 						<Skeleton className="h-4 w-20 rounded-none" />
 						<Skeleton className="h-6 w-32 rounded-none" />
 						<div className="flex items-center gap-3">
@@ -379,11 +375,11 @@ function ObraAuthed({
 	if (doc === null) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
-				<div className="max-w-lg border border-[#D6D0C7] bg-white p-6 space-y-3">
-					<p className="text-sm text-[#8C8279]">Obra no encontrada.</p>
+				<div className="max-w-lg border border-border bg-card p-6 space-y-3">
+					<p className="text-sm text-muted-foreground">Obra no encontrada.</p>
 					<Link
 						to="/biblioteca"
-						className="text-sm underline underline-offset-3 text-[#B85C38]"
+						className="text-sm underline underline-offset-3 text-primary"
 					>
 						Volver a la biblioteca
 					</Link>
@@ -473,7 +469,7 @@ function ObraAuthed({
 		) {
 			metadataItems.push({
 				label: "Próximo episodio",
-				value: new Date(metadata.nextEpisodeDate).toLocaleDateString(),
+				value: formatDateShort(metadata.nextEpisodeDate),
 			});
 		}
 		if (
@@ -492,7 +488,7 @@ function ObraAuthed({
 		if (obra.type === "manga" && metadata.latestChapterCheckedAt) {
 			metadataItems.push({
 				label: "Última verificación",
-				value: new Date(metadata.latestChapterCheckedAt).toLocaleString(),
+				value: formatDateShort(metadata.latestChapterCheckedAt),
 			});
 		}
 		if (
@@ -536,12 +532,6 @@ function ObraAuthed({
 		technicalItems.push({ label: "Año", value: obra.year.toString() });
 	}
 	technicalItems.push(...metadataItems);
-	if (obra.type === "manga") {
-		const mangaSummary = getMangaReleaseSummary(obra);
-		if (mangaSummary) {
-			technicalItems.push({ label: "Resumen manga", value: mangaSummary });
-		}
-	}
 	if (obra.external) {
 		technicalItems.push({ label: "Fuente", value: metadataSourceLabel });
 	}
@@ -892,7 +882,7 @@ function ObraAuthed({
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<Link
 						to="/biblioteca"
-						className="inline-flex h-10 items-center gap-2 text-sm text-[#8C8279] transition-colors hover:text-[#B85C38]"
+						className="inline-flex h-10 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -904,7 +894,7 @@ function ObraAuthed({
 								type="button"
 								variant="outline"
 								size="sm"
-								className="h-10 gap-2 border-[#D6D0C7] rounded-none hover:border-[#B85C38] hover:text-[#B85C38]"
+								className="h-10 gap-2 border-border rounded-none hover:border-primary hover:text-primary"
 								onClick={() => handleOpenReadingLink(obra.readingUrl ?? "")}
 							>
 								<ExternalLink className="h-4 w-4" />
@@ -917,14 +907,14 @@ function ObraAuthed({
 									<Button
 										variant="outline"
 										size="sm"
-										className="h-10 gap-2 border-[#D6D0C7] rounded-none hover:border-[#9A3B2E] hover:text-[#9A3B2E]"
+										className="h-10 gap-2 border-border rounded-none hover:border-destructive hover:text-destructive"
 									/>
 								}
 							>
 								<Trash2 className="h-4 w-4" />
 								Eliminar
 							</AlertDialogTrigger>
-							<AlertDialogContent className="rounded-none border-[#D6D0C7]">
+							<AlertDialogContent className="rounded-none border-border bg-card">
 								<AlertDialogHeader>
 									<AlertDialogTitle className="font-serif">
 										¿Eliminar obra?
@@ -934,7 +924,7 @@ function ObraAuthed({
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel className="rounded-none border-[#D6D0C7]">
+									<AlertDialogCancel className="rounded-none border-border">
 										Cancelar
 									</AlertDialogCancel>
 									<AlertDialogAction
@@ -949,11 +939,11 @@ function ObraAuthed({
 					</div>
 				</div>
 
-				<div className="border border-[#D6D0C7] bg-white p-6 md:p-8 space-y-8">
+				<div className="border border-border bg-card p-6 md:p-8 space-y-8">
 					<div className="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_1fr]">
 						{/* Cover */}
 						<div className="space-y-4">
-							<div className="aspect-[2/3] w-full bg-[#F5F2EB] border border-[#D6D0C7] overflow-hidden">
+							<div className="aspect-[2/3] w-full bg-background border border-border overflow-hidden">
 								{obra.coverUrl ? (
 									<img
 										src={obra.coverUrl}
@@ -962,22 +952,22 @@ function ObraAuthed({
 										loading="lazy"
 									/>
 								) : (
-									<div className="h-full w-full flex items-center justify-center text-sm text-[#8C8279]">
+									<div className="h-full w-full flex items-center justify-center text-sm text-muted-foreground">
 										Sin portada
 									</div>
 								)}
 							</div>
 							{obra.progress && (
 								<div>
-									<div className="flex justify-between text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279] mb-2">
+									<div className="flex justify-between text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground mb-2">
 										<span>Progreso</span>
 										<span>
 											{obra.progress.current} / {obra.progress.total}
 										</span>
 									</div>
-									<div className="h-1 w-full bg-[#D6D0C7]">
+									<div className="h-1 w-full bg-border">
 										<div
-											className="h-full bg-[#B85C38]"
+											className="h-full bg-primary"
 											style={{
 												width: `${Math.min(100, (obra.progress.current / Math.max(1, obra.progress.total)) * 100)}%`,
 											}}
@@ -1014,32 +1004,40 @@ function ObraAuthed({
 									{obra.title}
 								</h1>
 								{obra.creator && (
-									<p className="text-lg text-[#8C8279]">{obra.creator}</p>
+									<p className="text-lg text-muted-foreground">
+										{obra.creator}
+									</p>
 								)}
 								{obra.year && (
-									<p className="text-sm text-[#8C8279]">{obra.year}</p>
+									<p className="text-sm text-muted-foreground">{obra.year}</p>
 								)}
 							</div>
 
 							{/* Technical info */}
-							<div className="border border-[#D6D0C7] bg-[#F5F2EB] px-5 py-4">
+							<div className="border border-border bg-background px-5 py-4">
 								<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-3">
 									<p className="text-sm font-medium">Ficha técnica</p>
-									<p className="text-xs text-[#8C8279]">
-										Actualizado {new Date(obra.updatedAt).toLocaleString()}
+									<p className="text-xs text-muted-foreground">
+										Actualizado {formatDateShort(obra.updatedAt)}
 									</p>
 								</div>
 								{technicalItems.length > 0 ? (
 									<div className="grid gap-2 sm:grid-cols-2">
 										{technicalItems.map((item) => (
 											<div key={item.label} className="text-sm">
-												<span className="text-[#8C8279]">{item.label}:</span>{" "}
-												<span className="text-[#1A1A1A]">{item.value}</span>
+												<span className="text-muted-foreground">
+													{item.label}:
+												</span>{" "}
+												<span className="text-card-foreground">
+													{item.value}
+												</span>
 											</div>
 										))}
 									</div>
 								) : (
-									<p className="text-sm text-[#8C8279]">Sin datos técnicos.</p>
+									<p className="text-sm text-muted-foreground">
+										Sin datos técnicos.
+									</p>
 								)}
 							</div>
 
@@ -1053,7 +1051,7 @@ function ObraAuthed({
 								className="space-y-8"
 							>
 								{hasProgress && (
-									<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+									<section className="border border-border bg-card p-5 space-y-4">
 										<p className="text-sm font-medium">Progreso</p>
 										<div className="grid gap-4 sm:grid-cols-3">
 											<div className="space-y-3">
@@ -1081,7 +1079,7 @@ function ObraAuthed({
 														return (
 															<div className="space-y-3">
 																<div className="flex items-center justify-between">
-																	<span className="text-sm text-[#8C8279]">
+																	<span className="text-sm text-muted-foreground">
 																		{safeCurrent} / {safeTotal || "—"}
 																	</span>
 																</div>
@@ -1091,7 +1089,7 @@ function ObraAuthed({
 																		variant="outline"
 																		size="icon"
 																		disabled={isDisabled}
-																		className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+																		className="rounded-none border-border hover:border-primary hover:text-primary"
 																		onClick={() =>
 																			handleStepProgressChange(
 																				safeCurrent - 1,
@@ -1128,7 +1126,7 @@ function ObraAuthed({
 																		variant="outline"
 																		size="icon"
 																		disabled={isDisabled}
-																		className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+																		className="rounded-none border-border hover:border-primary hover:text-primary"
 																		onClick={() =>
 																			handleStepProgressChange(
 																				safeCurrent + 1,
@@ -1140,12 +1138,12 @@ function ObraAuthed({
 																	</Button>
 																</div>
 																{safeTotal <= 0 && (
-																	<p className="text-xs text-[#8C8279]">
+																	<p className="text-xs text-muted-foreground">
 																		Define un total para usar el slider.
 																	</p>
 																)}
 																{obra.type === "manga" && (
-																	<p className="text-xs text-[#8C8279]">
+																	<p className="text-xs text-muted-foreground">
 																		En manga, avanza por capítulos y marca
 																		terminada al llegar al total.
 																	</p>
@@ -1179,7 +1177,7 @@ function ObraAuthed({
 																							: nextValue,
 																					);
 																				}}
-																				className="max-w-[140px] rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+																				className="max-w-[140px] rounded-none border-border bg-background focus-visible:ring-primary"
 																			/>
 																		)}
 																	</form.Field>
@@ -1200,7 +1198,7 @@ function ObraAuthed({
 																disabled={
 																	isUpdatingProgress || progressTotal <= 0
 																}
-																className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+																className="rounded-none border-border hover:border-primary hover:text-primary"
 																onClick={() =>
 																	handleQuickProgressUpdate(
 																		progressTotal,
@@ -1218,7 +1216,7 @@ function ObraAuthed({
 																	progressTotal <= 0 ||
 																	obra.status === "finished"
 																}
-																className="rounded-none bg-[#B85C38] hover:bg-[#B85C38]/90 text-white"
+																className="rounded-none bg-primary hover:bg-primary/90 text-background"
 																onClick={() =>
 																	handleQuickProgressUpdate(
 																		progressTotal,
@@ -1297,7 +1295,7 @@ function ObraAuthed({
 										</div>
 									</section>
 								)}
-								<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+								<section className="border border-border bg-card p-5 space-y-4">
 									<p className="text-sm font-medium">Metadatos</p>
 									<div className="space-y-2">
 										<Label>Metadatos</Label>
@@ -1589,7 +1587,7 @@ function ObraAuthed({
 										</p>
 									</div>
 								</section>
-								<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+								<section className="border border-border bg-card p-5 space-y-4">
 									<p className="text-sm font-medium">Estado y fechas</p>
 									<div className="space-y-2">
 										<Label>Estado</Label>
@@ -1640,7 +1638,7 @@ function ObraAuthed({
 									</div>
 								</section>
 
-								<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+								<section className="border border-border bg-card p-5 space-y-4">
 									<p className="text-sm font-medium">Notas y reseña</p>
 									<div className="grid gap-4 sm:grid-cols-2">
 										<div className="space-y-2">

@@ -26,6 +26,7 @@ import type {
 	MetadataSearchResult,
 } from "@/lib/metadata/types";
 import type { ObraStatus, ObraType } from "@/lib/types";
+import { formatDateShort } from "@/lib/utils";
 import { Plus } from "./icons";
 
 const obraTypes: { value: ObraType; label: string }[] = [
@@ -439,7 +440,7 @@ export function AddObraDialog({
 			label: "Próximo episodio",
 			value:
 				previewMetadata.nextEpisodeDate !== undefined
-					? new Date(previewMetadata.nextEpisodeDate).toLocaleString()
+					? formatDateShort(previewMetadata.nextEpisodeDate)
 					: undefined,
 			showLoading: activeType === "series" || activeType === "anime",
 		});

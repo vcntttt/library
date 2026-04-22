@@ -3,18 +3,18 @@ import type { ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<ObraStatus, string> = {
-	backlog: "border-[#D6D0C7] bg-transparent text-[#8C8279]",
-	"in-progress": "border-[#B85C38]/40 bg-[#B85C38]/8 text-[#B85C38]",
+	backlog: "border-border bg-transparent text-muted-foreground",
+	"in-progress": "border-primary/40 bg-primary/10 text-primary",
 	finished:
-		"border-[#3A5A40]/30 bg-[#3A5A40]/8 text-[#3A5A40] dark:text-[#7AA080]",
-	dropped: "border-[#9A3B2E]/30 bg-[#9A3B2E]/8 text-[#9A3B2E]",
+		"border-emerald-700/30 bg-emerald-700/10 text-emerald-700 dark:text-emerald-300",
+	dropped: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
 const statusDots: Record<ObraStatus, string> = {
-	backlog: "bg-[#8C8279]",
-	"in-progress": "bg-[#B85C38]",
-	finished: "bg-[#3A5A40]",
-	dropped: "bg-[#9A3B2E]",
+	backlog: "bg-muted-foreground",
+	"in-progress": "bg-primary",
+	finished: "bg-emerald-700",
+	dropped: "bg-destructive",
 };
 
 const statusLabels: Record<ObraStatus, string> = {

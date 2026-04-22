@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Obra, ObraStatus, ObraType } from "@/lib/types";
+import { formatDateShort } from "@/lib/utils";
 
 /* ─── Mock data ─── */
 const mockObras: Obra[] = [
@@ -217,7 +218,7 @@ function VariantB() {
 			<footer className="fixed bottom-0 left-0 right-0 border-t border-[#333] bg-[#0D0D0D] px-4 py-1.5 flex items-center justify-between text-[10px] text-[#555]">
 				<span>SYS: OK</span>
 				<span>DB: CONNECTED</span>
-				<span>{new Date().toISOString()}</span>
+				<span>{formatDateShort(Date.now())}</span>
 			</footer>
 		</div>
 	);

@@ -32,7 +32,7 @@ export function DashboardSection({
 		<section className={cn("space-y-4", className)}>
 			<div className="flex items-baseline justify-between">
 				<h2 className="font-serif text-xl">{title}</h2>
-				<span className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
+				<span className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
 					{obras.length} obras
 				</span>
 			</div>
@@ -60,7 +60,7 @@ export function DashboardSection({
 										href={readingUrl}
 										target="_blank"
 										rel="noreferrer"
-										className="inline-flex h-9 items-center gap-1.5 border border-[#D6D0C7] bg-white px-3 text-xs text-[#8C8279] transition-colors hover:border-[#B85C38] hover:text-[#1A1A1A]"
+										className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 									>
 										<ExternalLink className="h-3.5 w-3.5" />
 										Ir a leer
@@ -71,8 +71,8 @@ export function DashboardSection({
 					})}
 				</div>
 			) : (
-				<div className="border border-dashed border-[#D6D0C7] bg-white py-8 text-center">
-					<p className="text-sm text-[#8C8279]">{emptyMessage}</p>
+				<div className="border border-dashed border-border bg-card py-8 text-center">
+					<p className="text-sm text-muted-foreground">{emptyMessage}</p>
 				</div>
 			)}
 		</section>

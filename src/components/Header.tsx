@@ -22,15 +22,12 @@ export default function Header() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 
 	return (
-		<header className="sticky top-0 z-50 w-full border-b border-[#D6D0C7] bg-[#F5F2EB]/90 backdrop-blur-sm">
+		<header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur-sm">
 			<div className="container mx-auto flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-0">
 				<Link to="/" className="flex items-baseline gap-3">
 					<h1 className="font-serif text-xl font-semibold tracking-tight">
 						Biblioteca
 					</h1>
-					<span className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
-						archivo personal
-					</span>
 				</Link>
 
 				<div className="flex w-full flex-wrap items-center gap-4 sm:w-auto sm:flex-nowrap">
@@ -42,8 +39,8 @@ export default function Header() {
 								className={cn(
 									"text-sm tracking-wide transition-colors pb-1 border-b-2",
 									item.isActive(pathname)
-										? "border-[#B85C38] text-[#1A1A1A]"
-										: "border-transparent text-[#8C8279] hover:text-[#1A1A1A]",
+										? "border-primary text-foreground"
+										: "border-transparent text-muted-foreground hover:text-foreground",
 								)}
 							>
 								{item.label}

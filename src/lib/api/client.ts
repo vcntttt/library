@@ -12,6 +12,8 @@ export function useQuery<TArgs, TData>(
 	const query = useTanstackQuery({
 		queryKey: descriptor.queryKey(args),
 		queryFn: () => requestJson<TData>(descriptor.path(args)),
+		refetchInterval: descriptor.refetchInterval,
+		refetchIntervalInBackground: descriptor.refetchIntervalInBackground,
 	});
 
 	return query.data;
