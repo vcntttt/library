@@ -3,19 +3,18 @@ import type { ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<ObraStatus, string> = {
-	backlog: "border-border/60 bg-muted/60 text-muted-foreground",
-	"in-progress":
-		"border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+	backlog: "border-[#D6D0C7] bg-transparent text-[#8C8279]",
+	"in-progress": "border-[#B85C38]/40 bg-[#B85C38]/8 text-[#B85C38]",
 	finished:
-		"border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-	dropped: "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+		"border-[#3A5A40]/30 bg-[#3A5A40]/8 text-[#3A5A40] dark:text-[#7AA080]",
+	dropped: "border-[#9A3B2E]/30 bg-[#9A3B2E]/8 text-[#9A3B2E]",
 };
 
 const statusDots: Record<ObraStatus, string> = {
-	backlog: "bg-muted-foreground",
-	"in-progress": "bg-amber-500",
-	finished: "bg-emerald-500",
-	dropped: "bg-rose-500",
+	backlog: "bg-[#8C8279]",
+	"in-progress": "bg-[#B85C38]",
+	finished: "bg-[#3A5A40]",
+	dropped: "bg-[#9A3B2E]",
 };
 
 const statusLabels: Record<ObraStatus, string> = {
@@ -34,7 +33,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 	return (
 		<Badge
 			className={cn(
-				"gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em]",
+				"gap-1.5 rounded-none border px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.2em]",
 				statusColors[status],
 				className,
 			)}

@@ -22,41 +22,38 @@ export default function Header() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 
 	return (
-		<header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/75 backdrop-blur-lg">
+		<header className="sticky top-0 z-50 w-full border-b border-[#D6D0C7] bg-[#F5F2EB]/90 backdrop-blur-sm">
 			<div className="container mx-auto flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-0">
-				<Link to="/" className="flex items-center gap-3">
-					<span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-						<img src="/library.svg" alt="Logo Biblioteca" className="h-4 w-4" />
+				<Link to="/" className="flex items-baseline gap-3">
+					<h1 className="font-serif text-xl font-semibold tracking-tight">
+						Biblioteca
+					</h1>
+					<span className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
+						archivo personal
 					</span>
-					<div className="leading-tight">
-						<span className="block font-serif text-lg font-semibold tracking-tight">
-							Biblioteca
-						</span>
-						<span className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
-							archivo personal
-						</span>
-					</div>
 				</Link>
 
-				<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
-					<nav className="flex flex-wrap items-center gap-1">
+				<div className="flex w-full flex-wrap items-center gap-4 sm:w-auto sm:flex-nowrap">
+					<nav className="flex flex-wrap items-center gap-6">
 						{navItems.map((item) => (
 							<Link
 								key={item.to}
 								to={item.to}
 								className={cn(
-									"inline-flex h-11 items-center rounded-full px-4 text-sm font-medium transition-colors",
+									"text-sm tracking-wide transition-colors pb-1 border-b-2",
 									item.isActive(pathname)
-										? "bg-primary text-primary-foreground shadow-sm"
-										: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+										? "border-[#B85C38] text-[#1A1A1A]"
+										: "border-transparent text-[#8C8279] hover:text-[#1A1A1A]",
 								)}
 							>
 								{item.label}
 							</Link>
 						))}
 					</nav>
-					<UserMenu />
-					<ModeToggle />
+					<div className="flex items-center gap-2">
+						<UserMenu />
+						<ModeToggle />
+					</div>
 				</div>
 			</div>
 		</header>

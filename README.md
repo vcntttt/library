@@ -188,6 +188,12 @@ Nota: el concepto original contemplaba SQLite + archivos locales. Hoy priorizamo
 
 Prototipo inicial, en evolucion constante como sistema personal.
 
+Estado actual de trabajo:
+
+- `manga` es el tipo priorizado para uso diario.
+- El flujo de alta, detalle, progreso y notificaciones de manga ya está integrado.
+- La documentación de contexto del proyecto vive en [docs/project-context.md](/home/vrivera/dev/library/docs/project-context.md).
+
 ## Roadmap (corto)
 
 - Autenticacion (Better Auth) + proteccion de rutas/API

@@ -1,8 +1,12 @@
 import { loadEnvFile } from "node:process";
+import { existsSync } from "node:fs";
 import { defineConfig } from "drizzle-kit";
 
 loadEnvFile(".env.local");
-loadEnvFile(".env");
+
+if (existsSync(".env")) {
+	loadEnvFile(".env");
+}
 
 const databaseUrl =
 	process.env.DATABASE_URL ??

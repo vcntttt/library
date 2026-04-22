@@ -29,23 +29,21 @@ export function DashboardSection({
 	className,
 }: DashboardSectionProps) {
 	return (
-		<section className={cn("space-y-3", className)}>
-			<div className="flex items-center justify-between">
-				<h2 className="text-lg font-semibold text-foreground font-serif">
-					{title}
-				</h2>
-				<span className="rounded-full border border-border/60 bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-					{obras.length}
+		<section className={cn("space-y-4", className)}>
+			<div className="flex items-baseline justify-between">
+				<h2 className="font-serif text-xl">{title}</h2>
+				<span className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
+					{obras.length} obras
 				</span>
 			</div>
 			{obras.length > 0 ? (
 				<div
 					className={cn(
 						variant === "default"
-							? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+							? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
 							: variant === "grid"
-								? "grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-								: "flex flex-col gap-2",
+								? "grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+								: "flex flex-col gap-3",
 					)}
 				>
 					{obras.map((obra) => {
@@ -62,7 +60,7 @@ export function DashboardSection({
 										href={readingUrl}
 										target="_blank"
 										rel="noreferrer"
-										className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+										className="inline-flex h-9 items-center gap-1.5 border border-[#D6D0C7] bg-white px-3 text-xs text-[#8C8279] transition-colors hover:border-[#B85C38] hover:text-[#1A1A1A]"
 									>
 										<ExternalLink className="h-3.5 w-3.5" />
 										Ir a leer
@@ -73,8 +71,8 @@ export function DashboardSection({
 					})}
 				</div>
 			) : (
-				<div className="rounded-xl border border-dashed border-border/60 bg-card/60 py-8 text-center">
-					<p className="text-sm text-muted-foreground">{emptyMessage}</p>
+				<div className="border border-dashed border-[#D6D0C7] bg-white py-8 text-center">
+					<p className="text-sm text-[#8C8279]">{emptyMessage}</p>
 				</div>
 			)}
 		</section>

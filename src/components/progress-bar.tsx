@@ -9,14 +9,6 @@ interface ProgressBarProps {
 	className?: string;
 }
 
-const progressColors: Record<ObraType, string> = {
-	book: "bg-emerald-500",
-	movie: "bg-blue-500",
-	series: "bg-orange-500",
-	anime: "bg-pink-500",
-	manga: "bg-cyan-500",
-};
-
 const unitLabels: Record<ObraType, string> = {
 	book: "páginas",
 	movie: "",
@@ -36,17 +28,14 @@ export function ProgressBar({
 
 	return (
 		<div className={cn("space-y-1", className)}>
-			<div className="h-2 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
+			<div className="h-px w-full bg-[#D6D0C7]">
 				<div
-					className={cn(
-						"h-full rounded-full transition-all duration-500",
-						progressColors[type],
-					)}
+					className="h-full bg-[#B85C38]"
 					style={{ width: `${percentage}%` }}
 				/>
 			</div>
 			{showLabel && (
-				<p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+				<p className="text-[0.6rem] uppercase tracking-[0.2em] text-[#8C8279]">
 					{current} / {total} {unitLabels[type]}
 				</p>
 			)}

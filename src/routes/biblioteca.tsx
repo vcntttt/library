@@ -20,15 +20,18 @@ function BibliotecaPage() {
 
 	if (session === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6">
-				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
+			<div className="mx-auto max-w-6xl px-6 py-10">
+				<div className="max-w-lg border border-[#D6D0C7] bg-white p-6 space-y-3">
 					<h1 className="text-2xl font-semibold tracking-tight font-serif">
 						Biblioteca
 					</h1>
-					<p className="text-sm text-muted-foreground">
+					<p className="text-sm text-[#8C8279]">
 						Inicia sesión para ver tu biblioteca.
 					</p>
-					<Link to="/login" className="text-sm underline underline-offset-4">
+					<Link
+						to="/login"
+						className="text-sm underline underline-offset-4 text-[#B85C38]"
+					>
 						Ir a login
 					</Link>
 				</div>
@@ -42,14 +45,14 @@ function BibliotecaPage() {
 function BibliotecaPageSkeleton() {
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="container mx-auto space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-[#D6D0C7] pb-4">
 					<div className="space-y-3">
-						<Skeleton className="h-3 w-28" />
-						<Skeleton className="h-10 w-56 sm:w-72" />
-						<Skeleton className="h-4 w-72 max-w-full" />
+						<Skeleton className="h-3 w-28 rounded-none" />
+						<Skeleton className="h-10 w-56 sm:w-72 rounded-none" />
+						<Skeleton className="h-4 w-72 max-w-full rounded-none" />
 					</div>
-					<Skeleton className="h-10 w-36 rounded-md" />
+					<Skeleton className="h-10 w-36 rounded-none" />
 				</div>
 
 				<BibliotecaTable obras={[]} isLoading />
@@ -65,16 +68,16 @@ function BibliotecaAuthed() {
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="container mx-auto space-y-6 p-4 pb-24 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-[#D6D0C7] pb-4">
 					<div className="space-y-3">
-						<p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-							Colección
+						<p className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279]">
+							Colección completa
 						</p>
 						<h1 className="text-3xl font-semibold tracking-tight font-serif sm:text-4xl">
 							Biblioteca
 						</h1>
-						<p className="text-sm text-muted-foreground">
+						<p className="text-sm text-[#8C8279]">
 							Busca, filtra y ordena todas tus obras.
 						</p>
 					</div>

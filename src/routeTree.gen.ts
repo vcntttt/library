@@ -9,6 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VariantCRouteImport } from './routes/variant-c'
+import { Route as VariantBRouteImport } from './routes/variant-b'
+import { Route as VariantARouteImport } from './routes/variant-a'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +24,21 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
 import { Route as InternalAlfredNotificationsAckRouteImport } from './routes/internal/alfred/notifications/ack'
 
+const VariantCRoute = VariantCRouteImport.update({
+  id: '/variant-c',
+  path: '/variant-c',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VariantBRoute = VariantBRouteImport.update({
+  id: '/variant-b',
+  path: '/variant-b',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VariantARoute = VariantARouteImport.update({
+  id: '/variant-a',
+  path: '/variant-a',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -83,6 +101,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/login': typeof LoginRoute
+  '/variant-a': typeof VariantARoute
+  '/variant-b': typeof VariantBRoute
+  '/variant-c': typeof VariantCRoute
   '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -96,6 +117,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/login': typeof LoginRoute
+  '/variant-a': typeof VariantARoute
+  '/variant-b': typeof VariantBRoute
+  '/variant-c': typeof VariantCRoute
   '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -110,6 +134,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/login': typeof LoginRoute
+  '/variant-a': typeof VariantARoute
+  '/variant-b': typeof VariantBRoute
+  '/variant-c': typeof VariantCRoute
   '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -125,6 +152,9 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/login'
+    | '/variant-a'
+    | '/variant-b'
+    | '/variant-c'
     | '/api/obras'
     | '/obra/$obraId'
     | '/api/auth/$'
@@ -138,6 +168,9 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/login'
+    | '/variant-a'
+    | '/variant-b'
+    | '/variant-c'
     | '/api/obras'
     | '/obra/$obraId'
     | '/api/auth/$'
@@ -151,6 +184,9 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/login'
+    | '/variant-a'
+    | '/variant-b'
+    | '/variant-c'
     | '/api/obras'
     | '/obra/$obraId'
     | '/api/auth/$'
@@ -165,6 +201,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BibliotecaRoute: typeof BibliotecaRoute
   LoginRoute: typeof LoginRoute
+  VariantARoute: typeof VariantARoute
+  VariantBRoute: typeof VariantBRoute
+  VariantCRoute: typeof VariantCRoute
   ApiObrasRoute: typeof ApiObrasRouteWithChildren
   ObraObraIdRoute: typeof ObraObraIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -176,6 +215,27 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/variant-c': {
+      id: '/variant-c'
+      path: '/variant-c'
+      fullPath: '/variant-c'
+      preLoaderRoute: typeof VariantCRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/variant-b': {
+      id: '/variant-b'
+      path: '/variant-b'
+      fullPath: '/variant-b'
+      preLoaderRoute: typeof VariantBRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/variant-a': {
+      id: '/variant-a'
+      path: '/variant-a'
+      fullPath: '/variant-a'
+      preLoaderRoute: typeof VariantARouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -272,6 +332,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
   LoginRoute: LoginRoute,
+  VariantARoute: VariantARoute,
+  VariantBRoute: VariantBRoute,
+  VariantCRoute: VariantCRoute,
   ApiObrasRoute: ApiObrasRouteWithChildren,
   ObraObraIdRoute: ObraObraIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

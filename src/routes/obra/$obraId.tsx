@@ -192,12 +192,15 @@ function ObraPage() {
 
 	if (session === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6">
-				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
-					<p className="text-sm text-muted-foreground">
+			<div className="mx-auto max-w-6xl px-6 py-10">
+				<div className="max-w-lg border border-[#D6D0C7] bg-white p-6 space-y-3">
+					<p className="text-sm text-[#8C8279]">
 						Inicia sesión para ver esta obra.
 					</p>
-					<Link to="/login" className="text-sm underline underline-offset-4">
+					<Link
+						to="/login"
+						className="text-sm underline underline-offset-4 text-[#B85C38]"
+					>
 						Ir a login
 					</Link>
 				</div>
@@ -211,44 +214,44 @@ function ObraPage() {
 function ObraPageSkeleton() {
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="container mx-auto space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 				<div className="flex items-center justify-between">
-					<Skeleton className="h-5 w-20" />
-					<Skeleton className="h-8 w-24 rounded-md" />
+					<Skeleton className="h-5 w-20 rounded-none" />
+					<Skeleton className="h-8 w-24 rounded-none" />
 				</div>
 
-				<div className="rounded-xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
-					<div className="flex items-start gap-4">
-						<Skeleton className="h-28 w-20 rounded-md" />
-						<div className="space-y-2 min-w-0 flex-1">
+				<div className="border border-[#D6D0C7] bg-white p-6 space-y-8">
+					<div className="flex items-start gap-6">
+						<Skeleton className="h-40 w-28 rounded-none shrink-0" />
+						<div className="space-y-3 min-w-0 flex-1">
 							<div className="flex gap-2">
-								<Skeleton className="h-5 w-16 rounded-full" />
-								<Skeleton className="h-5 w-20 rounded-full" />
+								<Skeleton className="h-5 w-16 rounded-none" />
+								<Skeleton className="h-5 w-20 rounded-none" />
 							</div>
-							<Skeleton className="h-8 w-3/5" />
-							<Skeleton className="h-4 w-2/5" />
+							<Skeleton className="h-10 w-3/5 rounded-none" />
+							<Skeleton className="h-4 w-2/5 rounded-none" />
 						</div>
 					</div>
 
-					<div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 space-y-3">
+					<div className="border border-[#D6D0C7] bg-[#F5F2EB] px-5 py-4 space-y-3">
 						<div className="flex items-center justify-between">
-							<Skeleton className="h-4 w-24" />
-							<Skeleton className="h-3 w-40" />
+							<Skeleton className="h-4 w-24 rounded-none" />
+							<Skeleton className="h-3 w-40 rounded-none" />
 						</div>
 						<div className="grid gap-2 sm:grid-cols-2">
 							{["t1", "t2", "t3", "t4"].map((key) => (
-								<Skeleton key={key} className="h-4 w-full" />
+								<Skeleton key={key} className="h-4 w-full rounded-none" />
 							))}
 						</div>
 					</div>
 
-					<div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
-						<Skeleton className="h-4 w-20" />
-						<Skeleton className="h-6 w-32" />
+					<div className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+						<Skeleton className="h-4 w-20 rounded-none" />
+						<Skeleton className="h-6 w-32 rounded-none" />
 						<div className="flex items-center gap-3">
-							<Skeleton className="h-9 w-9 rounded-md" />
-							<Skeleton className="h-4 flex-1" />
-							<Skeleton className="h-9 w-9 rounded-md" />
+							<Skeleton className="h-9 w-9 rounded-none" />
+							<Skeleton className="h-4 flex-1 rounded-none" />
+							<Skeleton className="h-9 w-9 rounded-none" />
 						</div>
 					</div>
 				</div>
@@ -375,12 +378,12 @@ function ObraAuthed({
 
 	if (doc === null) {
 		return (
-			<div className="container mx-auto p-4 md:p-6">
-				<div className="max-w-lg rounded-xl border border-border/60 bg-card/70 p-5 shadow-sm space-y-3">
-					<p className="text-sm text-muted-foreground">Obra no encontrada.</p>
+			<div className="mx-auto max-w-6xl px-6 py-10">
+				<div className="max-w-lg border border-[#D6D0C7] bg-white p-6 space-y-3">
+					<p className="text-sm text-[#8C8279]">Obra no encontrada.</p>
 					<Link
 						to="/biblioteca"
-						className="text-sm underline underline-offset-3"
+						className="text-sm underline underline-offset-3 text-[#B85C38]"
 					>
 						Volver a la biblioteca
 					</Link>
@@ -885,11 +888,11 @@ function ObraAuthed({
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="container mx-auto space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<Link
 						to="/biblioteca"
-						className="inline-flex h-10 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+						className="inline-flex h-10 items-center gap-2 text-sm text-[#8C8279] transition-colors hover:text-[#B85C38]"
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -901,7 +904,7 @@ function ObraAuthed({
 								type="button"
 								variant="outline"
 								size="sm"
-								className="h-10 gap-2"
+								className="h-10 gap-2 border-[#D6D0C7] rounded-none hover:border-[#B85C38] hover:text-[#B85C38]"
 								onClick={() => handleOpenReadingLink(obra.readingUrl ?? "")}
 							>
 								<ExternalLink className="h-4 w-4" />
@@ -911,22 +914,33 @@ function ObraAuthed({
 						<AlertDialog>
 							<AlertDialogTrigger
 								render={
-									<Button variant="outline" size="sm" className="h-10 gap-2" />
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-10 gap-2 border-[#D6D0C7] rounded-none hover:border-[#9A3B2E] hover:text-[#9A3B2E]"
+									/>
 								}
 							>
 								<Trash2 className="h-4 w-4" />
 								Eliminar
 							</AlertDialogTrigger>
-							<AlertDialogContent>
+							<AlertDialogContent className="rounded-none border-[#D6D0C7]">
 								<AlertDialogHeader>
-									<AlertDialogTitle>¿Eliminar obra?</AlertDialogTitle>
+									<AlertDialogTitle className="font-serif">
+										¿Eliminar obra?
+									</AlertDialogTitle>
 									<AlertDialogDescription>
 										Esto no se puede deshacer.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel>Cancelar</AlertDialogCancel>
-									<AlertDialogAction onClick={handleDelete}>
+									<AlertDialogCancel className="rounded-none border-[#D6D0C7]">
+										Cancelar
+									</AlertDialogCancel>
+									<AlertDialogAction
+										onClick={handleDelete}
+										className="rounded-none bg-[#9A3B2E] hover:bg-[#9A3B2E]/90"
+									>
 										Eliminar
 									</AlertDialogAction>
 								</AlertDialogFooter>
@@ -935,27 +949,54 @@ function ObraAuthed({
 					</div>
 				</div>
 
-				<div className="rounded-xl border border-border/60 bg-card/70 p-4 md:p-6 shadow-sm space-y-6">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-						<div className="flex items-start gap-4 min-w-0">
-							{obra.coverUrl && (
-								<div className="h-28 w-20 overflow-hidden rounded-md bg-muted/60">
+				<div className="border border-[#D6D0C7] bg-white p-6 md:p-8 space-y-8">
+					<div className="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_1fr]">
+						{/* Cover */}
+						<div className="space-y-4">
+							<div className="aspect-[2/3] w-full bg-[#F5F2EB] border border-[#D6D0C7] overflow-hidden">
+								{obra.coverUrl ? (
 									<img
 										src={obra.coverUrl}
 										alt={`Portada de ${obra.title}`}
 										className="h-full w-full object-cover"
 										loading="lazy"
 									/>
+								) : (
+									<div className="h-full w-full flex items-center justify-center text-sm text-[#8C8279]">
+										Sin portada
+									</div>
+								)}
+							</div>
+							{obra.progress && (
+								<div>
+									<div className="flex justify-between text-[0.65rem] uppercase tracking-[0.2em] text-[#8C8279] mb-2">
+										<span>Progreso</span>
+										<span>
+											{obra.progress.current} / {obra.progress.total}
+										</span>
+									</div>
+									<div className="h-1 w-full bg-[#D6D0C7]">
+										<div
+											className="h-full bg-[#B85C38]"
+											style={{
+												width: `${Math.min(100, (obra.progress.current / Math.max(1, obra.progress.total)) * 100)}%`,
+											}}
+										/>
+									</div>
 								</div>
 							)}
-							<div className="min-w-0 space-y-1">
-								<div className="flex flex-wrap items-center gap-2">
+						</div>
+
+						{/* Info */}
+						<div className="space-y-6">
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-2">
 									<TypeBadge type={obra.type} />
 									<StatusBadge status={obra.status} />
 									{showOngoingBadge && (
 										<Badge
 											variant="outline"
-											className="h-4 rounded-full border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-200"
+											className="h-4 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
 										>
 											En emisión
 										</Badge>
@@ -963,646 +1004,694 @@ function ObraAuthed({
 									{showUpToDateBadge && (
 										<Badge
 											variant="outline"
-											className="h-4 rounded-full border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200"
+											className="h-4 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
 										>
 											Al día
 										</Badge>
 									)}
 								</div>
-								<h1 className="text-2xl font-semibold tracking-tight font-serif">
+								<h1 className="font-serif text-4xl md:text-5xl leading-[1.1]">
 									{obra.title}
 								</h1>
 								{obra.creator && (
-									<p className="text-sm text-muted-foreground">
-										{obra.creator}
-									</p>
+									<p className="text-lg text-[#8C8279]">{obra.creator}</p>
+								)}
+								{obra.year && (
+									<p className="text-sm text-[#8C8279]">{obra.year}</p>
 								)}
 							</div>
-						</div>
-					</div>
 
-					<div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-						<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-							<p className="text-sm font-medium">Ficha técnica</p>
-							<p className="text-xs text-muted-foreground">
-								Actualizado {new Date(obra.updatedAt).toLocaleString()}
-							</p>
-						</div>
-						{technicalItems.length > 0 ? (
-							<div className="mt-3 grid gap-2 sm:grid-cols-2">
-								{technicalItems.map((item) => (
-									<div key={item.label} className="text-sm">
-										<span className="text-muted-foreground">{item.label}:</span>{" "}
-										<span className="text-foreground">{item.value}</span>
+							{/* Technical info */}
+							<div className="border border-[#D6D0C7] bg-[#F5F2EB] px-5 py-4">
+								<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-3">
+									<p className="text-sm font-medium">Ficha técnica</p>
+									<p className="text-xs text-[#8C8279]">
+										Actualizado {new Date(obra.updatedAt).toLocaleString()}
+									</p>
+								</div>
+								{technicalItems.length > 0 ? (
+									<div className="grid gap-2 sm:grid-cols-2">
+										{technicalItems.map((item) => (
+											<div key={item.label} className="text-sm">
+												<span className="text-[#8C8279]">{item.label}:</span>{" "}
+												<span className="text-[#1A1A1A]">{item.value}</span>
+											</div>
+										))}
 									</div>
-								))}
+								) : (
+									<p className="text-sm text-[#8C8279]">Sin datos técnicos.</p>
+								)}
 							</div>
-						) : (
-							<p className="mt-3 text-sm text-muted-foreground">
-								Sin datos técnicos.
-							</p>
-						)}
-					</div>
 
-					<form
-						onSubmit={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							void form.handleSubmit();
-						}}
-						className="space-y-6"
-					>
-						{hasProgress && (
-							<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
-								<p className="text-sm font-medium">Progreso</p>
-								<div className="grid gap-4 sm:grid-cols-3">
-									<div className="space-y-3">
-										<Label>
-											Progreso
-											{progressUnitLabel ? ` (${progressUnitLabel})` : ""}
-										</Label>
-										<form.Subscribe
-											selector={(state) =>
-												[
-													state.values.progressCurrent,
-													state.values.progressTotal,
-												] as const
-											}
-										>
-											{([progressCurrent, progressTotal]) => {
-												const safeTotal = Math.max(0, progressTotal || 0);
-												const safeCurrent = Math.min(
-													Math.max(progressCurrent || 0, 0),
-													safeTotal,
-												);
-												const isDisabled = isUpdatingProgress || safeTotal <= 0;
+							{/* Form */}
+							<form
+								onSubmit={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									void form.handleSubmit();
+								}}
+								className="space-y-8"
+							>
+								{hasProgress && (
+									<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+										<p className="text-sm font-medium">Progreso</p>
+										<div className="grid gap-4 sm:grid-cols-3">
+											<div className="space-y-3">
+												<Label>
+													Progreso
+													{progressUnitLabel ? ` (${progressUnitLabel})` : ""}
+												</Label>
+												<form.Subscribe
+													selector={(state) =>
+														[
+															state.values.progressCurrent,
+															state.values.progressTotal,
+														] as const
+													}
+												>
+													{([progressCurrent, progressTotal]) => {
+														const safeTotal = Math.max(0, progressTotal || 0);
+														const safeCurrent = Math.min(
+															Math.max(progressCurrent || 0, 0),
+															safeTotal,
+														);
+														const isDisabled =
+															isUpdatingProgress || safeTotal <= 0;
 
-												return (
-													<div className="space-y-3">
-														<div className="flex items-center justify-between">
-															<span className="text-sm text-muted-foreground">
-																{safeCurrent} / {safeTotal || "—"}
-															</span>
-														</div>
-														<div className="flex items-center gap-3">
-															<Button
-																type="button"
-																variant="outline"
-																size="icon"
-																disabled={isDisabled}
-																onClick={() =>
-																	handleStepProgressChange(
-																		safeCurrent - 1,
-																		safeTotal,
-																	)
-																}
-															>
-																<Minus className="h-4 w-4" />
-															</Button>
-															<Slider
-																min={0}
-																max={safeTotal || 1}
-																step={1}
-																disabled={safeTotal <= 0}
-																value={[safeCurrent]}
-																onValueChange={(value) => {
-																	const nextValue = Array.isArray(value)
-																		? value[0]
-																		: value;
-																	if (
-																		safeTotal > 0 &&
-																		nextValue !== undefined
-																	) {
-																		handleStepProgressChange(
-																			nextValue,
-																			safeTotal,
-																		);
-																	}
-																}}
-																className="flex-1"
-															/>
-															<Button
-																type="button"
-																variant="outline"
-																size="icon"
-																disabled={isDisabled}
-																onClick={() =>
-																	handleStepProgressChange(
-																		safeCurrent + 1,
-																		safeTotal,
-																	)
-																}
-															>
-																<Plus className="h-4 w-4" />
-															</Button>
-														</div>
-														{safeTotal <= 0 && (
-															<p className="text-xs text-muted-foreground">
-																Define un total para usar el slider.
-															</p>
-														)}
-														{obra.type === "manga" && (
-															<p className="text-xs text-muted-foreground">
-																En manga, avanza por capítulos y marca terminada
-																al llegar al total.
-															</p>
-														)}
-														<div className="space-y-2">
-															<Label>
-																Total
-																{progressUnitLabel
-																	? ` (${progressUnitLabel})`
-																	: ""}
-															</Label>
-															<form.Field name="progressTotal">
-																{(field) => (
-																	<Input
-																		type="number"
-																		min={0}
-																		step={1}
-																		value={
-																			Number.isFinite(field.state.value)
-																				? String(field.state.value)
-																				: ""
+														return (
+															<div className="space-y-3">
+																<div className="flex items-center justify-between">
+																	<span className="text-sm text-[#8C8279]">
+																		{safeCurrent} / {safeTotal || "—"}
+																	</span>
+																</div>
+																<div className="flex items-center gap-3">
+																	<Button
+																		type="button"
+																		variant="outline"
+																		size="icon"
+																		disabled={isDisabled}
+																		className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+																		onClick={() =>
+																			handleStepProgressChange(
+																				safeCurrent - 1,
+																				safeTotal,
+																			)
 																		}
-																		onChange={(event) => {
-																			const rawValue = event.target.value;
-																			const nextValue = rawValue
-																				? Number(rawValue)
-																				: 0;
-																			field.handleChange(
-																				Number.isNaN(nextValue) ? 0 : nextValue,
-																			);
+																	>
+																		<Minus className="h-4 w-4" />
+																	</Button>
+																	<Slider
+																		min={0}
+																		max={safeTotal || 1}
+																		step={1}
+																		disabled={safeTotal <= 0}
+																		value={[safeCurrent]}
+																		onValueChange={(value) => {
+																			const nextValue = Array.isArray(value)
+																				? value[0]
+																				: value;
+																			if (
+																				safeTotal > 0 &&
+																				nextValue !== undefined
+																			) {
+																				handleStepProgressChange(
+																					nextValue,
+																					safeTotal,
+																				);
+																			}
 																		}}
-																		className="max-w-[140px]"
+																		className="flex-1"
 																	/>
+																	<Button
+																		type="button"
+																		variant="outline"
+																		size="icon"
+																		disabled={isDisabled}
+																		className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+																		onClick={() =>
+																			handleStepProgressChange(
+																				safeCurrent + 1,
+																				safeTotal,
+																			)
+																		}
+																	>
+																		<Plus className="h-4 w-4" />
+																	</Button>
+																</div>
+																{safeTotal <= 0 && (
+																	<p className="text-xs text-[#8C8279]">
+																		Define un total para usar el slider.
+																	</p>
 																)}
-															</form.Field>
+																{obra.type === "manga" && (
+																	<p className="text-xs text-[#8C8279]">
+																		En manga, avanza por capítulos y marca
+																		terminada al llegar al total.
+																	</p>
+																)}
+																<div className="space-y-2">
+																	<Label>
+																		Total
+																		{progressUnitLabel
+																			? ` (${progressUnitLabel})`
+																			: ""}
+																	</Label>
+																	<form.Field name="progressTotal">
+																		{(field) => (
+																			<Input
+																				type="number"
+																				min={0}
+																				step={1}
+																				value={
+																					Number.isFinite(field.state.value)
+																						? String(field.state.value)
+																						: ""
+																				}
+																				onChange={(event) => {
+																					const rawValue = event.target.value;
+																					const nextValue = rawValue
+																						? Number(rawValue)
+																						: 0;
+																					field.handleChange(
+																						Number.isNaN(nextValue)
+																							? 0
+																							: nextValue,
+																					);
+																				}}
+																				className="max-w-[140px] rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+																			/>
+																		)}
+																	</form.Field>
+																</div>
+															</div>
+														);
+													}}
+												</form.Subscribe>
+												<form.Subscribe
+													selector={(state) => [state.values.progressTotal]}
+												>
+													{([progressTotal]) => (
+														<div className="flex flex-wrap gap-2">
+															<Button
+																type="button"
+																variant="outline"
+																size="sm"
+																disabled={
+																	isUpdatingProgress || progressTotal <= 0
+																}
+																className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+																onClick={() =>
+																	handleQuickProgressUpdate(
+																		progressTotal,
+																		progressTotal,
+																	)
+																}
+															>
+																Al total
+															</Button>
+															<Button
+																type="button"
+																size="sm"
+																disabled={
+																	isUpdatingProgress ||
+																	progressTotal <= 0 ||
+																	obra.status === "finished"
+																}
+																className="rounded-none bg-[#B85C38] hover:bg-[#B85C38]/90 text-white"
+																onClick={() =>
+																	handleQuickProgressUpdate(
+																		progressTotal,
+																		progressTotal,
+																		"finished",
+																	)
+																}
+															>
+																Marcar terminada
+															</Button>
 														</div>
-													</div>
-												);
-											}}
-										</form.Subscribe>
-										<form.Subscribe
-											selector={(state) => [state.values.progressTotal]}
+													)}
+												</form.Subscribe>
+												<form.Subscribe
+													selector={(state) =>
+														[
+															state.values.progressCurrent,
+															state.values.progressTotal,
+														] as const
+													}
+												>
+													{([progressCurrent, progressTotal]) => {
+														const canSaveProgress =
+															Number.isFinite(progressCurrent) &&
+															Number.isFinite(progressTotal) &&
+															progressTotal >= 0 &&
+															progressCurrent >= 0 &&
+															(progressTotal === 0 ||
+																progressCurrent <= progressTotal);
+
+														if (canSaveProgress) return null;
+														return (
+															<p className="text-sm text-[#9A3B2E]">
+																El progreso no puede superar el total.
+															</p>
+														);
+													}}
+												</form.Subscribe>
+											</div>
+											<div className="sm:col-span-2 flex items-end justify-end">
+												<form.Subscribe
+													selector={(state) =>
+														[
+															state.values.progressCurrent,
+															state.values.progressTotal,
+															state.isSubmitting,
+														] as const
+													}
+												>
+													{([progressCurrent, progressTotal, isSubmitting]) => {
+														const canSaveProgress =
+															Number.isFinite(progressCurrent) &&
+															Number.isFinite(progressTotal) &&
+															progressTotal >= 0 &&
+															progressCurrent >= 0 &&
+															(progressTotal === 0 ||
+																progressCurrent <= progressTotal);
+
+														return (
+															<Button
+																type="submit"
+																disabled={isSubmitting || !canSaveProgress}
+																className={cn(
+																	"rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]",
+																	!canSaveProgress && "pointer-events-none",
+																)}
+															>
+																{isSubmitting
+																	? "Guardando..."
+																	: "Guardar cambios"}
+															</Button>
+														);
+													}}
+												</form.Subscribe>
+											</div>
+										</div>
+									</section>
+								)}
+								<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+									<p className="text-sm font-medium">Metadatos</p>
+									<div className="space-y-2">
+										<Label>Metadatos</Label>
+										<Dialog
+											open={isMetadataOpen}
+											onOpenChange={handleMetadataOpenChange}
 										>
-											{([progressTotal]) => (
-												<div className="flex flex-wrap gap-2">
+											<DialogTrigger
+												render={
+													<Button
+														variant="outline"
+														size="sm"
+														className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
+													/>
+												}
+											>
+												Buscar metadatos
+											</DialogTrigger>
+											<DialogContent className="sm:max-w-lg rounded-none border-[#D6D0C7]">
+												<DialogHeader>
+													<DialogTitle className="text-lg font-semibold font-serif">
+														Buscar metadatos
+													</DialogTitle>
+													<DialogDescription>
+														Proveedor: {metadataSourceLabel}
+													</DialogDescription>
+												</DialogHeader>
+												<div className="space-y-3">
+													<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+														<Input
+															value={metadataQuery}
+															onChange={(e) => setMetadataQuery(e.target.value)}
+															placeholder={`Buscar en ${metadataSourceLabel}`}
+															className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+														/>
+														<Button
+															type="button"
+															disabled={!canSearchMetadata}
+															onClick={handleMetadataSearch}
+															className="rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]"
+														>
+															{isSearchingMetadata ? "Buscando..." : "Buscar"}
+														</Button>
+													</div>
+													{metadataError && (
+														<p className="text-sm text-[#9A3B2E]">
+															{metadataError}
+														</p>
+													)}
+													{metadataResults.length === 0 &&
+														!metadataError &&
+														!isSearchingMetadata && (
+															<p className="text-sm text-[#8C8279]">
+																Ingresa un término para buscar.
+															</p>
+														)}
+													{metadataResults.length > 0 && (
+														<div className="space-y-2 max-h-64 overflow-auto">
+															{metadataResults.map((result) => {
+																const details = [
+																	result.creator,
+																	result.year?.toString(),
+																]
+																	.filter(Boolean)
+																	.join(" • ");
+																return (
+																	<div
+																		key={`${result.source}-${result.id}`}
+																		className="flex items-center justify-between gap-3 border border-[#D6D0C7] bg-[#F5F2EB] px-3 py-2"
+																	>
+																		<div className="min-w-0">
+																			<p className="text-sm font-medium truncate">
+																				{result.title}
+																			</p>
+																			{details && (
+																				<p className="text-xs text-[#8C8279]">
+																					{details}
+																				</p>
+																			)}
+																		</div>
+																		<Button
+																			type="button"
+																			size="sm"
+																			disabled={isLoadingPreviewDetails}
+																			onClick={() =>
+																				handleOpenMetadataPreview(result)
+																			}
+																			className="rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]"
+																		>
+																			Vista previa
+																		</Button>
+																	</div>
+																);
+															})}
+														</div>
+													)}
+													<Dialog
+														open={isMetadataPreviewOpen}
+														onOpenChange={setIsMetadataPreviewOpen}
+													>
+														<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-none border-[#D6D0C7]">
+															<DialogHeader>
+																<DialogTitle className="font-serif">
+																	Vista previa de metadatos
+																</DialogTitle>
+																<DialogDescription>
+																	Revisa toda la metadata disponible antes de
+																	aplicarla.
+																</DialogDescription>
+															</DialogHeader>
+															<div className="space-y-4">
+																{isLoadingPreviewDetails && (
+																	<p className="text-sm text-[#8C8279]">
+																		Cargando detalles...
+																	</p>
+																)}
+																{previewError && (
+																	<p className="text-sm text-[#9A3B2E]">
+																		{previewError}
+																	</p>
+																)}
+																{previewMetadata && (
+																	<>
+																		{previewMetadata.coverUrl && (
+																			<img
+																				src={previewMetadata.coverUrl}
+																				alt={`Portada de ${previewMetadata.title}`}
+																				className="h-44 w-32 object-cover border border-[#D6D0C7]"
+																				loading="lazy"
+																			/>
+																		)}
+																		<div className="grid gap-2 sm:grid-cols-2">
+																			{previewRows
+																				.filter(
+																					(row) =>
+																						Boolean(row.value) ||
+																						(isLoadingPreviewDetails &&
+																							row.showLoading),
+																				)
+																				.map((row) => (
+																					<div
+																						key={`${row.label}-${row.value}`}
+																						className="text-sm"
+																					>
+																						<span className="text-[#8C8279]">
+																							{row.label}:
+																						</span>{" "}
+																						{row.value ? (
+																							<span>{row.value}</span>
+																						) : isLoadingPreviewDetails &&
+																							row.showLoading ? (
+																							<span className="inline-block h-3.5 w-28 animate-pulse bg-[#D6D0C7] align-middle" />
+																						) : null}
+																					</div>
+																				))}
+																		</div>
+																		{!isLoadingPreviewDetails &&
+																			obra.type === "manga" &&
+																			mangaChapterPreview === undefined && (
+																				<p className="text-sm text-[#8C8279]">
+																					Último capítulo: No disponible en el
+																					proveedor.
+																				</p>
+																			)}
+																		<details>
+																			<summary className="cursor-pointer text-sm text-[#8C8279]">
+																				Request debug
+																			</summary>
+																			<div className="mt-2 space-y-2">
+																				{(lastMetadataSearchUrl ||
+																					requestDebugSearch) && (
+																					<pre className="border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto">
+																						{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
+																					</pre>
+																				)}
+																				{requestDebugDetails && (
+																					<pre className="border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto">
+																						{`GET ${requestDebugDetails}`}
+																					</pre>
+																				)}
+																				{previewResult?.source ===
+																					"anilist" && (
+																					<pre className="border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+																						{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
+																							{
+																								query:
+																									"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
+																								variables: {
+																									id: Number(previewResult.id),
+																								},
+																							},
+																							null,
+																							2,
+																						)}`}
+																					</pre>
+																				)}
+																			</div>
+																		</details>
+																		<details>
+																			<summary className="cursor-pointer text-sm text-[#8C8279]">
+																				Ver JSON completo
+																			</summary>
+																			<pre className="mt-2 border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+																				{JSON.stringify(
+																					previewMetadata,
+																					null,
+																					2,
+																				)}
+																			</pre>
+																		</details>
+																	</>
+																)}
+															</div>
+															<DialogFooter>
+																<Button
+																	type="button"
+																	variant="outline"
+																	onClick={() =>
+																		setIsMetadataPreviewOpen(false)
+																	}
+																	className="rounded-none border-[#D6D0C7] hover:border-[#B85C38]"
+																>
+																	Cerrar
+																</Button>
+																<Button
+																	type="button"
+																	disabled={
+																		!previewResult || isApplyingMetadata
+																	}
+																	onClick={handleApplyMetadata}
+																	className="rounded-none bg-[#B85C38] hover:bg-[#B85C38]/90 text-white"
+																>
+																	{isApplyingMetadata
+																		? "Aplicando..."
+																		: "Usar metadatos"}
+																</Button>
+															</DialogFooter>
+														</DialogContent>
+													</Dialog>
+												</div>
+												<DialogFooter>
 													<Button
 														type="button"
 														variant="outline"
-														size="sm"
-														disabled={isUpdatingProgress || progressTotal <= 0}
-														onClick={() =>
-															handleQuickProgressUpdate(
-																progressTotal,
-																progressTotal,
-															)
-														}
+														onClick={() => setIsMetadataOpen(false)}
+														className="rounded-none border-[#D6D0C7] hover:border-[#B85C38]"
 													>
-														Al total
+														Cerrar
 													</Button>
+												</DialogFooter>
+											</DialogContent>
+										</Dialog>
+										<p className="text-xs text-[#8C8279]">
+											Proveedor recomendado: {metadataSourceLabel}.
+										</p>
+									</div>
+									<div className="space-y-2">
+										<Label>Lectura personal</Label>
+										<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+											<form.Field name="readingUrl">
+												{(field) => (
+													<Input
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														placeholder="https://cubari.moe/..."
+														className="flex-1 rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+											<form.Subscribe
+												selector={(state) => state.values.readingUrl}
+											>
+												{(readingUrl) => (
 													<Button
 														type="button"
-														size="sm"
-														disabled={
-															isUpdatingProgress ||
-															progressTotal <= 0 ||
-															obra.status === "finished"
-														}
-														onClick={() =>
-															handleQuickProgressUpdate(
-																progressTotal,
-																progressTotal,
-																"finished",
-															)
-														}
+														variant="outline"
+														disabled={!readingUrl.trim()}
+														onClick={() => handleOpenReadingLink(readingUrl)}
+														className="rounded-none border-[#D6D0C7] hover:border-[#B85C38] hover:text-[#B85C38]"
 													>
-														Marcar terminada
+														Ir a leer
 													</Button>
-												</div>
-											)}
-										</form.Subscribe>
-										<form.Subscribe
-											selector={(state) =>
-												[
-													state.values.progressCurrent,
-													state.values.progressTotal,
-												] as const
-											}
-										>
-											{([progressCurrent, progressTotal]) => {
-												const canSaveProgress =
-													Number.isFinite(progressCurrent) &&
-													Number.isFinite(progressTotal) &&
-													progressTotal >= 0 &&
-													progressCurrent >= 0 &&
-													(progressTotal === 0 ||
-														progressCurrent <= progressTotal);
-
-												if (canSaveProgress) return null;
-												return (
-													<p className="text-sm text-destructive">
-														El progreso no puede superar el total.
-													</p>
-												);
-											}}
-										</form.Subscribe>
-									</div>
-									<div className="sm:col-span-2 flex items-end justify-end">
-										<form.Subscribe
-											selector={(state) =>
-												[
-													state.values.progressCurrent,
-													state.values.progressTotal,
-													state.isSubmitting,
-												] as const
-											}
-										>
-											{([progressCurrent, progressTotal, isSubmitting]) => {
-												const canSaveProgress =
-													Number.isFinite(progressCurrent) &&
-													Number.isFinite(progressTotal) &&
-													progressTotal >= 0 &&
-													progressCurrent >= 0 &&
-													(progressTotal === 0 ||
-														progressCurrent <= progressTotal);
-
-												return (
-													<Button
-														type="submit"
-														disabled={isSubmitting || !canSaveProgress}
-														className={cn(
-															!canSaveProgress && "pointer-events-none",
-														)}
-													>
-														{isSubmitting ? "Guardando..." : "Guardar cambios"}
-													</Button>
-												);
-											}}
-										</form.Subscribe>
-									</div>
-								</div>
-							</section>
-						)}
-						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
-							<p className="text-sm font-medium">Metadatos</p>
-							<div className="space-y-2">
-								<Label>Metadatos</Label>
-								<Dialog
-									open={isMetadataOpen}
-									onOpenChange={handleMetadataOpenChange}
-								>
-									<DialogTrigger
-										render={<Button variant="outline" size="sm" />}
-									>
-										Buscar metadatos
-									</DialogTrigger>
-									<DialogContent className="sm:max-w-lg rounded-xl">
-										<DialogHeader>
-											<DialogTitle className="text-lg font-semibold font-serif">
-												Buscar metadatos
-											</DialogTitle>
-											<DialogDescription>
-												Proveedor: {metadataSourceLabel}
-											</DialogDescription>
-										</DialogHeader>
-										<div className="space-y-3">
-											<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-												<Input
-													value={metadataQuery}
-													onChange={(e) => setMetadataQuery(e.target.value)}
-													placeholder={`Buscar en ${metadataSourceLabel}`}
-												/>
-												<Button
-													type="button"
-													disabled={!canSearchMetadata}
-													onClick={handleMetadataSearch}
-												>
-													{isSearchingMetadata ? "Buscando..." : "Buscar"}
-												</Button>
-											</div>
-											{metadataError && (
-												<p className="text-sm text-destructive">
-													{metadataError}
-												</p>
-											)}
-											{metadataResults.length === 0 &&
-												!metadataError &&
-												!isSearchingMetadata && (
-													<p className="text-sm text-muted-foreground">
-														Ingresa un término para buscar.
-													</p>
 												)}
-											{metadataResults.length > 0 && (
-												<div className="space-y-2 max-h-64 overflow-auto">
-													{metadataResults.map((result) => {
-														const details = [
-															result.creator,
-															result.year?.toString(),
-														]
-															.filter(Boolean)
-															.join(" • ");
-														return (
-															<div
-																key={`${result.source}-${result.id}`}
-																className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-2"
-															>
-																<div className="min-w-0">
-																	<p className="text-sm font-medium truncate">
-																		{result.title}
-																	</p>
-																	{details && (
-																		<p className="text-xs text-muted-foreground">
-																			{details}
-																		</p>
-																	)}
-																</div>
-																<Button
-																	type="button"
-																	size="sm"
-																	disabled={isLoadingPreviewDetails}
-																	onClick={() =>
-																		handleOpenMetadataPreview(result)
-																	}
-																>
-																	Vista previa
-																</Button>
-															</div>
-														);
-													})}
-												</div>
-											)}
-											<Dialog
-												open={isMetadataPreviewOpen}
-												onOpenChange={setIsMetadataPreviewOpen}
-											>
-												<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl">
-													<DialogHeader>
-														<DialogTitle>Vista previa de metadatos</DialogTitle>
-														<DialogDescription>
-															Revisa toda la metadata disponible antes de
-															aplicarla.
-														</DialogDescription>
-													</DialogHeader>
-													<div className="space-y-4">
-														{isLoadingPreviewDetails && (
-															<p className="text-sm text-muted-foreground">
-																Cargando detalles...
-															</p>
-														)}
-														{previewError && (
-															<p className="text-sm text-destructive">
-																{previewError}
-															</p>
-														)}
-														{previewMetadata && (
-															<>
-																{previewMetadata.coverUrl && (
-																	<img
-																		src={previewMetadata.coverUrl}
-																		alt={`Portada de ${previewMetadata.title}`}
-																		className="h-44 w-32 rounded-md object-cover"
-																		loading="lazy"
-																	/>
-																)}
-																<div className="grid gap-2 sm:grid-cols-2">
-																	{previewRows
-																		.filter(
-																			(row) =>
-																				Boolean(row.value) ||
-																				(isLoadingPreviewDetails &&
-																					row.showLoading),
-																		)
-																		.map((row) => (
-																			<div
-																				key={`${row.label}-${row.value}`}
-																				className="text-sm"
-																			>
-																				<span className="text-muted-foreground">
-																					{row.label}:
-																				</span>{" "}
-																				{row.value ? (
-																					<span>{row.value}</span>
-																				) : isLoadingPreviewDetails &&
-																					row.showLoading ? (
-																					<span className="inline-block h-3.5 w-28 animate-pulse rounded bg-muted-foreground/25 align-middle" />
-																				) : null}
-																			</div>
-																		))}
-																</div>
-																{!isLoadingPreviewDetails &&
-																	obra.type === "manga" &&
-																	mangaChapterPreview === undefined && (
-																		<p className="text-sm text-muted-foreground">
-																			Último capítulo: No disponible en el
-																			proveedor.
-																		</p>
-																	)}
-																<details>
-																	<summary className="cursor-pointer text-sm text-muted-foreground">
-																		Request debug
-																	</summary>
-																	<div className="mt-2 space-y-2">
-																		{(lastMetadataSearchUrl ||
-																			requestDebugSearch) && (
-																			<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
-																				{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
-																			</pre>
-																		)}
-																		{requestDebugDetails && (
-																			<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto">
-																				{`GET ${requestDebugDetails}`}
-																			</pre>
-																		)}
-																		{previewResult?.source === "anilist" && (
-																			<pre className="rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
-																				{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
-																					{
-																						query:
-																							"query ($id: Int) { Media(id: $id) { id idMal title { romaji english native } coverImage { extraLarge large } season seasonYear status episodes chapters volumes nextAiringEpisode { episode airingAt } externalLinks { site url } staff(perPage: 6) { edges { role node { name { full } } } } studios(isMain: true) { nodes { name } } } }",
-																						variables: {
-																							id: Number(previewResult.id),
-																						},
-																					},
-																					null,
-																					2,
-																				)}`}
-																			</pre>
-																		)}
-																	</div>
-																</details>
-																<details>
-																	<summary className="cursor-pointer text-sm text-muted-foreground">
-																		Ver JSON completo
-																	</summary>
-																	<pre className="mt-2 rounded-md border border-border/60 bg-muted/40 p-3 text-xs overflow-x-auto whitespace-pre-wrap">
-																		{JSON.stringify(previewMetadata, null, 2)}
-																	</pre>
-																</details>
-															</>
-														)}
-													</div>
-													<DialogFooter>
-														<Button
-															type="button"
-															variant="outline"
-															onClick={() => setIsMetadataPreviewOpen(false)}
-														>
-															Cerrar
-														</Button>
-														<Button
-															type="button"
-															disabled={!previewResult || isApplyingMetadata}
-															onClick={handleApplyMetadata}
-														>
-															{isApplyingMetadata
-																? "Aplicando..."
-																: "Usar metadatos"}
-														</Button>
-													</DialogFooter>
-												</DialogContent>
-											</Dialog>
+											</form.Subscribe>
 										</div>
-										<DialogFooter>
-											<Button
-												type="button"
-												variant="outline"
-												onClick={() => setIsMetadataOpen(false)}
-											>
-												Cerrar
-											</Button>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
-								<p className="text-xs text-muted-foreground">
-									Proveedor recomendado: {metadataSourceLabel}.
-								</p>
-							</div>
-							<div className="space-y-2">
-								<Label>Lectura personal</Label>
-								<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-									<form.Field name="readingUrl">
-										{(field) => (
-											<Input
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="https://cubari.moe/..."
-												className="flex-1"
-											/>
-										)}
-									</form.Field>
-									<form.Subscribe selector={(state) => state.values.readingUrl}>
-										{(readingUrl) => (
-											<Button
-												type="button"
-												variant="outline"
-												disabled={!readingUrl.trim()}
-												onClick={() => handleOpenReadingLink(readingUrl)}
-											>
-												Ir a leer
-											</Button>
-										)}
-									</form.Subscribe>
-								</div>
-								<p className="text-xs text-muted-foreground">
-									Guarda tu link personal del sitio donde lees los capítulos.
-								</p>
-							</div>
-						</section>
-						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
-							<p className="text-sm font-medium">Estado y fechas</p>
-							<div className="space-y-2">
-								<Label>Estado</Label>
-								<Select
-									value={obra.status}
-									onValueChange={(v) => handleStatusChange(v as ObraStatus)}
-								>
-									<SelectTrigger>
-										<span className="truncate">
-											{statusLabels[obra.status]}
-										</span>
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="backlog">Pendiente</SelectItem>
-										<SelectItem value="in-progress">En progreso</SelectItem>
-										<SelectItem value="finished">Terminada</SelectItem>
-										<SelectItem value="dropped">Abandonada</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="space-y-2">
-									<Label>Fecha de inicio</Label>
-									<form.Field name="startedAt">
-										{(field) => (
-											<Input
-												type="date"
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-											/>
-										)}
-									</form.Field>
-								</div>
-								<div className="space-y-2">
-									<Label>Fecha de término</Label>
-									<form.Field name="finishedAt">
-										{(field) => (
-											<Input
-												type="date"
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-											/>
-										)}
-									</form.Field>
-								</div>
-							</div>
-						</section>
+										<p className="text-xs text-[#8C8279]">
+											Guarda tu link personal del sitio donde lees los
+											capítulos.
+										</p>
+									</div>
+								</section>
+								<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+									<p className="text-sm font-medium">Estado y fechas</p>
+									<div className="space-y-2">
+										<Label>Estado</Label>
+										<Select
+											value={obra.status}
+											onValueChange={(v) => handleStatusChange(v as ObraStatus)}
+										>
+											<SelectTrigger className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus:ring-[#B85C38]">
+												<span className="truncate">
+													{statusLabels[obra.status]}
+												</span>
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="backlog">Pendiente</SelectItem>
+												<SelectItem value="in-progress">En progreso</SelectItem>
+												<SelectItem value="finished">Terminada</SelectItem>
+												<SelectItem value="dropped">Abandonada</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="grid gap-4 sm:grid-cols-2">
+										<div className="space-y-2">
+											<Label>Fecha de inicio</Label>
+											<form.Field name="startedAt">
+												{(field) => (
+													<Input
+														type="date"
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+										</div>
+										<div className="space-y-2">
+											<Label>Fecha de término</Label>
+											<form.Field name="finishedAt">
+												{(field) => (
+													<Input
+														type="date"
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+										</div>
+									</div>
+								</section>
 
-						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
-							<p className="text-sm font-medium">Notas y reseña</p>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="space-y-2">
-									<Label>Reseña</Label>
-									<form.Field name="review">
-										{(field) => (
-											<Textarea
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="Qué te dejó esta obra?"
-												rows={4}
-											/>
-										)}
-									</form.Field>
-								</div>
-								<div className="space-y-2">
-									<Label>Notas</Label>
-									<form.Field name="notes">
-										{(field) => (
-											<Textarea
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="Ideas, citas, preguntas..."
-												rows={8}
-											/>
-										)}
-									</form.Field>
-								</div>
-							</div>
-						</section>
+								<section className="border border-[#D6D0C7] bg-white p-5 space-y-4">
+									<p className="text-sm font-medium">Notas y reseña</p>
+									<div className="grid gap-4 sm:grid-cols-2">
+										<div className="space-y-2">
+											<Label>Reseña</Label>
+											<form.Field name="review">
+												{(field) => (
+													<Textarea
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														placeholder="Qué te dejó esta obra?"
+														rows={4}
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+										</div>
+										<div className="space-y-2">
+											<Label>Notas</Label>
+											<form.Field name="notes">
+												{(field) => (
+													<Textarea
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														placeholder="Ideas, citas, preguntas..."
+														rows={8}
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+										</div>
+									</div>
+								</section>
 
-						{!hasProgress && (
-							<div className="flex justify-end">
-								<form.Subscribe selector={(state) => state.isSubmitting}>
-									{(isSubmitting) => (
-										<Button type="submit" disabled={isSubmitting}>
-											{isSubmitting ? "Guardando..." : "Guardar cambios"}
-										</Button>
-									)}
-								</form.Subscribe>
-							</div>
-						)}
-					</form>
+								{!hasProgress && (
+									<div className="flex justify-end">
+										<form.Subscribe selector={(state) => state.isSubmitting}>
+											{(isSubmitting) => (
+												<Button
+													type="submit"
+													disabled={isSubmitting}
+													className="rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]"
+												>
+													{isSubmitting ? "Guardando..." : "Guardar cambios"}
+												</Button>
+											)}
+										</form.Subscribe>
+									</div>
+								)}
+							</form>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
