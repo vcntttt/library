@@ -1206,7 +1206,7 @@ function ObraAuthed({
 																	)
 																}
 															>
-																Al total
+																Al día
 															</Button>
 															<Button
 																type="button"
