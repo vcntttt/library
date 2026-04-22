@@ -87,3 +87,33 @@ export const isObraUpToDate = (obra: Obra) => {
 	const progressCurrent = obra.progress?.current ?? 0;
 	return progressCurrent >= releasedCount;
 };
+
+export const getMangaProgressUnitLabel = () => "capítulos";
+
+export const getMangaReleaseSummary = (obra: Obra) => {
+	if (obra.type !== "manga") return undefined;
+
+	const metadata = obra.metadata;
+	const parts: string[] = [];
+	const latestChapter = metadata?.latestChapter ?? metadata?.chapters;
+
+	if (latestChapter) {
+		parts.push(`${latestChapter} capítulos`);
+	}
+	if (metadata?.volumes) {
+		parts.push(`${metadata.volumes} volúmenes`);
+	}
+	const status = formatMetadataStatus(metadata?.status);
+	if (status) {
+		parts.push(status);
+	}
+	if (metadata?.latestChapterCheckedAt) {
+		parts.push(
+			`Última verificación ${new Date(
+				metadata.latestChapterCheckedAt,
+			).toLocaleString()}`,
+		);
+	}
+
+	return parts.length ? parts.slice(0, 3).join(" • ") : undefined;
+};

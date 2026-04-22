@@ -14,7 +14,6 @@ import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
 import { Route as ApiObrasRouteImport } from './routes/api/obras'
-import { Route as ApiObsidianOpenRouteImport } from './routes/api/obsidian/open'
 import { Route as ApiObrasObraIdRouteImport } from './routes/api/obras/$obraId'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
@@ -45,11 +44,6 @@ const ObraObraIdRoute = ObraObraIdRouteImport.update({
 const ApiObrasRoute = ApiObrasRouteImport.update({
   id: '/api/obras',
   path: '/api/obras',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiObsidianOpenRoute = ApiObsidianOpenRouteImport.update({
-  id: '/api/obsidian/open',
-  path: '/api/obsidian/open',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiObrasObraIdRoute = ApiObrasObraIdRouteImport.update({
@@ -95,7 +89,6 @@ export interface FileRoutesByFullPath {
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/api/obras/$obraId': typeof ApiObrasObraIdRoute
-  '/api/obsidian/open': typeof ApiObsidianOpenRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
@@ -109,7 +102,6 @@ export interface FileRoutesByTo {
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/api/obras/$obraId': typeof ApiObrasObraIdRoute
-  '/api/obsidian/open': typeof ApiObsidianOpenRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
@@ -124,7 +116,6 @@ export interface FileRoutesById {
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/api/obras/$obraId': typeof ApiObrasObraIdRoute
-  '/api/obsidian/open': typeof ApiObsidianOpenRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
@@ -140,7 +131,6 @@ export interface FileRouteTypes {
     | '/api/metadata/details'
     | '/api/metadata/search'
     | '/api/obras/$obraId'
-    | '/api/obsidian/open'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/pull'
   fileRoutesByTo: FileRoutesByTo
@@ -154,7 +144,6 @@ export interface FileRouteTypes {
     | '/api/metadata/details'
     | '/api/metadata/search'
     | '/api/obras/$obraId'
-    | '/api/obsidian/open'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/pull'
   id:
@@ -168,7 +157,6 @@ export interface FileRouteTypes {
     | '/api/metadata/details'
     | '/api/metadata/search'
     | '/api/obras/$obraId'
-    | '/api/obsidian/open'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/pull'
   fileRoutesById: FileRoutesById
@@ -182,7 +170,6 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
-  ApiObsidianOpenRoute: typeof ApiObsidianOpenRoute
   InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
   InternalAlfredNotificationsPullRoute: typeof InternalAlfredNotificationsPullRoute
 }
@@ -222,13 +209,6 @@ declare module '@tanstack/react-router' {
       path: '/api/obras'
       fullPath: '/api/obras'
       preLoaderRoute: typeof ApiObrasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/obsidian/open': {
-      id: '/api/obsidian/open'
-      path: '/api/obsidian/open'
-      fullPath: '/api/obsidian/open'
-      preLoaderRoute: typeof ApiObsidianOpenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/obras/$obraId': {
@@ -297,7 +277,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
-  ApiObsidianOpenRoute: ApiObsidianOpenRoute,
   InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,
   InternalAlfredNotificationsPullRoute: InternalAlfredNotificationsPullRoute,
 }

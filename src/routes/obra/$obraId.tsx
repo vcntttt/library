@@ -41,7 +41,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery } from "@/lib/api/client";
 import { api } from "@/lib/api/definitions";
 import { authClient } from "@/lib/auth-client";
-import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
+import {
+	getMangaReleaseSummary,
+	isMetadataOngoing,
+	isObraUpToDate,
+} from "@/lib/metadata/format";
 import type {
 	MetadataDetails,
 	MetadataSearchResult,
@@ -263,8 +267,6 @@ function ObraAuthed({
 	const doc = useQuery(api.obras.get, { id });
 	const updateObra = useMutation(api.obras.update);
 	const removeObra = useMutation(api.obras.remove);
-	const [isOpeningObsidian, setIsOpeningObsidian] = useState(false);
-	const [obsidianError, setObsidianError] = useState<string | null>(null);
 	const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 	const [isMetadataOpen, setIsMetadataOpen] = useState(false);
 	const [metadataQuery, setMetadataQuery] = useState("");
@@ -291,7 +293,6 @@ function ObraAuthed({
 
 	const form = useForm({
 		defaultValues: {
-			obsidianPath: "",
 			readingUrl: "",
 			startedAt: "",
 			finishedAt: "",
@@ -318,7 +319,6 @@ function ObraAuthed({
 			if (!canSaveProgress) return;
 
 			const patch: Record<string, unknown> = {
-				obsidianPath: value.obsidianPath.trim() || undefined,
 				readingUrl: value.readingUrl.trim() || undefined,
 				startedAt: parseDateInput(value.startedAt),
 				finishedAt: parseDateInput(value.finishedAt),
@@ -351,7 +351,6 @@ function ObraAuthed({
 			return;
 		}
 		form.reset({
-			obsidianPath: doc.obsidianPath ?? "",
 			readingUrl: doc.readingUrl ?? "",
 			startedAt: formatDateInput(doc.startedAt),
 			finishedAt: formatDateInput(doc.finishedAt),
@@ -487,6 +486,12 @@ function ObraAuthed({
 				).toLocaleString(),
 			});
 		}
+		if (obra.type === "manga" && metadata.latestChapterCheckedAt) {
+			metadataItems.push({
+				label: "Última verificación",
+				value: new Date(metadata.latestChapterCheckedAt).toLocaleString(),
+			});
+		}
 		if (
 			obra.type === "manga" &&
 			metadata.latestChapter !== undefined &&
@@ -528,6 +533,12 @@ function ObraAuthed({
 		technicalItems.push({ label: "Año", value: obra.year.toString() });
 	}
 	technicalItems.push(...metadataItems);
+	if (obra.type === "manga") {
+		const mangaSummary = getMangaReleaseSummary(obra);
+		if (mangaSummary) {
+			technicalItems.push({ label: "Resumen manga", value: mangaSummary });
+		}
+	}
 	if (obra.external) {
 		technicalItems.push({ label: "Fuente", value: metadataSourceLabel });
 	}
@@ -587,40 +598,6 @@ function ObraAuthed({
 			progressCommitTimeout.current = null;
 			void handleQuickProgressUpdate(nextCurrent, nextTotal);
 		}, 600);
-	};
-
-	const handleOpenInObsidian = async (pathValue: string) => {
-		const trimmedPath = pathValue.trim();
-		if (!trimmedPath) return;
-
-		setIsOpeningObsidian(true);
-		setObsidianError(null);
-		try {
-			const response = await fetch(
-				`/api/obsidian/open?path=${encodeURIComponent(trimmedPath)}`,
-			);
-			if (!response.ok) {
-				const payload = await response.json().catch(() => ({}));
-				const message =
-					payload && typeof payload.error === "string"
-						? payload.error
-						: "No se pudo abrir Obsidian.";
-				throw new Error(message);
-			}
-
-			const payload = await response.json();
-			if (!payload?.url) {
-				throw new Error("Respuesta invalida.");
-			}
-
-			window.location.assign(payload.url);
-		} catch (error) {
-			setObsidianError(
-				error instanceof Error ? error.message : "No se pudo abrir Obsidian.",
-			);
-		} finally {
-			setIsOpeningObsidian(false);
-		}
 	};
 
 	const handleOpenReadingLink = (urlValue: string) => {
@@ -1124,6 +1101,12 @@ function ObraAuthed({
 																Define un total para usar el slider.
 															</p>
 														)}
+														{obra.type === "manga" && (
+															<p className="text-xs text-muted-foreground">
+																En manga, avanza por capítulos y marca terminada
+																al llegar al total.
+															</p>
+														)}
 														<div className="space-y-2">
 															<Label>
 																Total
@@ -1263,7 +1246,7 @@ function ObraAuthed({
 							</section>
 						)}
 						<section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
-							<p className="text-sm font-medium">Metadatos y Obsidian</p>
+							<p className="text-sm font-medium">Metadatos</p>
 							<div className="space-y-2">
 								<Label>Metadatos</Label>
 								<Dialog
@@ -1497,43 +1480,6 @@ function ObraAuthed({
 								</p>
 							</div>
 							<div className="space-y-2">
-								<Label>Obsidian</Label>
-								<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-									<form.Field name="obsidianPath">
-										{(field) => (
-											<Input
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="500-Library/Books/Título.md"
-												className="flex-1"
-											/>
-										)}
-									</form.Field>
-									<form.Subscribe
-										selector={(state) => state.values.obsidianPath}
-									>
-										{(obsidianPath) => (
-											<Button
-												type="button"
-												variant="outline"
-												disabled={!obsidianPath.trim() || isOpeningObsidian}
-												onClick={() => handleOpenInObsidian(obsidianPath)}
-											>
-												{isOpeningObsidian
-													? "Abriendo..."
-													: "Abrir en Obsidian"}
-											</Button>
-										)}
-									</form.Subscribe>
-								</div>
-								<p className="text-xs text-muted-foreground">
-									Path relativo al vault.
-								</p>
-								{obsidianError && (
-									<p className="text-sm text-destructive">{obsidianError}</p>
-								)}
-							</div>
-							<div className="space-y-2">
 								<Label>Lectura personal</Label>
 								<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
 									<form.Field name="readingUrl">
@@ -1630,7 +1576,7 @@ function ObraAuthed({
 									</form.Field>
 								</div>
 								<div className="space-y-2">
-									<Label>Notas (Markdown)</Label>
+									<Label>Notas</Label>
 									<form.Field name="notes">
 										{(field) => (
 											<Textarea

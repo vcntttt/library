@@ -55,7 +55,6 @@ const createObraSchema = z.object({
 	review: z.string().nullish(),
 	tags: z.array(z.string()).nullish(),
 	notes: z.string().nullish(),
-	obsidianPath: z.string().nullish(),
 	readingUrl: z.string().nullish(),
 	external: externalSchema.nullish(),
 	metadata: metadataSchema.nullish(),
@@ -74,7 +73,6 @@ const updatePatchSchema = z.object({
 	review: z.string().nullish(),
 	tags: z.array(z.string()).nullish(),
 	notes: z.string().nullish(),
-	obsidianPath: z.string().nullish(),
 	readingUrl: z.string().nullish(),
 	external: externalSchema.nullish(),
 	metadata: metadataSchema.nullish(),
@@ -136,7 +134,7 @@ export async function createObra(userId: string, rawInput: unknown) {
 	const now = Date.now();
 	const progress = sanitizeProgress(input.progress);
 	const external = sanitizeExternal(input.external);
-	const metadata = sanitizeMetadata(input.metadata);
+	const metadata = sanitizeMetadata(input.metadata, input.type);
 
 	let startedAt = nullableNumber(input.startedAt);
 	let finishedAt = nullableNumber(input.finishedAt);
@@ -165,7 +163,6 @@ export async function createObra(userId: string, rawInput: unknown) {
 			review: normalizeOptionalString(input.review),
 			tags: normalizeTags(input.tags),
 			notes: normalizeOptionalString(input.notes),
-			obsidianPath: normalizeOptionalString(input.obsidianPath),
 			readingUrl: normalizeOptionalString(input.readingUrl),
 			externalSource: external?.source,
 			externalId: external?.id,
@@ -222,9 +219,6 @@ export async function updateObra(
 	if (hasOwn(patch, "notes")) {
 		nextPatch.notes = normalizeOptionalString(patch.notes);
 	}
-	if (hasOwn(patch, "obsidianPath")) {
-		nextPatch.obsidianPath = normalizeOptionalString(patch.obsidianPath);
-	}
 	if (hasOwn(patch, "readingUrl")) {
 		nextPatch.readingUrl = normalizeOptionalString(patch.readingUrl);
 	}
@@ -234,7 +228,10 @@ export async function updateObra(
 		nextPatch.externalId = external?.id ?? null;
 	}
 	if (hasOwn(patch, "metadata")) {
-		nextPatch.metadata = sanitizeMetadata(patch.metadata ?? null);
+		nextPatch.metadata = sanitizeMetadata(
+			patch.metadata ?? null,
+			patch.type ?? existing.type,
+		);
 	}
 	if (hasOwn(patch, "coverUrl")) {
 		nextPatch.coverUrl = normalizeOptionalString(patch.coverUrl);
@@ -314,7 +311,6 @@ export function toObra(row: ObraRow): Obra {
 		review: row.review ?? undefined,
 		tags: row.tags ?? [],
 		notes: row.notes ?? undefined,
-		obsidianPath: row.obsidianPath ?? undefined,
 		readingUrl: row.readingUrl ?? undefined,
 		coverUrl: row.coverUrl ?? undefined,
 		creator: row.creator ?? undefined,
@@ -355,6 +351,7 @@ function sanitizeExternal(
 
 function sanitizeMetadata(
 	metadata: ObraMetadata | null | undefined,
+	obraType?: ObraType,
 ): ObraMetadata | null | undefined {
 	if (metadata === undefined) return undefined;
 	if (metadata === null) return null;
@@ -389,6 +386,16 @@ function sanitizeMetadata(
 			normalizeOptionalString(metadata.mangaPlusTitleId) ?? undefined,
 		mangaDexId: normalizeOptionalString(metadata.mangaDexId) ?? undefined,
 	};
+
+	if (obraType === "manga") {
+		const latestChapter = sanitized.latestChapter ?? sanitized.chapters;
+		if (latestChapter !== undefined && sanitized.chapters === undefined) {
+			sanitized.chapters = latestChapter;
+		}
+		if (latestChapter !== undefined && sanitized.latestChapter === undefined) {
+			sanitized.latestChapter = latestChapter;
+		}
+	}
 
 	return Object.values(sanitized).some((value) => value !== undefined)
 		? sanitized

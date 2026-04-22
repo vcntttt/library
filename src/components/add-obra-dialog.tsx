@@ -76,6 +76,9 @@ const metadataSourceByType: Record<
 	manga: "anilist",
 };
 
+const mangaHelpText =
+	"Elige un manga y deja que AniList complete capítulos, volúmenes y portada.";
+
 const parseDateInput = (value: string) => {
 	if (!value.trim()) return undefined;
 	const timestamp = new Date(value).getTime();
@@ -628,6 +631,11 @@ export function AddObraDialog({
 								<p className="text-xs text-muted-foreground">
 									Elige el tipo antes de buscar metadatos.
 								</p>
+								{field.state.value === "manga" && (
+									<p className="text-xs text-cyan-700 dark:text-cyan-300">
+										{mangaHelpText}
+									</p>
+								)}
 							</div>
 						)}
 					</form.Field>
@@ -715,6 +723,11 @@ export function AddObraDialog({
 								{activeType && metadataQuery.trim().length < 3 && (
 									<p className="text-sm text-muted-foreground">
 										Escribe al menos 3 caracteres para buscar.
+									</p>
+								)}
+								{activeType === "manga" && (
+									<p className="text-xs text-muted-foreground">
+										En manga, el progreso se mide en capítulos.
 									</p>
 								)}
 								{activeType && isSearchingMetadata && (
@@ -891,6 +904,12 @@ export function AddObraDialog({
 													onChange={(e) => field.handleChange(e.target.value)}
 													placeholder="Ej: 320"
 												/>
+												{type === "manga" && (
+													<p className="text-xs text-muted-foreground">
+														Si no conoces el total, usa el valor que devuelva
+														AniList.
+													</p>
+												)}
 											</div>
 										)}
 									</form.Field>

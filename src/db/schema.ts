@@ -144,7 +144,6 @@ export const obras = pgTable(
 		review: text("review"),
 		tags: jsonb("tags").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
 		notes: text("notes"),
-		obsidianPath: text("obsidian_path"),
 		readingUrl: text("reading_url"),
 		externalSource: text("external_source").$type<MetadataSource>(),
 		externalId: text("external_id"),

@@ -47,7 +47,6 @@ export interface Obra {
 	review?: string;
 	tags: string[];
 	notes?: string;
-	obsidianPath?: string;
 	readingUrl?: string;
 	coverUrl?: string;
 	creator?: string;
@@ -68,7 +67,6 @@ export interface CreateObraInput {
 	review?: string;
 	tags?: string[];
 	notes?: string;
-	obsidianPath?: string;
 	readingUrl?: string;
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
@@ -87,7 +85,6 @@ export interface UpdateObraPatch {
 	review?: string;
 	tags?: string[];
 	notes?: string;
-	obsidianPath?: string;
 	readingUrl?: string;
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
