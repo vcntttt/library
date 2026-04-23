@@ -431,7 +431,7 @@ export function BibliotecaTable({
 															{showOngoingBadge && (
 																<Badge
 																	variant="outline"
-																	className="h-4 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
+																	className="h-5 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
 																>
 																	En emisión
 																</Badge>
@@ -439,7 +439,7 @@ export function BibliotecaTable({
 															{showUpToDateBadge && (
 																<Badge
 																	variant="outline"
-																	className="h-4 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
+																	className="h-5 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
 																>
 																	Al día
 																</Badge>
@@ -501,7 +501,7 @@ export function BibliotecaTable({
 			) : (
 				<div className="space-y-4">
 					{isLoading ? (
-						<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+						<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
 							{GRID_SKELETON_KEYS.map((key) => (
 								<div
 									key={key}
@@ -526,26 +526,10 @@ export function BibliotecaTable({
 							</p>
 						</div>
 					) : (
-						<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-							{filteredObras.map((obra) => {
-								const readingUrl = normalizeReadingUrl(obra.readingUrl);
-								return (
-									<div key={obra.id} className="space-y-2">
-										<ObraCard obra={obra} variant="grid" />
-										{readingUrl && (
-											<a
-												href={readingUrl}
-												target="_blank"
-												rel="noreferrer"
-												className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
-											>
-												<ExternalLink className="h-3.5 w-3.5" />
-												Ir a leer
-											</a>
-										)}
-									</div>
-								);
-							})}
+						<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+							{filteredObras.map((obra) => (
+								<ObraCard key={obra.id} obra={obra} variant="grid" />
+							))}
 						</div>
 					)}
 				</div>

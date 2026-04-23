@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { ExternalLink } from "lucide-react";
 import { getObraMetaLine } from "@/lib/metadata/format";
 import type { Obra } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,14 @@ interface ObraCardProps {
 	className?: string;
 }
 
+const normalizeReadingUrl = (value?: string) => {
+	if (!value) return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	if (/^https?:\/\//i.test(trimmed)) return trimmed;
+	return `https://${trimmed}`;
+};
+
 export function ObraCard({
 	obra,
 	variant = "default",
@@ -25,49 +34,68 @@ export function ObraCard({
 		obra.type !== "movie" &&
 		(obra.status === "in-progress" || obra.status === "backlog");
 	const metaLine = getObraMetaLine(obra);
+	const readingUrl = normalizeReadingUrl(obra.readingUrl);
 
 	if (variant === "grid") {
 		return (
-			<Link
-				to="/obra/$obraId"
-				params={{ obraId: obra.id }}
+			<article
 				className={cn(
-					"group flex flex-col overflow-hidden border border-border bg-card transition-all duration-300 hover:border-primary hover:shadow-sm",
+					"group relative flex h-full flex-col overflow-hidden border border-border bg-card transition-all duration-300 hover:border-primary hover:shadow-sm focus-within:border-primary focus-within:shadow-sm",
 					className,
 				)}
 			>
-				<div className="aspect-[4/5] w-full max-h-56 bg-background sm:aspect-[2/3] sm:max-h-none">
-					{obra.coverUrl ? (
-						<img
-							src={obra.coverUrl}
-							alt={`Portada de ${obra.title}`}
-							className="h-full w-full object-cover"
-							loading="lazy"
-						/>
-					) : (
-						<div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-							Sin portada
-						</div>
-					)}
-				</div>
-				<div className="space-y-1 p-3">
-					<div className="flex items-center gap-2">
-						<TypeBadge type={obra.type} />
-						<StatusBadge status={obra.status} />
+				<Link
+					to="/obra/$obraId"
+					params={{ obraId: obra.id }}
+					className="flex h-full flex-col"
+				>
+					<div className="relative aspect-[4/5] w-full max-h-60 overflow-hidden bg-background sm:aspect-[2/3] sm:max-h-none">
+						{obra.coverUrl ? (
+							<img
+								src={obra.coverUrl}
+								alt={`Portada de ${obra.title}`}
+								className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+								loading="lazy"
+							/>
+						) : (
+							<div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+								Sin portada
+							</div>
+						)}
+						<div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
 					</div>
-					<h3 className="truncate text-sm font-semibold text-card-foreground font-serif group-hover:text-primary transition-colors">
-						{obra.title}
-					</h3>
-					{obra.creator && (
-						<p className="truncate text-xs text-muted-foreground">
-							{obra.creator}
-						</p>
-					)}
-					{metaLine && (
-						<p className="truncate text-xs text-muted-foreground">{metaLine}</p>
-					)}
-				</div>
-			</Link>
+					<div className="space-y-2 p-4 pt-3.5">
+						<div className="flex flex-wrap items-center gap-1.5">
+							<TypeBadge type={obra.type} />
+							<StatusBadge status={obra.status} />
+						</div>
+						<h3 className="truncate text-sm font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
+							{obra.title}
+						</h3>
+						{obra.creator && (
+							<p className="truncate text-xs text-muted-foreground">
+								{obra.creator}
+							</p>
+						)}
+						{metaLine && (
+							<p className="truncate text-xs text-muted-foreground">
+								{metaLine}
+							</p>
+						)}
+					</div>
+				</Link>
+				{readingUrl && (
+					<a
+						href={readingUrl}
+						target="_blank"
+						rel="noreferrer"
+						className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 border border-white/15 bg-black/55 px-2.5 text-[0.65rem] uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm transition-all duration-300 hover:border-white/30 hover:bg-black/72 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:focus-visible:translate-y-0 sm:focus-visible:opacity-100"
+					>
+						<ExternalLink className="h-3.5 w-3.5" />
+						Ir a leer
+					</a>
+				)}
+			</article>
 		);
 	}
 

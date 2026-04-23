@@ -986,7 +986,7 @@ function ObraAuthed({
 									{showOngoingBadge && (
 										<Badge
 											variant="outline"
-											className="h-4 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
+											className="h-5 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
 										>
 											En emisión
 										</Badge>
@@ -994,7 +994,7 @@ function ObraAuthed({
 									{showUpToDateBadge && (
 										<Badge
 											variant="outline"
-											className="h-4 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
+											className="h-5 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
 										>
 											Al día
 										</Badge>
