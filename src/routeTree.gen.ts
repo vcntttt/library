@@ -22,6 +22,7 @@ import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/sea
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
+import { Route as InternalAlfredNotificationsMarkReadRouteImport } from './routes/internal/alfred/notifications/mark-read'
 import { Route as InternalAlfredNotificationsAckRouteImport } from './routes/internal/alfred/notifications/ack'
 
 const VariantCRoute = VariantCRouteImport.update({
@@ -90,6 +91,12 @@ const InternalAlfredNotificationsPullRoute =
     path: '/internal/alfred/notifications/pull',
     getParentRoute: () => rootRouteImport,
   } as any)
+const InternalAlfredNotificationsMarkReadRoute =
+  InternalAlfredNotificationsMarkReadRouteImport.update({
+    id: '/internal/alfred/notifications/mark-read',
+    path: '/internal/alfred/notifications/mark-read',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const InternalAlfredNotificationsAckRoute =
   InternalAlfredNotificationsAckRouteImport.update({
     id: '/internal/alfred/notifications/ack',
@@ -111,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
+  '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
 export interface FileRoutesByTo {
@@ -127,6 +135,7 @@ export interface FileRoutesByTo {
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
+  '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
 export interface FileRoutesById {
@@ -144,6 +153,7 @@ export interface FileRoutesById {
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
+  '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
 }
 export interface FileRouteTypes {
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/api/metadata/search'
     | '/api/obras/$obraId'
     | '/internal/alfred/notifications/ack'
+    | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/api/metadata/search'
     | '/api/obras/$obraId'
     | '/internal/alfred/notifications/ack'
+    | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
   id:
     | '__root__'
@@ -194,6 +206,7 @@ export interface FileRouteTypes {
     | '/api/metadata/search'
     | '/api/obras/$obraId'
     | '/internal/alfred/notifications/ack'
+    | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
   fileRoutesById: FileRoutesById
 }
@@ -210,6 +223,7 @@ export interface RootRouteChildren {
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
   InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
+  InternalAlfredNotificationsMarkReadRoute: typeof InternalAlfredNotificationsMarkReadRoute
   InternalAlfredNotificationsPullRoute: typeof InternalAlfredNotificationsPullRoute
 }
 
@@ -306,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InternalAlfredNotificationsPullRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/internal/alfred/notifications/mark-read': {
+      id: '/internal/alfred/notifications/mark-read'
+      path: '/internal/alfred/notifications/mark-read'
+      fullPath: '/internal/alfred/notifications/mark-read'
+      preLoaderRoute: typeof InternalAlfredNotificationsMarkReadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/internal/alfred/notifications/ack': {
       id: '/internal/alfred/notifications/ack'
       path: '/internal/alfred/notifications/ack'
@@ -341,6 +362,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
   InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,
+  InternalAlfredNotificationsMarkReadRoute:
+    InternalAlfredNotificationsMarkReadRoute,
   InternalAlfredNotificationsPullRoute: InternalAlfredNotificationsPullRoute,
 }
 export const routeTree = rootRouteImport

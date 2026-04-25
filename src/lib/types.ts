@@ -15,7 +15,6 @@ export interface ObraMetadata {
 	episodesAired?: number;
 	nextEpisodeDate?: number;
 	status?: string;
-	chapters?: number;
 	volumes?: number;
 	season?: string;
 	seasonYear?: number;

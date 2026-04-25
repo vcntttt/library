@@ -6,6 +6,7 @@ import {
 	obras,
 } from "@/db/schema";
 import { getMetadataDetails } from "@/lib/metadata/providers";
+import { syncMangaProgressTotal } from "@/lib/server/obras";
 import type { ObraMetadata } from "@/lib/types";
 
 const DEFAULT_POLL_LIMIT = 10;
@@ -44,10 +45,16 @@ export async function checkForNewChapters() {
 				"manga",
 			);
 			const merged = mergeMangaMetadata(obra.metadata ?? undefined, details);
+			const progressTotal = syncMangaProgressTotal(
+				obra.progressTotal,
+				merged,
+				obra.type,
+			);
 			const [updatedRow] = await db
 				.update(obras)
 				.set({
 					metadata: merged,
+					progressTotal: progressTotal ?? null,
 					updatedAt: Date.now(),
 				})
 				.where(eq(obras.id, obra.id))
@@ -57,7 +64,7 @@ export async function checkForNewChapters() {
 				updated += 1;
 			}
 
-			const latestChapter = merged?.latestChapter ?? merged?.chapters;
+			const latestChapter = merged?.latestChapter;
 			const lastNotifiedChapter = obra.metadata?.lastNotifiedChapter ?? 0;
 			if (!latestChapter || latestChapter <= lastNotifiedChapter) {
 				continue;
@@ -181,14 +188,81 @@ export async function ackNotificationEvent(
 			event.chapter,
 			now,
 		);
+		const progressTotal = syncMangaProgressTotal(
+			obra.progressTotal,
+			metadata,
+			obra.type,
+		);
 
 		await db
 			.update(obras)
-			.set({ metadata, updatedAt: now })
+			.set({
+				metadata,
+				progressTotal: progressTotal ?? null,
+				updatedAt: now,
+			})
 			.where(eq(obras.id, obra.id));
 	}
 
 	return { ok: true, status: "delivered" as const };
+}
+
+export async function markNotificationChapterRead(eventId: string) {
+	const event = await db.query.notificationEvents.findFirst({
+		where: eq(notificationEvents.eventId, eventId),
+	});
+
+	if (!event) {
+		return {
+			ok: false,
+			reason: "not_found" as const,
+			message: "Notificacion no encontrada.",
+		};
+	}
+
+	const obra = await db.query.obras.findFirst({
+		where: eq(obras.id, event.obraId),
+	});
+
+	if (!obra) {
+		return {
+			ok: false,
+			reason: "obra_not_found" as const,
+			message: "Obra no encontrada.",
+		};
+	}
+
+	if (obra.type !== "manga") {
+		return {
+			ok: false,
+			reason: "not_manga" as const,
+			message: "La obra no es un manga.",
+		};
+	}
+
+	const currentProgress = obra.progressCurrent ?? 0;
+	const alreadyRead = currentProgress >= event.chapter;
+	const progressCurrent = Math.max(currentProgress, event.chapter);
+	const progressTotal = Math.max(obra.progressTotal ?? 0, event.chapter);
+	const now = Date.now();
+
+	await db
+		.update(obras)
+		.set({
+			progressCurrent,
+			progressTotal,
+			updatedAt: now,
+		})
+		.where(eq(obras.id, obra.id));
+
+	return {
+		ok: true,
+		eventId: event.eventId,
+		obraId: event.obraId,
+		chapter: event.chapter,
+		progressCurrent,
+		alreadyRead,
+	};
 }
 
 export async function enqueueReleaseNotification(payload: MangaReleasePayload) {
@@ -248,7 +322,6 @@ function mergeMangaMetadata(
 ) {
 	const merged: ObraMetadata = {
 		...(existing ?? {}),
-		chapters: details.chapters ?? existing?.chapters,
 		volumes: details.volumes ?? existing?.volumes,
 		status: details.status ?? existing?.status,
 		latestChapter: details.latestChapter ?? existing?.latestChapter,
@@ -263,14 +336,6 @@ function mergeMangaMetadata(
 		lastNotifiedChapter: existing?.lastNotifiedChapter,
 	};
 
-	if (
-		typeof details.latestChapter === "number" &&
-		(typeof merged.chapters !== "number" ||
-			details.latestChapter > merged.chapters)
-	) {
-		merged.chapters = details.latestChapter;
-	}
-
 	return merged;
 }
 
@@ -281,13 +346,11 @@ export function mergeAcknowledgedMangaMetadata(
 ): ObraMetadata {
 	const nextChapter = Math.max(
 		typeof existing?.latestChapter === "number" ? existing.latestChapter : 0,
-		typeof existing?.chapters === "number" ? existing.chapters : 0,
 		chapter,
 	);
 
 	return {
 		...(existing ?? {}),
-		chapters: nextChapter,
 		latestChapter: nextChapter,
 		lastNotifiedChapter: chapter,
 		latestChapterCheckedAt: existing?.latestChapterCheckedAt ?? now,

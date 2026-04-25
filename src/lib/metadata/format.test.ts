@@ -24,7 +24,6 @@ describe("manga formatting", () => {
 		const obra = makeManga({
 			metadata: {
 				latestChapter: 24,
-				chapters: 20,
 				volumes: 4,
 				status: "RELEASING",
 			},

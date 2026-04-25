@@ -385,7 +385,7 @@ export function AddObraDialog({
 		showLoading?: boolean;
 	}> = [];
 	const mangaChapterPreview = previewMetadata
-		? (previewMetadata.latestChapter ?? previewMetadata.chapters)
+		? previewMetadata.latestChapter
 		: undefined;
 
 	if (previewMetadata) {
@@ -450,7 +450,7 @@ export function AddObraDialog({
 			showLoading: true,
 		});
 		previewRows.push({
-			label: "Último capítulo",
+			label: "Capítulos totales",
 			value:
 				mangaChapterPreview !== undefined
 					? mangaChapterPreview.toLocaleString()
@@ -506,13 +506,12 @@ export function AddObraDialog({
 	const getTotalFromMetadata = (
 		metadata: Pick<
 			MetadataSearchResult,
-			"pages" | "episodes" | "chapters" | "latestChapter"
+			"pages" | "episodes" | "latestChapter"
 		> | null,
 	) => {
 		if (!metadata) return undefined;
 		if (activeType === "book") return metadata.pages;
-		if (activeType === "manga")
-			return metadata.latestChapter ?? metadata.chapters;
+		if (activeType === "manga") return metadata.latestChapter;
 		if (activeType === "series" || activeType === "anime")
 			return metadata.episodes;
 		return undefined;
@@ -529,7 +528,6 @@ export function AddObraDialog({
 			episodesAired: source.episodesAired ?? undefined,
 			nextEpisodeDate: source.nextEpisodeDate ?? undefined,
 			status: source.status ?? undefined,
-			chapters: source.chapters ?? undefined,
 			volumes: source.volumes ?? undefined,
 			season: source.season ?? undefined,
 			seasonYear: source.seasonYear ?? undefined,

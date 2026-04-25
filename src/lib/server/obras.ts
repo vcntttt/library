@@ -29,7 +29,6 @@ const metadataSchema = z.object({
 	episodesAired: z.number().int().nonnegative().nullish(),
 	nextEpisodeDate: z.number().int().nonnegative().nullish(),
 	status: z.string().nullish(),
-	chapters: z.number().int().nonnegative().nullish(),
 	volumes: z.number().int().nonnegative().nullish(),
 	season: z.string().nullish(),
 	seasonYear: z.number().int().nonnegative().nullish(),
@@ -254,6 +253,22 @@ export async function updateObra(
 		nextPatch.finishedAt = nullableNumber(patch.finishedAt);
 	}
 
+	if (
+		!hasOwn(patch, "progress") &&
+		hasOwn(patch, "metadata") &&
+		nextPatch.metadata &&
+		typeof existing.progressTotal === "number"
+	) {
+		const syncedTotal = syncMangaProgressTotal(
+			existing.progressTotal,
+			nextPatch.metadata,
+			nextPatch.type ?? existing.type,
+		);
+		if (syncedTotal !== undefined) {
+			nextPatch.progressTotal = syncedTotal;
+		}
+	}
+
 	const nextStatus = nextPatch.status ?? existing.status;
 	if (
 		nextStatus === "in-progress" &&
@@ -363,7 +378,6 @@ function sanitizeMetadata(
 		episodesAired: nullableNumber(metadata.episodesAired) ?? undefined,
 		nextEpisodeDate: nullableNumber(metadata.nextEpisodeDate) ?? undefined,
 		status: normalizeOptionalString(metadata.status) ?? undefined,
-		chapters: nullableNumber(metadata.chapters) ?? undefined,
 		volumes: nullableNumber(metadata.volumes) ?? undefined,
 		season: normalizeOptionalString(metadata.season) ?? undefined,
 		seasonYear: nullableNumber(metadata.seasonYear) ?? undefined,
@@ -388,10 +402,8 @@ function sanitizeMetadata(
 	};
 
 	if (obraType === "manga") {
-		const latestChapter = sanitized.latestChapter ?? sanitized.chapters;
-		if (latestChapter !== undefined && sanitized.chapters === undefined) {
-			sanitized.chapters = latestChapter;
-		}
+		const legacyChapters = (metadata as { chapters?: number }).chapters;
+		const latestChapter = sanitized.latestChapter ?? legacyChapters;
 		if (latestChapter !== undefined && sanitized.latestChapter === undefined) {
 			sanitized.latestChapter = latestChapter;
 		}
@@ -415,6 +427,20 @@ function sanitizeProgress(
 	}
 
 	return progress;
+}
+
+export function syncMangaProgressTotal(
+	currentTotal: number | null | undefined,
+	metadata: ObraMetadata | null | undefined,
+	obraType: ObraType,
+) {
+	if (obraType !== "manga") return currentTotal ?? undefined;
+	if (currentTotal == null) return undefined;
+
+	const latestChapter = metadata?.latestChapter;
+	if (typeof latestChapter !== "number") return currentTotal;
+
+	return Math.max(currentTotal, latestChapter);
 }
 
 function normalizeTags(tags: string[] | null | undefined) {

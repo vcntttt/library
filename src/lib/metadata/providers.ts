@@ -192,7 +192,6 @@ async function searchAnilist(query: string, obraType?: ObraType) {
 			year: media.startDate?.year ?? undefined,
 			coverUrl: media.coverImage?.extraLarge ?? media.coverImage?.large,
 			episodes: media.episodes ?? undefined,
-			chapters: media.chapters ?? undefined,
 			volumes: media.volumes ?? undefined,
 			status: media.status ?? undefined,
 			season: media.season ?? undefined,
@@ -314,11 +313,7 @@ async function getAnilistDetails(
 	const nextEpisode = media.nextAiringEpisode;
 	const latestChapterInfo =
 		obraType === "manga" ? await resolveLatestMangaChapter(media) : undefined;
-	const fallbackChapter = latestChapterInfo?.latestChapter;
-	const resolvedChapter =
-		media.chapters !== undefined && fallbackChapter !== undefined
-			? Math.max(media.chapters, fallbackChapter)
-			: (media.chapters ?? fallbackChapter);
+	const resolvedChapter = latestChapterInfo?.latestChapter ?? media.chapters;
 
 	return {
 		source: "anilist",
@@ -335,7 +330,6 @@ async function getAnilistDetails(
 		seasonYear: media.seasonYear ?? undefined,
 		status: media.status ?? undefined,
 		episodes: media.episodes ?? undefined,
-		chapters: resolvedChapter,
 		volumes: media.volumes ?? undefined,
 		episodesAired: nextEpisode?.episode
 			? Math.max(nextEpisode.episode - 1, 0)
@@ -571,8 +565,7 @@ export async function getMetadataDetails(
 		source === "anilist" &&
 		obraType === "manga" &&
 		cached?.value.status === "RELEASING" &&
-		cached.value.latestChapter === undefined &&
-		cached.value.chapters === undefined;
+		cached.value.latestChapter === undefined;
 
 	if (cached && cached.expiresAt > Date.now() && !shouldBypassCachedManga) {
 		return cached.value;

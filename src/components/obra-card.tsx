@@ -138,75 +138,92 @@ export function ObraCard({
 	}
 
 	return (
-		<Link
-			to="/obra/$obraId"
-			params={{ obraId: obra.id }}
+		<article
 			className={cn(
-				"group flex flex-col border border-border bg-card p-4 transition-all duration-300 hover:border-primary hover:shadow-sm",
+				"group flex flex-col border border-border bg-card transition-all duration-300 hover:border-primary hover:shadow-sm",
 				className,
 			)}
 		>
-			<div className="flex items-start justify-between gap-3">
-				<div className="flex items-start gap-3 min-w-0 flex-1">
-					{obra.coverUrl && (
-						<div className="h-16 w-12 overflow-hidden bg-background">
-							<img
-								src={obra.coverUrl}
-								alt={`Portada de ${obra.title}`}
-								className="h-full w-full object-cover"
-								loading="lazy"
-							/>
-						</div>
-					)}
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-2 mb-1">
-							<TypeBadge type={obra.type} />
-							<StatusBadge status={obra.status} />
-						</div>
-						<h3 className="truncate font-semibold text-card-foreground font-serif group-hover:text-primary transition-colors">
-							{obra.title}
-						</h3>
-						{obra.creator && (
-							<p className="text-sm text-muted-foreground truncate">
-								{obra.creator}
-							</p>
+			<Link
+				to="/obra/$obraId"
+				params={{ obraId: obra.id }}
+				className="flex flex-1 flex-col p-4"
+			>
+				<div className="flex items-start justify-between gap-3">
+					<div className="flex min-w-0 flex-1 items-start gap-3">
+						{obra.coverUrl && (
+							<div className="h-16 w-12 overflow-hidden bg-background">
+								<img
+									src={obra.coverUrl}
+									alt={`Portada de ${obra.title}`}
+									className="h-full w-full object-cover"
+									loading="lazy"
+								/>
+							</div>
 						)}
-						{metaLine && (
-							<p className="text-xs text-muted-foreground truncate">
-								{metaLine}
-							</p>
-						)}
+						<div className="min-w-0 flex-1">
+							<div className="mb-1 flex items-center gap-2">
+								<TypeBadge type={obra.type} />
+								<StatusBadge status={obra.status} />
+							</div>
+							<h3 className="truncate font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
+								{obra.title}
+							</h3>
+							{obra.creator && (
+								<p className="truncate text-sm text-muted-foreground">
+									{obra.creator}
+								</p>
+							)}
+							{metaLine && (
+								<p className="truncate text-xs text-muted-foreground">
+									{metaLine}
+								</p>
+							)}
+						</div>
 					</div>
 				</div>
-			</div>
 
-			{showProgress && obra.progress && (
-				<div className="mt-3">
-					<ProgressBar
-						current={obra.progress.current}
-						total={obra.progress.total}
-						type={obra.type}
-					/>
+				{showProgress && obra.progress && (
+					<div className="mt-3">
+						<ProgressBar
+							current={obra.progress.current}
+							total={obra.progress.total}
+							type={obra.type}
+						/>
+					</div>
+				)}
+
+				{obra.tags.length > 0 && (
+					<div className="mt-3 flex flex-wrap gap-2">
+						{obra.tags.slice(0, 3).map((tag) => (
+							<span
+								key={tag}
+								className="border-b border-border pb-0.5 text-xs text-muted-foreground"
+							>
+								{tag}
+							</span>
+						))}
+						{obra.tags.length > 3 && (
+							<span className="text-xs text-muted-foreground">
+								+{obra.tags.length - 3}
+							</span>
+						)}
+					</div>
+				)}
+			</Link>
+			{readingUrl && (
+				<div className="border-t border-border px-4 py-3">
+					<a
+						href={readingUrl}
+						target="_blank"
+						rel="noreferrer"
+						className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+					>
+						<ExternalLink className="h-3.5 w-3.5" />
+						Ir a leer
+					</a>
 				</div>
 			)}
-
-			{obra.tags.length > 0 && (
-				<div className="mt-3 flex flex-wrap gap-2">
-					{obra.tags.slice(0, 3).map((tag) => (
-						<span
-							key={tag}
-							className="text-xs text-muted-foreground border-b border-border pb-0.5"
-						>
-							{tag}
-						</span>
-					))}
-					{obra.tags.length > 3 && (
-						<span className="text-xs text-muted-foreground">
-							+{obra.tags.length - 3}
-						</span>
-					)}
-				</div>
-			)}
-		</Link>
+		</article>
 	);
 }

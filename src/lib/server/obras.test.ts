@@ -16,11 +16,13 @@ vi.mock("@/db/client", () => ({
 
 let parseCreateObraInput: typeof import("./obras").parseCreateObraInput;
 let parseUpdateObraPatch: typeof import("./obras").parseUpdateObraPatch;
+let syncMangaProgressTotal: typeof import("./obras").syncMangaProgressTotal;
 
 beforeAll(async () => {
 	const mod = await import("./obras");
 	parseCreateObraInput = mod.parseCreateObraInput;
 	parseUpdateObraPatch = mod.parseUpdateObraPatch;
+	syncMangaProgressTotal = mod.syncMangaProgressTotal;
 });
 
 describe("obra validation", () => {
@@ -30,7 +32,6 @@ describe("obra validation", () => {
 			type: "manga",
 			status: "backlog",
 			metadata: {
-				chapters: 120,
 				latestChapter: 120,
 				volumes: 12,
 				latestChapterSource: "anilist",
@@ -62,5 +63,17 @@ describe("obra validation", () => {
 		});
 
 		expect(input.progress?.total).toBe(24);
+	});
+
+	it("syncs manga progress totals upward when new chapters arrive", () => {
+		expect(syncMangaProgressTotal(872, { latestChapter: 873 }, "manga")).toBe(
+			873,
+		);
+	});
+
+	it("does not create progress for manga rows that do not have one yet", () => {
+		expect(
+			syncMangaProgressTotal(undefined, { latestChapter: 873 }, "manga"),
+		).toBeUndefined();
 	});
 });

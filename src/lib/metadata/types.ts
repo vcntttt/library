@@ -17,7 +17,6 @@ export interface MetadataSearchResult {
 	episodesAired?: number;
 	nextEpisodeDate?: number;
 	status?: string;
-	chapters?: number;
 	volumes?: number;
 	season?: string;
 	seasonYear?: number;
@@ -43,7 +42,6 @@ export interface MetadataDetails {
 	episodesAired?: number;
 	nextEpisodeDate?: number;
 	status?: string;
-	chapters?: number;
 	volumes?: number;
 	season?: string;
 	seasonYear?: number;

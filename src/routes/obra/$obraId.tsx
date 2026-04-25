@@ -114,7 +114,6 @@ const buildMetadataPayload = (
 		| "episodesAired"
 		| "nextEpisodeDate"
 		| "status"
-		| "chapters"
 		| "volumes"
 		| "season"
 		| "seasonYear"
@@ -136,7 +135,6 @@ const buildMetadataPayload = (
 		episodesAired: metadata.episodesAired ?? undefined,
 		nextEpisodeDate: metadata.nextEpisodeDate ?? undefined,
 		status: metadata.status ?? undefined,
-		chapters: metadata.chapters ?? undefined,
 		volumes: metadata.volumes ?? undefined,
 		season: metadata.season ?? undefined,
 		seasonYear: metadata.seasonYear ?? undefined,
@@ -472,34 +470,16 @@ function ObraAuthed({
 				value: formatDateShort(metadata.nextEpisodeDate),
 			});
 		}
-		if (
-			obra.type === "manga" &&
-			(metadata.latestChapter || metadata.chapters)
-		) {
+		if (obra.type === "manga" && metadata.latestChapter) {
 			metadataItems.push({
-				label: "Último capítulo",
-				value: (
-					metadata.latestChapter ??
-					metadata.chapters ??
-					0
-				).toLocaleString(),
+				label: "Capítulos totales",
+				value: metadata.latestChapter.toLocaleString(),
 			});
 		}
 		if (obra.type === "manga" && metadata.latestChapterCheckedAt) {
 			metadataItems.push({
 				label: "Última verificación",
 				value: formatDateShort(metadata.latestChapterCheckedAt),
-			});
-		}
-		if (
-			obra.type === "manga" &&
-			metadata.latestChapter !== undefined &&
-			metadata.chapters !== undefined &&
-			metadata.chapters !== metadata.latestChapter
-		) {
-			metadataItems.push({
-				label: "Capítulos totales",
-				value: metadata.chapters.toLocaleString(),
 			});
 		}
 		if (obra.type === "manga" && metadata.volumes) {
@@ -758,7 +738,7 @@ function ObraAuthed({
 		showLoading?: boolean;
 	}> = [];
 	const mangaChapterPreview = previewMetadata
-		? (previewMetadata.latestChapter ?? previewMetadata.chapters)
+		? previewMetadata.latestChapter
 		: undefined;
 
 	if (previewMetadata) {
