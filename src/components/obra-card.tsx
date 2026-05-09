@@ -5,6 +5,7 @@ import type { Obra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "./icons";
 import { ProgressBar } from "./progress-bar";
+import { RecommendationBadge } from "./recommendation-badge";
 import { StatusBadge } from "./status-badge";
 import { TypeBadge } from "./type-badge";
 
@@ -68,6 +69,7 @@ export function ObraCard({
 						<div className="flex flex-wrap items-center gap-1.5">
 							<TypeBadge type={obra.type} />
 							<StatusBadge status={obra.status} />
+							{obra.recommendedBy && <RecommendationBadge />}
 						</div>
 						<h3 className="truncate text-sm font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
 							{obra.title}
@@ -80,6 +82,11 @@ export function ObraCard({
 						{metaLine && (
 							<p className="truncate text-xs text-muted-foreground">
 								{metaLine}
+							</p>
+						)}
+						{obra.recommendedBy && (
+							<p className="truncate text-xs text-muted-foreground">
+								Por {obra.recommendedBy}
 							</p>
 						)}
 					</div>
@@ -130,6 +137,11 @@ export function ObraCard({
 								{secondaryText ?? metaLine}
 							</span>
 						)}
+						{!secondaryText && !metaLine && obra.recommendedBy && (
+							<span className="block text-xs text-muted-foreground">
+								Recomendada por {obra.recommendedBy}
+							</span>
+						)}
 					</div>
 				</div>
 				<ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
@@ -165,6 +177,7 @@ export function ObraCard({
 							<div className="mb-1 flex items-center gap-2">
 								<TypeBadge type={obra.type} />
 								<StatusBadge status={obra.status} />
+								{obra.recommendedBy && <RecommendationBadge />}
 							</div>
 							<h3 className="truncate font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
 								{obra.title}
@@ -177,6 +190,11 @@ export function ObraCard({
 							{metaLine && (
 								<p className="truncate text-xs text-muted-foreground">
 									{metaLine}
+								</p>
+							)}
+							{obra.recommendedBy && (
+								<p className="truncate text-xs text-muted-foreground">
+									Por {obra.recommendedBy}
 								</p>
 							)}
 						</div>

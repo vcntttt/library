@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
+import { RecommendationBadge } from "@/components/recommendation-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { TypeBadge } from "@/components/type-badge";
 import {
@@ -291,6 +292,7 @@ function ObraAuthed({
 	const form = useForm({
 		defaultValues: {
 			readingUrl: "",
+			recommendedBy: "",
 			startedAt: "",
 			finishedAt: "",
 			review: "",
@@ -317,6 +319,7 @@ function ObraAuthed({
 
 			const patch: Record<string, unknown> = {
 				readingUrl: value.readingUrl.trim() || undefined,
+				recommendedBy: value.recommendedBy.trim(),
 				startedAt: parseDateInput(value.startedAt),
 				finishedAt: parseDateInput(value.finishedAt),
 				review: value.review.trim() || undefined,
@@ -349,6 +352,7 @@ function ObraAuthed({
 		}
 		form.reset({
 			readingUrl: doc.readingUrl ?? "",
+			recommendedBy: doc.recommendedBy ?? "",
 			startedAt: formatDateInput(doc.startedAt),
 			finishedAt: formatDateInput(doc.finishedAt),
 			review: doc.review ?? "",
@@ -963,6 +967,7 @@ function ObraAuthed({
 								<div className="flex flex-wrap gap-2">
 									<TypeBadge type={obra.type} />
 									<StatusBadge status={obra.status} />
+									{obra.recommendedBy && <RecommendationBadge />}
 									{showOngoingBadge && (
 										<Badge
 											variant="outline"
@@ -990,6 +995,11 @@ function ObraAuthed({
 								)}
 								{obra.year && (
 									<p className="text-sm text-muted-foreground">{obra.year}</p>
+								)}
+								{obra.recommendedBy && (
+									<p className="text-sm text-muted-foreground">
+										Recomendada por {obra.recommendedBy}
+									</p>
 								)}
 							</div>
 
@@ -1589,6 +1599,19 @@ function ObraAuthed({
 										</Select>
 									</div>
 									<div className="grid gap-4 sm:grid-cols-2">
+										<div className="space-y-2 sm:col-span-2">
+											<Label>Recomendado por</Label>
+											<form.Field name="recommendedBy">
+												{(field) => (
+													<Input
+														value={field.state.value}
+														onChange={(e) => field.handleChange(e.target.value)}
+														placeholder="Ej: Vale, Reddit, Discord"
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+										</div>
 										<div className="space-y-2">
 											<Label>Fecha de inicio</Label>
 											<form.Field name="startedAt">

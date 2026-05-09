@@ -129,6 +129,7 @@ export function AddObraDialog({
 	const yearId = useId();
 	const startedAtId = useId();
 	const finishedAtId = useId();
+	const recommendedById = useId();
 	const readingUrlId = useId();
 	const totalId = useId();
 	const tagsId = useId();
@@ -143,6 +144,7 @@ export function AddObraDialog({
 			year: "",
 			startedAt: "",
 			finishedAt: "",
+			recommendedBy: "",
 			readingUrl: "",
 			tags: "",
 			totalProgress: "",
@@ -168,6 +170,7 @@ export function AddObraDialog({
 				year,
 				startedAt,
 				finishedAt,
+				recommendedBy: value.recommendedBy.trim() || undefined,
 				readingUrl: value.readingUrl.trim() || undefined,
 				tags: value.tags
 					.split(",")
@@ -880,6 +883,20 @@ export function AddObraDialog({
 								);
 							}}
 						</form.Subscribe>
+
+						<form.Field name="recommendedBy">
+							{(field) => (
+								<div className="space-y-2">
+									<Label htmlFor={recommendedById}>Recomendado por</Label>
+									<Input
+										id={recommendedById}
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										placeholder="Ej: Vale, Reddit, Discord"
+									/>
+								</div>
+							)}
+						</form.Field>
 
 						<form.Subscribe selector={(state) => state.values.type}>
 							{(type) =>

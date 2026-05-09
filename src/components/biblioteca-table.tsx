@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { Search } from "./icons";
 import { ObraCard } from "./obra-card";
 import { ProgressBar } from "./progress-bar";
+import { RecommendationBadge } from "./recommendation-badge";
 import { StatusBadge } from "./status-badge";
 import { TypeBadge } from "./type-badge";
 
@@ -108,6 +109,7 @@ export function BibliotecaTable({
 				(w) =>
 					w.title.toLowerCase().includes(q) ||
 					w.creator?.toLowerCase().includes(q) ||
+					w.recommendedBy?.toLowerCase().includes(q) ||
 					w.tags.some((t: string) => t.toLowerCase().includes(q)),
 			);
 		}
@@ -406,6 +408,11 @@ export function BibliotecaTable({
 																	{metaLine}
 																</p>
 															)}
+															{obra.recommendedBy && (
+																<p className="text-xs text-muted-foreground">
+																	Recomendada por {obra.recommendedBy}
+																</p>
+															)}
 														</div>
 													</div>
 												</TableCell>
@@ -416,6 +423,7 @@ export function BibliotecaTable({
 													<div className="space-y-2">
 														<div className="flex flex-wrap items-center gap-2">
 															<StatusBadge status={obra.status} />
+															{obra.recommendedBy && <RecommendationBadge />}
 															{showOngoingBadge && (
 																<Badge
 																	variant="outline"

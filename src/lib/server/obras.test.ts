@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { db } from "@/db/client";
 
 vi.mock("@/db/client", () => ({
 	db: {
@@ -16,14 +17,47 @@ vi.mock("@/db/client", () => ({
 
 let parseCreateObraInput: typeof import("./obras").parseCreateObraInput;
 let parseUpdateObraPatch: typeof import("./obras").parseUpdateObraPatch;
+let createObra: typeof import("./obras").createObra;
+let updateObra: typeof import("./obras").updateObra;
 let syncMangaProgressTotal: typeof import("./obras").syncMangaProgressTotal;
 
 beforeAll(async () => {
 	const mod = await import("./obras");
 	parseCreateObraInput = mod.parseCreateObraInput;
 	parseUpdateObraPatch = mod.parseUpdateObraPatch;
+	createObra = mod.createObra;
+	updateObra = mod.updateObra;
 	syncMangaProgressTotal = mod.syncMangaProgressTotal;
 });
+
+beforeEach(() => {
+	vi.clearAllMocks();
+});
+
+const baseRow = {
+	id: "obra-1",
+	userId: "user-1",
+	title: "Obra",
+	type: "book" as const,
+	status: "backlog" as const,
+	review: null,
+	tags: [],
+	notes: null,
+	recommendedBy: null,
+	readingUrl: null,
+	externalSource: null,
+	externalId: null,
+	metadata: null,
+	coverUrl: null,
+	creator: null,
+	year: null,
+	progressCurrent: null,
+	progressTotal: null,
+	startedAt: null,
+	finishedAt: null,
+	createdAt: 1,
+	updatedAt: 1,
+};
 
 describe("obra validation", () => {
 	it("accepts manga metadata fields for creation", () => {
@@ -75,5 +109,81 @@ describe("obra validation", () => {
 		expect(
 			syncMangaProgressTotal(undefined, { latestChapter: 873 }, "manga"),
 		).toBeUndefined();
+	});
+
+	it("round-trips a recommendedBy value when creating an obra", async () => {
+		const values = vi.fn((input) => ({
+			returning: vi.fn(async () => [{ ...baseRow, ...input }]),
+		}));
+		vi.mocked(db.insert).mockReturnValue({ values } as never);
+
+		const obra = await createObra("user-1", {
+			title: "Dune",
+			type: "book",
+			status: "backlog",
+			recommendedBy: "Vale",
+		});
+
+		expect(values).toHaveBeenCalledWith(
+			expect.objectContaining({ recommendedBy: "Vale" }),
+		);
+		expect(obra.recommendedBy).toBe("Vale");
+	});
+
+	it("trims recommendedBy on create and clears it on update", async () => {
+		const values = vi.fn((input) => ({
+			returning: vi.fn(async () => [{ ...baseRow, ...input }]),
+		}));
+		vi.mocked(db.insert).mockReturnValue({ values } as never);
+
+		const created = await createObra("user-1", {
+			title: "Dune",
+			type: "book",
+			status: "backlog",
+			recommendedBy: "  Reddit  ",
+		});
+
+		expect(created.recommendedBy).toBe("Reddit");
+
+		vi.mocked(db.query.obras.findFirst).mockResolvedValue({
+			...baseRow,
+			recommendedBy: "Reddit",
+		});
+		const set = vi.fn((patch) => ({
+			where: vi.fn(() => ({
+				returning: vi.fn(async () => [
+					{ ...baseRow, recommendedBy: "Reddit", ...patch },
+				]),
+			})),
+		}));
+		vi.mocked(db.update).mockReturnValue({ set } as never);
+
+		const updated = await updateObra("user-1", "obra-1", {
+			recommendedBy: "",
+		});
+
+		expect(set).toHaveBeenCalledWith(
+			expect.objectContaining({ recommendedBy: null }),
+		);
+		expect(updated.recommendedBy).toBeUndefined();
+	});
+
+	it("keeps ordinary backlog obras without recommendations unchanged", async () => {
+		const values = vi.fn((input) => ({
+			returning: vi.fn(async () => [{ ...baseRow, ...input }]),
+		}));
+		vi.mocked(db.insert).mockReturnValue({ values } as never);
+
+		const obra = await createObra("user-1", {
+			title: "Plain backlog",
+			type: "book",
+			status: "backlog",
+		});
+
+		expect(values).toHaveBeenCalledWith(
+			expect.objectContaining({ recommendedBy: null }),
+		);
+		expect(obra.status).toBe("backlog");
+		expect(obra.recommendedBy).toBeUndefined();
 	});
 });

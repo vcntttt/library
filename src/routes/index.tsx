@@ -98,8 +98,15 @@ function DashboardAuthed() {
 	const isGridView = view === "grid";
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
-	const backlog = obras.filter((w) => w.status === "backlog");
+	const backlog = obras
+		.filter((w) => w.status === "backlog")
+		.sort((a, b) => {
+			return (
+				Number(Boolean(b.recommendedBy)) - Number(Boolean(a.recommendedBy))
+			);
+		});
 	const finished = obras.filter((w) => w.status === "finished");
+	const recommended = obras.filter((w) => w.recommendedBy);
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
@@ -148,7 +155,14 @@ function DashboardAuthed() {
 						</div>
 					</div>
 
-					<div className="grid grid-cols-3 gap-8">
+					<div
+						className={cn(
+							"grid gap-8",
+							recommended.length > 0
+								? "grid-cols-2 sm:grid-cols-4"
+								: "grid-cols-3",
+						)}
+					>
 						<div className="border-l border-border pl-6">
 							<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
 								Pendientes
@@ -167,6 +181,14 @@ function DashboardAuthed() {
 							</p>
 							<p className="font-serif text-3xl mt-1">{obras.length}</p>
 						</div>
+						{recommended.length > 0 && (
+							<div className="border-l border-border pl-6">
+								<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+									Recomendadas
+								</p>
+								<p className="font-serif text-3xl mt-1">{recommended.length}</p>
+							</div>
+						)}
 					</div>
 				</section>
 

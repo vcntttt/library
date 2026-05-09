@@ -54,6 +54,7 @@ const createObraSchema = z.object({
 	review: z.string().nullish(),
 	tags: z.array(z.string()).nullish(),
 	notes: z.string().nullish(),
+	recommendedBy: z.string().nullish(),
 	readingUrl: z.string().nullish(),
 	external: externalSchema.nullish(),
 	metadata: metadataSchema.nullish(),
@@ -72,6 +73,7 @@ const updatePatchSchema = z.object({
 	review: z.string().nullish(),
 	tags: z.array(z.string()).nullish(),
 	notes: z.string().nullish(),
+	recommendedBy: z.string().nullish(),
 	readingUrl: z.string().nullish(),
 	external: externalSchema.nullish(),
 	metadata: metadataSchema.nullish(),
@@ -162,6 +164,7 @@ export async function createObra(userId: string, rawInput: unknown) {
 			review: normalizeOptionalString(input.review),
 			tags: normalizeTags(input.tags),
 			notes: normalizeOptionalString(input.notes),
+			recommendedBy: normalizeOptionalString(input.recommendedBy),
 			readingUrl: normalizeOptionalString(input.readingUrl),
 			externalSource: external?.source,
 			externalId: external?.id,
@@ -217,6 +220,9 @@ export async function updateObra(
 	}
 	if (hasOwn(patch, "notes")) {
 		nextPatch.notes = normalizeOptionalString(patch.notes);
+	}
+	if (hasOwn(patch, "recommendedBy")) {
+		nextPatch.recommendedBy = normalizeOptionalString(patch.recommendedBy);
 	}
 	if (hasOwn(patch, "readingUrl")) {
 		nextPatch.readingUrl = normalizeOptionalString(patch.readingUrl);
@@ -326,6 +332,7 @@ export function toObra(row: ObraRow): Obra {
 		review: row.review ?? undefined,
 		tags: row.tags ?? [],
 		notes: row.notes ?? undefined,
+		recommendedBy: row.recommendedBy ?? undefined,
 		readingUrl: row.readingUrl ?? undefined,
 		coverUrl: row.coverUrl ?? undefined,
 		creator: row.creator ?? undefined,
