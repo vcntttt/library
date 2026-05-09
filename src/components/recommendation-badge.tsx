@@ -11,11 +11,11 @@ export function RecommendationBadge({ className }: RecommendationBadgeProps) {
 		<Badge
 			variant="outline"
 			className={cn(
-				"h-5 gap-1 rounded-none border-amber-700/30 bg-amber-700/10 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-amber-800 dark:border-amber-300/30 dark:bg-amber-300/10 dark:text-amber-200",
+				"gap-1 rounded-none border-amber-700/40 bg-amber-700/10 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] text-amber-800 dark:border-amber-300/40 dark:bg-amber-300/10 dark:text-amber-200",
 				className,
 			)}
 		>
-			<Sparkles className="h-3 w-3" />
+			<Sparkles className="size-3" />
 			Recomendada
 		</Badge>
 	);

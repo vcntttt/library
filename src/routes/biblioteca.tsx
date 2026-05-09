@@ -71,13 +71,13 @@ function BibliotecaAuthed() {
 			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-[#D6D0C7] pb-4">
 					<div className="space-y-3">
-						<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+						<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 							Colección completa
 						</p>
 						<h1 className="text-3xl font-semibold tracking-tight font-serif sm:text-4xl">
 							Biblioteca
 						</h1>
-						<p className="text-sm text-muted-foreground">
+						<p className="text-base text-muted-foreground sm:text-sm">
 							Busca, filtra y ordena todas tus obras.
 						</p>
 					</div>

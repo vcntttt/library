@@ -22,8 +22,8 @@ export function DashboardSection({
 	return (
 		<section className={cn("space-y-4", className)}>
 			<div className="flex items-baseline justify-between">
-				<h2 className="font-serif text-xl">{title}</h2>
-				<span className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+				<h2 className="font-serif text-2xl">{title}</h2>
+				<span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 					{obras.length} obras
 				</span>
 			</div>

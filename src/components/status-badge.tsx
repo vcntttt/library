@@ -6,7 +6,7 @@ const statusColors: Record<ObraStatus, string> = {
 	backlog: "border-border bg-transparent text-muted-foreground",
 	"in-progress": "border-primary/40 bg-primary/10 text-primary",
 	finished:
-		"border-emerald-700/30 bg-emerald-700/10 text-emerald-700 dark:text-emerald-300",
+		"border-emerald-700/40 bg-emerald-700/10 text-emerald-700 dark:text-emerald-200",
 	dropped: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
@@ -33,7 +33,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 	return (
 		<Badge
 			className={cn(
-				"gap-1.5 rounded-none border px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.2em]",
+				"gap-1.5 rounded-none border px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em]",
 				statusColors[status],
 				className,
 			)}

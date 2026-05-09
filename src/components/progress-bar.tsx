@@ -28,14 +28,14 @@ export function ProgressBar({
 
 	return (
 		<div className={cn("space-y-1", className)}>
-			<div className="h-px w-full bg-border">
+			<div className="h-1 w-full bg-border">
 				<div
 					className="h-full bg-primary"
 					style={{ width: `${percentage}%` }}
 				/>
 			</div>
 			{showLabel && (
-				<p className="text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+				<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
 					{current} / {total} {unitLabels[type]}
 				</p>
 			)}

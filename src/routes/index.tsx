@@ -115,10 +115,10 @@ function DashboardAuthed() {
 				<section className="space-y-6">
 					<div className="flex items-end justify-between border-b border-border pb-4">
 						<div className="space-y-2">
-							<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 								Biblioteca privada
 							</p>
-							<h1 className="font-serif text-4xl sm:text-5xl font-medium tracking-tight">
+							<h1 className="font-serif text-4xl font-medium leading-tight tracking-tight sm:text-5xl">
 								{inProgress.length} obras en progreso
 							</h1>
 						</div>
@@ -127,27 +127,27 @@ function DashboardAuthed() {
 								<button
 									type="button"
 									className={cn(
-										"inline-flex h-10 items-center gap-1.5 border-r border-border px-3 text-xs transition-colors",
+										"inline-flex h-10 items-center gap-1.5 border-r border-border px-3 text-sm transition-colors",
 										view === "list"
 											? "bg-foreground text-background"
 											: "text-muted-foreground hover:bg-muted hover:text-foreground",
 									)}
 									onClick={() => setView("list")}
 								>
-									<List className="h-3.5 w-3.5" />
+									<List className="size-3.5" />
 									Lista
 								</button>
 								<button
 									type="button"
 									className={cn(
-										"inline-flex h-10 items-center gap-1.5 px-3 text-xs transition-colors",
+										"inline-flex h-10 items-center gap-1.5 px-3 text-sm transition-colors",
 										view === "grid"
 											? "bg-foreground text-background"
 											: "text-muted-foreground hover:bg-muted hover:text-foreground",
 									)}
 									onClick={() => setView("grid")}
 								>
-									<LayoutGrid className="h-3.5 w-3.5" />
+									<LayoutGrid className="size-3.5" />
 									Grid
 								</button>
 							</div>
@@ -164,26 +164,26 @@ function DashboardAuthed() {
 						)}
 					>
 						<div className="border-l border-border pl-6">
-							<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 								Pendientes
 							</p>
 							<p className="font-serif text-3xl mt-1">{backlog.length}</p>
 						</div>
 						<div className="border-l border-border pl-6">
-							<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 								Terminadas
 							</p>
 							<p className="font-serif text-3xl mt-1">{finished.length}</p>
 						</div>
 						<div className="border-l border-border pl-6">
-							<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 								Total
 							</p>
 							<p className="font-serif text-3xl mt-1">{obras.length}</p>
 						</div>
 						{recommended.length > 0 && (
 							<div className="border-l border-border pl-6">
-								<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+								<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 									Recomendadas
 								</p>
 								<p className="font-serif text-3xl mt-1">{recommended.length}</p>

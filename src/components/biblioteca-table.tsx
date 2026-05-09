@@ -159,13 +159,13 @@ export function BibliotecaTable({
 			<div className="border border-border bg-card p-4">
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 					<div className="relative w-full lg:max-w-md">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+						<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							aria-label="Buscar obras"
 							placeholder="Buscar por título, autor o etiqueta..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="pl-9 border-border bg-background rounded-none shadow-none focus-visible:ring-primary"
+							className="rounded-none border-border bg-background pl-9 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-primary sm:text-sm"
 						/>
 					</div>
 					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
@@ -173,7 +173,7 @@ export function BibliotecaTable({
 							value={typeFilter}
 							onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
 						>
-							<SelectTrigger className="w-full border-border bg-background rounded-none shadow-none sm:w-[220px]">
+							<SelectTrigger className="w-full rounded-none border-border bg-background text-base shadow-none sm:w-[220px] sm:text-sm">
 								<span className="truncate">{typeLabels[typeFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -189,7 +189,7 @@ export function BibliotecaTable({
 							value={statusFilter}
 							onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
 						>
-							<SelectTrigger className="w-full border-border bg-background rounded-none shadow-none sm:w-[220px]">
+							<SelectTrigger className="w-full rounded-none border-border bg-background text-base shadow-none sm:w-[220px] sm:text-sm">
 								<span className="truncate">{statusLabels[statusFilter]}</span>
 							</SelectTrigger>
 							<SelectContent>
@@ -205,28 +205,28 @@ export function BibliotecaTable({
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-10 flex-1 rounded-none border-r border-border px-3 text-xs sm:flex-none",
+									"h-10 flex-1 rounded-none border-r border-border px-3 text-sm sm:flex-none",
 									view === "list"
 										? "bg-foreground text-background"
 										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
 								onClick={() => setView("list")}
 							>
-								<List className="h-3.5 w-3.5" />
+								<List className="size-3.5" />
 								Lista
 							</Button>
 							<Button
 								size="sm"
 								variant="ghost"
 								className={cn(
-									"h-10 flex-1 rounded-none px-3 text-xs sm:flex-none",
+									"h-10 flex-1 rounded-none px-3 text-sm sm:flex-none",
 									view === "grid"
 										? "bg-foreground text-background"
 										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
 								onClick={() => setView("grid")}
 							>
-								<LayoutGrid className="h-3.5 w-3.5" />
+								<LayoutGrid className="size-3.5" />
 								Grid
 							</Button>
 						</div>
@@ -257,7 +257,7 @@ export function BibliotecaTable({
 								<p className="text-sm font-medium text-card-foreground">
 									No se encontraron obras
 								</p>
-								<p className="mt-1 text-xs text-muted-foreground">
+								<p className="mt-1 text-sm text-muted-foreground">
 									Prueba quitando filtros o buscando otro término.
 								</p>
 							</div>
@@ -277,7 +277,7 @@ export function BibliotecaTable({
 						<Table>
 							<TableHeader>
 								<TableRow className="bg-muted hover:bg-muted">
-									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+									<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
 										<button
 											type="button"
 											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
@@ -287,7 +287,7 @@ export function BibliotecaTable({
 											{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+									<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
 										<button
 											type="button"
 											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
@@ -297,7 +297,7 @@ export function BibliotecaTable({
 											{sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+									<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
 										<button
 											type="button"
 											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
@@ -307,10 +307,10 @@ export function BibliotecaTable({
 											{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="hidden text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
+									<TableHead className="hidden text-xs uppercase tracking-[0.12em] text-muted-foreground sm:table-cell">
 										Etiquetas
 									</TableHead>
-									<TableHead className="text-right text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+									<TableHead className="text-right text-xs uppercase tracking-[0.12em] text-muted-foreground">
 										Leer
 									</TableHead>
 								</TableRow>
@@ -355,7 +355,7 @@ export function BibliotecaTable({
 												<p className="text-sm font-medium text-card-foreground">
 													No se encontraron obras
 												</p>
-												<p className="mt-1 text-xs text-muted-foreground">
+												<p className="mt-1 text-sm text-muted-foreground">
 													Prueba quitando filtros o cambiando el orden.
 												</p>
 											</div>
@@ -394,7 +394,7 @@ export function BibliotecaTable({
 																params={{
 																	obraId: obra.id,
 																}}
-																className="font-medium text-foreground hover:text-primary transition-colors"
+																className="text-sm font-medium text-foreground transition-colors hover:text-primary"
 															>
 																{obra.title}
 															</Link>
@@ -404,12 +404,12 @@ export function BibliotecaTable({
 																</p>
 															)}
 															{metaLine && (
-																<p className="text-xs text-muted-foreground">
+																<p className="text-sm text-muted-foreground">
 																	{metaLine}
 																</p>
 															)}
 															{obra.recommendedBy && (
-																<p className="text-xs text-muted-foreground">
+																<p className="text-sm text-muted-foreground">
 																	Recomendada por {obra.recommendedBy}
 																</p>
 															)}
@@ -427,7 +427,7 @@ export function BibliotecaTable({
 															{showOngoingBadge && (
 																<Badge
 																	variant="outline"
-																	className="h-5 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
+																	className="rounded-none border-[#4A4E69]/40 bg-[#4A4E69]/10 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] text-[#4A4E69] dark:text-[#B9BEDB]"
 																>
 																	En emisión
 																</Badge>
@@ -435,7 +435,7 @@ export function BibliotecaTable({
 															{showUpToDateBadge && (
 																<Badge
 																	variant="outline"
-																	className="h-5 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
+																	className="rounded-none border-[#3A5A40]/40 bg-[#3A5A40]/10 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] text-[#3A5A40] dark:text-[#A8D5AD]"
 																>
 																	Al día
 																</Badge>
@@ -457,13 +457,13 @@ export function BibliotecaTable({
 														{obra.tags.slice(0, 2).map((tag: string) => (
 															<span
 																key={tag}
-																className="text-xs text-muted-foreground border-b border-border pb-0.5"
+																className="border-b border-border pb-0.5 text-sm text-muted-foreground"
 															>
 																{tag}
 															</span>
 														))}
 														{obra.tags.length > 2 && (
-															<span className="text-xs text-muted-foreground">
+															<span className="text-sm text-muted-foreground">
 																+{obra.tags.length - 2}
 															</span>
 														)}
@@ -475,13 +475,13 @@ export function BibliotecaTable({
 															href={readingUrl}
 															target="_blank"
 															rel="noreferrer"
-															className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+															className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 														>
-															<ExternalLink className="h-3.5 w-3.5" />
+															<ExternalLink className="size-3.5" />
 															Ir a leer
 														</a>
 													) : (
-														<span className="text-xs text-muted-foreground">
+														<span className="text-sm text-muted-foreground">
 															-
 														</span>
 													)}
@@ -517,7 +517,7 @@ export function BibliotecaTable({
 							<p className="text-sm font-medium text-card-foreground">
 								No se encontraron obras
 							</p>
-							<p className="mt-1 text-xs text-muted-foreground">
+							<p className="mt-1 text-sm text-muted-foreground">
 								Prueba con otros filtros o cambia a vista de lista.
 							</p>
 						</div>
@@ -531,7 +531,7 @@ export function BibliotecaTable({
 				</div>
 			)}
 
-			<p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+			<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
 				{isLoading
 					? "Cargando obras..."
 					: `Mostrando ${filteredObras.length} de ${obras.length} obras`}

@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import { TypeIcons } from "./icons";
 
 const typeColors: Record<ObraType, string> = {
-	book: "border-emerald-700/30 text-emerald-700 dark:text-emerald-300",
-	movie: "border-slate-700/30 text-slate-700 dark:text-slate-300",
-	series: "border-amber-700/30 text-amber-700 dark:text-amber-300",
+	book: "border-emerald-700/40 text-emerald-700 dark:text-emerald-200",
+	movie: "border-slate-700/40 text-slate-700 dark:text-slate-200",
+	series: "border-amber-700/40 text-amber-700 dark:text-amber-200",
 	anime: "border-destructive/30 text-destructive",
 	manga: "border-primary/30 text-primary",
 };
@@ -35,12 +35,12 @@ export function TypeBadge({
 	return (
 		<Badge
 			className={cn(
-				"gap-1.5 rounded-none border px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.2em] bg-transparent",
+				"gap-1.5 rounded-none border bg-transparent px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em]",
 				typeColors[type],
 				className,
 			)}
 		>
-			{showIcon && <Icon className="h-3 w-3" />}
+			{showIcon && <Icon className="size-3" />}
 			{typeLabels[type]}
 		</Badge>
 	);

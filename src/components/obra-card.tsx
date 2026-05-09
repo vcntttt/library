@@ -59,7 +59,7 @@ export function ObraCard({
 								loading="lazy"
 							/>
 						) : (
-							<div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+							<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
 								Sin portada
 							</div>
 						)}
@@ -71,21 +71,21 @@ export function ObraCard({
 							<StatusBadge status={obra.status} />
 							{obra.recommendedBy && <RecommendationBadge />}
 						</div>
-						<h3 className="truncate text-sm font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
+						<h3 className="truncate font-serif text-base font-semibold text-card-foreground transition-colors group-hover:text-primary">
 							{obra.title}
 						</h3>
 						{obra.creator && (
-							<p className="truncate text-xs text-muted-foreground">
+							<p className="truncate text-sm text-muted-foreground">
 								{obra.creator}
 							</p>
 						)}
 						{metaLine && (
-							<p className="truncate text-xs text-muted-foreground">
+							<p className="truncate text-sm text-muted-foreground">
 								{metaLine}
 							</p>
 						)}
 						{obra.recommendedBy && (
-							<p className="truncate text-xs text-muted-foreground">
+							<p className="truncate text-sm text-muted-foreground">
 								Por {obra.recommendedBy}
 							</p>
 						)}
@@ -96,9 +96,9 @@ export function ObraCard({
 						href={readingUrl}
 						target="_blank"
 						rel="noreferrer"
-						className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 border border-white/15 bg-black/55 px-2.5 text-[0.65rem] uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm transition-all duration-300 hover:border-white/30 hover:bg-black/72 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:focus-visible:translate-y-0 sm:focus-visible:opacity-100"
+						className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 border border-white/15 bg-black/55 px-2.5 text-xs uppercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-all duration-300 hover:border-white/30 hover:bg-black/72 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:focus-visible:translate-y-0 sm:focus-visible:opacity-100"
 					>
-						<ExternalLink className="h-3.5 w-3.5" />
+						<ExternalLink className="size-3.5" />
 						Ir a leer
 					</a>
 				)}
@@ -133,18 +133,18 @@ export function ObraCard({
 							{obra.title}
 						</span>
 						{(secondaryText ?? metaLine) && (
-							<span className="block text-xs text-muted-foreground">
+							<span className="block text-sm text-muted-foreground">
 								{secondaryText ?? metaLine}
 							</span>
 						)}
 						{!secondaryText && !metaLine && obra.recommendedBy && (
-							<span className="block text-xs text-muted-foreground">
+							<span className="block text-sm text-muted-foreground">
 								Recomendada por {obra.recommendedBy}
 							</span>
 						)}
 					</div>
 				</div>
-				<ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+				<ChevronRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
 			</Link>
 		);
 	}
@@ -188,12 +188,12 @@ export function ObraCard({
 								</p>
 							)}
 							{metaLine && (
-								<p className="truncate text-xs text-muted-foreground">
+								<p className="truncate text-sm text-muted-foreground">
 									{metaLine}
 								</p>
 							)}
 							{obra.recommendedBy && (
-								<p className="truncate text-xs text-muted-foreground">
+								<p className="truncate text-sm text-muted-foreground">
 									Por {obra.recommendedBy}
 								</p>
 							)}
@@ -216,13 +216,13 @@ export function ObraCard({
 						{obra.tags.slice(0, 3).map((tag) => (
 							<span
 								key={tag}
-								className="border-b border-border pb-0.5 text-xs text-muted-foreground"
+								className="border-b border-border pb-0.5 text-sm text-muted-foreground"
 							>
 								{tag}
 							</span>
 						))}
 						{obra.tags.length > 3 && (
-							<span className="text-xs text-muted-foreground">
+							<span className="text-sm text-muted-foreground">
 								+{obra.tags.length - 3}
 							</span>
 						)}
@@ -235,9 +235,9 @@ export function ObraCard({
 						href={readingUrl}
 						target="_blank"
 						rel="noreferrer"
-						className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+						className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 					>
-						<ExternalLink className="h-3.5 w-3.5" />
+						<ExternalLink className="size-3.5" />
 						Ir a leer
 					</a>
 				</div>
