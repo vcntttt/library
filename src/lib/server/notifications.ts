@@ -78,6 +78,7 @@ export async function checkForNewChapters() {
 				title: obra.title,
 				chapter: latestChapter,
 				source: merged?.latestChapterSource ?? "anilist",
+				url: obra.readingUrl ?? undefined,
 				detectedAt: Date.now(),
 			};
 
