@@ -49,8 +49,8 @@ export const Route = createFileRoute("/api/metadata/search")({
 				}
 
 				try {
-					const results = await searchMetadata(provider, query, typeParam);
-					return json({ provider, results });
+					const outcome = await searchMetadata(provider, query, typeParam);
+					return json(outcome);
 				} catch (error) {
 					return jsonError(
 						error instanceof Error

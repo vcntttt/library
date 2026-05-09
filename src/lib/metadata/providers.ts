@@ -28,6 +28,11 @@ const DETAILS_CACHE_VERSION = "v2";
 
 const providerLastRequest = new Map<MetadataSource, number>();
 
+export interface MetadataSearchOutcome {
+	provider: MetadataSource;
+	results: MetadataSearchResult[];
+}
+
 export const providerByType: Record<ObraType, MetadataSource> = {
 	book: "google-books",
 	movie: "tmdb",
@@ -40,40 +45,31 @@ export async function searchMetadata(
 	provider: MetadataSource,
 	query: string,
 	obraType?: ObraType,
-) {
+): Promise<MetadataSearchOutcome> {
 	const trimmedQuery = query.trim();
-	if (!trimmedQuery) return [];
+	if (!trimmedQuery) {
+		return { provider, results: [] };
+	}
 
 	const cacheKey = `${provider}:${trimmedQuery.toLowerCase()}:${obraType ?? ""}`;
 	const cached = providerCache.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) {
-		return cached.value;
+		return { provider, results: cached.value };
 	}
 
-	await enforceRateLimit(provider);
-	let results: MetadataSearchResult[] = [];
+	const outcome = await searchMetadataForProvider(
+		provider,
+		trimmedQuery,
+		obraType,
+	);
 
-	switch (provider) {
-		case "google-books":
-			results = await searchGoogleBooks(trimmedQuery);
-			break;
-		case "open-library":
-			results = await searchOpenLibrary(trimmedQuery);
-			break;
-		case "tmdb":
-			results = await searchTmdb(trimmedQuery, obraType);
-			break;
-		case "anilist":
-			results = await searchAnilist(trimmedQuery, obraType);
-			break;
-	}
-
-	providerCache.set(cacheKey, {
+	const outcomeCacheKey = `${outcome.provider}:${trimmedQuery.toLowerCase()}:${obraType ?? ""}`;
+	providerCache.set(outcomeCacheKey, {
 		expiresAt: Date.now() + CACHE_TTL_MS,
-		value: results,
+		value: outcome.results,
 	});
 
-	return results;
+	return outcome;
 }
 
 async function enforceRateLimit(provider: MetadataSource) {
@@ -88,7 +84,40 @@ async function enforceRateLimit(provider: MetadataSource) {
 	providerLastRequest.set(provider, Date.now());
 }
 
-async function searchGoogleBooks(query: string) {
+async function searchMetadataForProvider(
+	provider: MetadataSource,
+	query: string,
+	obraType?: ObraType,
+): Promise<MetadataSearchOutcome> {
+	await enforceRateLimit(provider);
+
+	switch (provider) {
+		case "google-books":
+			return searchGoogleBooks(query, obraType);
+		case "open-library":
+			return {
+				provider: "open-library",
+				results: await searchOpenLibrary(query),
+			};
+		case "tmdb":
+			return {
+				provider: "tmdb",
+				results: await searchTmdb(query, obraType),
+			};
+		case "anilist":
+			return {
+				provider: "anilist",
+				results: await searchAnilist(query, obraType),
+			};
+	}
+
+	throw new Error("Proveedor de metadatos inválido.");
+}
+
+async function searchGoogleBooks(
+	query: string,
+	obraType?: ObraType,
+): Promise<MetadataSearchOutcome> {
 	const url = new URL("https://www.googleapis.com/books/v1/volumes");
 	url.searchParams.set("q", query);
 	url.searchParams.set("maxResults", "6");
@@ -98,18 +127,28 @@ async function searchGoogleBooks(query: string) {
 		url.searchParams.set("key", apiKey);
 	}
 
-	const data = await fetchJson<{ items?: GoogleBooksItem[] }>(url.toString());
-	return (
-		data.items?.map((item) => ({
-			source: "google-books" as const,
-			id: item.id,
-			title: item.volumeInfo.title,
-			creator: item.volumeInfo.authors?.join(", "),
-			year: parseYear(item.volumeInfo.publishedDate),
-			coverUrl: pickGoogleCover(item.volumeInfo.imageLinks),
-			pages: item.volumeInfo.pageCount,
-		})) ?? []
-	);
+	try {
+		const data = await fetchJson<{ items?: GoogleBooksItem[] }>(url.toString());
+		return {
+			provider: "google-books",
+			results:
+				data.items?.map((item) => ({
+					source: "google-books" as const,
+					id: item.id,
+					title: item.volumeInfo.title,
+					creator: item.volumeInfo.authors?.join(", "),
+					year: parseYear(item.volumeInfo.publishedDate),
+					coverUrl: pickGoogleCover(item.volumeInfo.imageLinks),
+					pages: item.volumeInfo.pageCount,
+				})) ?? [],
+		};
+	} catch (error) {
+		if (isGoogleBooksQuotaError(error)) {
+			return searchMetadataForProvider("open-library", query, obraType);
+		}
+
+		throw error;
+	}
 }
 
 async function searchOpenLibrary(query: string) {
@@ -600,34 +639,39 @@ export async function getMetadataDetails(
 async function fetchJson<T>(url: string, init?: RequestInit) {
 	const response = await fetch(url, init);
 	if (!response.ok) {
-		const message = await getMetadataErrorMessage(response, url);
-		throw new Error(message);
+		const details = await readMetadataErrorDetails(response);
+		const message = getMetadataErrorMessage(response, url, details);
+		const error = new Error(message) as Error & {
+			status?: number;
+			url?: string;
+			metadata?: { reason?: string };
+		};
+		error.status = response.status;
+		error.url = url;
+		if (details?.reason) {
+			error.metadata = { reason: details.reason };
+		}
+		throw error;
 	}
 	return (await response.json()) as T;
 }
 
-async function getMetadataErrorMessage(response: Response, url: string) {
+function getMetadataErrorMessage(
+	response: Response,
+	url: string,
+	details?: Awaited<ReturnType<typeof readMetadataErrorDetails>>,
+) {
 	const fallback = "No se pudo consultar metadatos.";
-	let detail: string | undefined;
-
-	try {
-		const text = await response.text();
-		if (text) {
-			const payload = JSON.parse(text) as {
-				error?: { message?: string } | string;
-			};
-			if (payload?.error) {
-				detail =
-					typeof payload.error === "string"
-						? payload.error
-						: payload.error.message;
-			}
-		}
-	} catch (error) {
-		void error;
-	}
+	const detail = details?.message;
 
 	if (response.status === 403 && url.includes("googleapis.com/books")) {
+		if (
+			details?.reason === "quotaExceeded" ||
+			isGoogleBooksQuotaMessage(detail)
+		) {
+			return "Google Books agotó su cuota diaria. Configura GOOGLE_BOOKS_API_KEY o usa Open Library.";
+		}
+
 		return (
 			detail ??
 			"Google Books requiere una API key para esta IP. Configura GOOGLE_BOOKS_API_KEY."
@@ -639,6 +683,69 @@ async function getMetadataErrorMessage(response: Response, url: string) {
 	}
 
 	return `${fallback} (HTTP ${response.status}).`;
+}
+
+async function readMetadataErrorDetails(response: Response) {
+	try {
+		const text = await response.text();
+		if (!text) return undefined;
+
+		const payload = JSON.parse(text) as {
+			error?:
+				| string
+				| {
+						message?: string;
+						errors?: Array<{
+							reason?: string;
+						}>;
+				  };
+		};
+
+		if (!payload?.error) return undefined;
+
+		if (typeof payload.error === "string") {
+			return { message: payload.error };
+		}
+
+		return {
+			message: payload.error.message,
+			reason: payload.error.errors?.[0]?.reason,
+		};
+	} catch {
+		return undefined;
+	}
+}
+
+function isGoogleBooksQuotaError(error: unknown) {
+	if (!(error instanceof Error)) return false;
+
+	const metadataError = error as Error & {
+		status?: number;
+		url?: string;
+		metadata?: { reason?: string };
+	};
+	const message = error.message;
+	const reason = metadataError.metadata?.reason?.toLowerCase();
+
+	return Boolean(
+		metadataError.url?.includes("googleapis.com/books") &&
+			(metadataError.status === 403 || metadataError.status === 429) &&
+			(isGoogleBooksQuotaMessage(message) ||
+				reason === "quotaexceeded" ||
+				reason === "dailylimitexceeded" ||
+				reason === "userratelimitexceeded"),
+	);
+}
+
+function isGoogleBooksQuotaMessage(message?: string) {
+	if (!message) return false;
+	const normalized = message.toLowerCase();
+	return Boolean(
+		normalized.includes("quota") ||
+			normalized.includes("rate limit") ||
+			normalized.includes("daily limit") ||
+			normalized.includes("queries per day"),
+	);
 }
 
 function parseYear(value?: string) {

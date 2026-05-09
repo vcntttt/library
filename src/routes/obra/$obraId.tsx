@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ExternalLink, Minus, Plus } from "lucide-react";
+import { ExternalLink, Minus, Pencil, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { RecommendationBadge } from "@/components/recommendation-badge";
@@ -49,7 +49,7 @@ import type {
 	MetadataSource,
 } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
-import type { ObraId, ObraStatus, ObraType } from "@/lib/types";
+import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
 import { cn, formatDateShort } from "@/lib/utils";
 
 const statusLabels: Record<ObraStatus, string> = {
@@ -105,6 +105,11 @@ const metadataSourceByType: Record<ObraType, MetadataSource> = {
 	anime: "anilist",
 	manga: "anilist",
 };
+
+interface DetailItem {
+	label: string;
+	value: string;
+}
 
 const buildMetadataPayload = (
 	metadata: Pick<
@@ -255,6 +260,329 @@ function ObraPageSkeleton() {
 	);
 }
 
+function ObraActionBar({
+	obra,
+	onDelete,
+	onEdit,
+	onOpenReadingLink,
+}: {
+	obra: Obra;
+	onDelete: () => Promise<void>;
+	onEdit: () => void;
+	onOpenReadingLink: (urlValue: string) => void;
+}) {
+	return (
+		<div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+			<Link
+				to="/biblioteca"
+				className="inline-flex h-10 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+			>
+				<ArrowLeft className="h-4 w-4" />
+				Volver
+			</Link>
+
+			<div className="flex flex-wrap items-center gap-2">
+				{obra.readingUrl && (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						className="h-10 gap-2 rounded-none border-border hover:border-primary hover:text-primary"
+						onClick={() => onOpenReadingLink(obra.readingUrl ?? "")}
+					>
+						<ExternalLink className="h-4 w-4" />
+						Ir a leer
+					</Button>
+				)}
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="h-10 gap-2 rounded-none border-border hover:border-primary hover:text-primary"
+					onClick={onEdit}
+				>
+					<Pencil className="h-4 w-4" />
+					Editar
+				</Button>
+				<AlertDialog>
+					<AlertDialogTrigger
+						render={
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-10 gap-2 rounded-none border-border hover:border-destructive hover:text-destructive"
+							/>
+						}
+					>
+						<Trash2 className="h-4 w-4" />
+						Eliminar
+					</AlertDialogTrigger>
+					<AlertDialogContent className="rounded-none border-border bg-card">
+						<AlertDialogHeader>
+							<AlertDialogTitle className="font-serif">
+								¿Eliminar obra?
+							</AlertDialogTitle>
+							<AlertDialogDescription>
+								Esto no se puede deshacer.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel className="rounded-none border-border">
+								Cancelar
+							</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={onDelete}
+								className="rounded-none bg-[#9A3B2E] hover:bg-[#9A3B2E]/90"
+							>
+								Eliminar
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			</div>
+		</div>
+	);
+}
+
+function ObraDetailView({
+	obra,
+	progressUnitLabel,
+	showOngoingBadge,
+	showUpToDateBadge,
+	technicalItems,
+}: {
+	obra: Obra;
+	progressUnitLabel: string;
+	showOngoingBadge: boolean;
+	showUpToDateBadge: boolean;
+	technicalItems: DetailItem[];
+}) {
+	return (
+		<div className="grid gap-10 lg:grid-cols-[320px_1fr]">
+			<ObraCoverPanel obra={obra} progressUnitLabel={progressUnitLabel} />
+			<div className="space-y-10">
+				<ObraHeroInfo
+					obra={obra}
+					showOngoingBadge={showOngoingBadge}
+					showUpToDateBadge={showUpToDateBadge}
+				/>
+				<TechnicalInfoSection
+					items={technicalItems}
+					updatedAt={obra.updatedAt}
+				/>
+				<PersonalNotesSection obra={obra} />
+			</div>
+		</div>
+	);
+}
+
+function ObraCoverPanel({
+	obra,
+	progressUnitLabel,
+}: {
+	obra: Obra;
+	progressUnitLabel: string;
+}) {
+	const showProgress = obra.type !== "movie" && obra.progress;
+	const progressTotal = obra.progress?.total ?? 0;
+	const progressCurrent = obra.progress?.current ?? 0;
+	const progressPercent =
+		progressTotal > 0
+			? Math.min(100, (progressCurrent / progressTotal) * 100)
+			: 0;
+
+	return (
+		<aside className="space-y-5">
+			<div className="aspect-[2/3] w-full overflow-hidden border border-border bg-card">
+				{obra.coverUrl ? (
+					<img
+						src={obra.coverUrl}
+						alt={`Portada de ${obra.title}`}
+						className="h-full w-full object-cover"
+						loading="lazy"
+					/>
+				) : (
+					<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+						Sin portada
+					</div>
+				)}
+			</div>
+			{showProgress && (
+				<div className="space-y-2">
+					<div className="flex justify-between text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+						<span>Progreso</span>
+						<span>
+							{progressCurrent} / {progressTotal || "—"}
+						</span>
+					</div>
+					<div className="h-1 w-full bg-border">
+						<div
+							className="h-full bg-primary"
+							style={{ width: `${progressPercent}%` }}
+						/>
+					</div>
+					{progressUnitLabel && (
+						<p className="text-xs text-muted-foreground">
+							Avance en {progressUnitLabel}.
+						</p>
+					)}
+				</div>
+			)}
+		</aside>
+	);
+}
+
+function ObraHeroInfo({
+	obra,
+	showOngoingBadge,
+	showUpToDateBadge,
+}: {
+	obra: Obra;
+	showOngoingBadge: boolean;
+	showUpToDateBadge: boolean;
+}) {
+	return (
+		<section className="space-y-4">
+			<div className="flex flex-wrap gap-2">
+				<TypeBadge type={obra.type} />
+				<StatusBadge status={obra.status} />
+				{obra.recommendedBy && <RecommendationBadge />}
+				{showOngoingBadge && (
+					<Badge
+						variant="outline"
+						className="h-5 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
+					>
+						En emisión
+					</Badge>
+				)}
+				{showUpToDateBadge && (
+					<Badge
+						variant="outline"
+						className="h-5 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
+					>
+						Al día
+					</Badge>
+				)}
+			</div>
+			<div className="space-y-3">
+				<h1 className="font-serif text-5xl leading-[1.05] tracking-tight md:text-6xl">
+					{obra.title}
+				</h1>
+				{obra.creator && (
+					<p className="text-lg text-muted-foreground">{obra.creator}</p>
+				)}
+				<div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+					{obra.year && <span>{obra.year}</span>}
+					{obra.recommendedBy && (
+						<span>Recomendada por {obra.recommendedBy}</span>
+					)}
+				</div>
+			</div>
+		</section>
+	);
+}
+
+function TechnicalInfoSection({
+	items,
+	updatedAt,
+}: {
+	items: DetailItem[];
+	updatedAt: number;
+}) {
+	return (
+		<section className="border border-border bg-card px-5 py-4">
+			<div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+				<p className="text-sm font-medium">Ficha técnica</p>
+				<p className="text-xs text-muted-foreground">
+					Actualizado {formatDateShort(updatedAt)}
+				</p>
+			</div>
+			{items.length > 0 ? (
+				<div className="grid gap-2 sm:grid-cols-2">
+					{items.map((item) => (
+						<div key={item.label} className="text-sm">
+							<span className="text-muted-foreground">{item.label}:</span>{" "}
+							<span className="text-card-foreground">{item.value}</span>
+						</div>
+					))}
+				</div>
+			) : (
+				<p className="text-sm text-muted-foreground">Sin datos técnicos.</p>
+			)}
+		</section>
+	);
+}
+
+function PersonalNotesSection({ obra }: { obra: Obra }) {
+	const dateItems: DetailItem[] = [];
+	if (obra.startedAt) {
+		dateItems.push({
+			label: "Fecha de inicio",
+			value: formatDateShort(obra.startedAt),
+		});
+	}
+	if (obra.finishedAt) {
+		dateItems.push({
+			label: "Fecha de término",
+			value: formatDateShort(obra.finishedAt),
+		});
+	}
+
+	return (
+		<section className="space-y-8">
+			{obra.review && (
+				<div className="border-l-2 border-primary py-1 pl-6">
+					<p className="mb-2 text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+						Reseña
+					</p>
+					<p className="font-serif text-xl leading-relaxed text-foreground">
+						“{obra.review}”
+					</p>
+				</div>
+			)}
+			{obra.notes && (
+				<div className="border border-border bg-card p-6">
+					<p className="mb-3 text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+						Notas
+					</p>
+					<p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+						{obra.notes}
+					</p>
+				</div>
+			)}
+			{dateItems.length > 0 && (
+				<div className="grid gap-3 sm:grid-cols-2">
+					{dateItems.map((item) => (
+						<div key={item.label} className="border-l border-border pl-4">
+							<p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
+								{item.label}
+							</p>
+							<p className="mt-1 text-sm">{item.value}</p>
+						</div>
+					))}
+				</div>
+			)}
+			{obra.tags.length > 0 && (
+				<div className="space-y-2">
+					<p className="text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+						Etiquetas
+					</p>
+					<div className="flex flex-wrap gap-2">
+						{obra.tags.map((tag) => (
+							<span
+								key={tag}
+								className="border-b border-border pb-0.5 text-xs text-muted-foreground"
+							>
+								{tag}
+							</span>
+						))}
+					</div>
+				</div>
+			)}
+		</section>
+	);
+}
+
 function ObraAuthed({
 	id,
 	navigate,
@@ -274,6 +602,7 @@ function ObraAuthed({
 	const [metadataError, setMetadataError] = useState<string | null>(null);
 	const [isSearchingMetadata, setIsSearchingMetadata] = useState(false);
 	const [isApplyingMetadata, setIsApplyingMetadata] = useState(false);
+	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [lastMetadataSearchUrl, setLastMetadataSearchUrl] = useState<
 		string | null
 	>(null);
@@ -343,6 +672,7 @@ function ObraAuthed({
 			}
 
 			await updateObra({ id, patch });
+			setIsEditOpen(false);
 		},
 	});
 
@@ -863,175 +1193,32 @@ function ObraAuthed({
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
 			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<Link
-						to="/biblioteca"
-						className="inline-flex h-10 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Link>
+				<ObraActionBar
+					obra={obra}
+					onDelete={handleDelete}
+					onEdit={() => setIsEditOpen(true)}
+					onOpenReadingLink={handleOpenReadingLink}
+				/>
 
-					<div className="flex items-center gap-2">
-						{obra.readingUrl && (
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="h-10 gap-2 border-border rounded-none hover:border-primary hover:text-primary"
-								onClick={() => handleOpenReadingLink(obra.readingUrl ?? "")}
-							>
-								<ExternalLink className="h-4 w-4" />
-								Ir a leer
-							</Button>
-						)}
-						<AlertDialog>
-							<AlertDialogTrigger
-								render={
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-10 gap-2 border-border rounded-none hover:border-destructive hover:text-destructive"
-									/>
-								}
-							>
-								<Trash2 className="h-4 w-4" />
-								Eliminar
-							</AlertDialogTrigger>
-							<AlertDialogContent className="rounded-none border-border bg-card">
-								<AlertDialogHeader>
-									<AlertDialogTitle className="font-serif">
-										¿Eliminar obra?
-									</AlertDialogTitle>
-									<AlertDialogDescription>
-										Esto no se puede deshacer.
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter>
-									<AlertDialogCancel className="rounded-none border-border">
-										Cancelar
-									</AlertDialogCancel>
-									<AlertDialogAction
-										onClick={handleDelete}
-										className="rounded-none bg-[#9A3B2E] hover:bg-[#9A3B2E]/90"
-									>
-										Eliminar
-									</AlertDialogAction>
-								</AlertDialogFooter>
-							</AlertDialogContent>
-						</AlertDialog>
-					</div>
-				</div>
+				<ObraDetailView
+					obra={obra}
+					progressUnitLabel={progressUnitLabel}
+					showOngoingBadge={showOngoingBadge}
+					showUpToDateBadge={showUpToDateBadge}
+					technicalItems={technicalItems}
+				/>
 
-				<div className="border border-border bg-card p-6 md:p-8 space-y-8">
-					<div className="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_1fr]">
-						{/* Cover */}
-						<div className="space-y-4">
-							<div className="aspect-[2/3] w-full bg-background border border-border overflow-hidden">
-								{obra.coverUrl ? (
-									<img
-										src={obra.coverUrl}
-										alt={`Portada de ${obra.title}`}
-										className="h-full w-full object-cover"
-										loading="lazy"
-									/>
-								) : (
-									<div className="h-full w-full flex items-center justify-center text-sm text-muted-foreground">
-										Sin portada
-									</div>
-								)}
-							</div>
-							{obra.progress && (
-								<div>
-									<div className="flex justify-between text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground mb-2">
-										<span>Progreso</span>
-										<span>
-											{obra.progress.current} / {obra.progress.total}
-										</span>
-									</div>
-									<div className="h-1 w-full bg-border">
-										<div
-											className="h-full bg-primary"
-											style={{
-												width: `${Math.min(100, (obra.progress.current / Math.max(1, obra.progress.total)) * 100)}%`,
-											}}
-										/>
-									</div>
-								</div>
-							)}
-						</div>
-
-						{/* Info */}
-						<div className="space-y-6">
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-2">
-									<TypeBadge type={obra.type} />
-									<StatusBadge status={obra.status} />
-									{obra.recommendedBy && <RecommendationBadge />}
-									{showOngoingBadge && (
-										<Badge
-											variant="outline"
-											className="h-5 rounded-none border-[#4A4E69]/30 bg-[#4A4E69]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#4A4E69] dark:text-[#8A8EA9]"
-										>
-											En emisión
-										</Badge>
-									)}
-									{showUpToDateBadge && (
-										<Badge
-											variant="outline"
-											className="h-5 rounded-none border-[#3A5A40]/30 bg-[#3A5A40]/8 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#3A5A40] dark:text-[#7AA080]"
-										>
-											Al día
-										</Badge>
-									)}
-								</div>
-								<h1 className="font-serif text-4xl md:text-5xl leading-[1.1]">
-									{obra.title}
-								</h1>
-								{obra.creator && (
-									<p className="text-lg text-muted-foreground">
-										{obra.creator}
-									</p>
-								)}
-								{obra.year && (
-									<p className="text-sm text-muted-foreground">{obra.year}</p>
-								)}
-								{obra.recommendedBy && (
-									<p className="text-sm text-muted-foreground">
-										Recomendada por {obra.recommendedBy}
-									</p>
-								)}
-							</div>
-
-							{/* Technical info */}
-							<div className="border border-border bg-background px-5 py-4">
-								<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-3">
-									<p className="text-sm font-medium">Ficha técnica</p>
-									<p className="text-xs text-muted-foreground">
-										Actualizado {formatDateShort(obra.updatedAt)}
-									</p>
-								</div>
-								{technicalItems.length > 0 ? (
-									<div className="grid gap-2 sm:grid-cols-2">
-										{technicalItems.map((item) => (
-											<div key={item.label} className="text-sm">
-												<span className="text-muted-foreground">
-													{item.label}:
-												</span>{" "}
-												<span className="text-card-foreground">
-													{item.value}
-												</span>
-											</div>
-										))}
-									</div>
-								) : (
-									<p className="text-sm text-muted-foreground">
-										Sin datos técnicos.
-									</p>
-								)}
-							</div>
-
-							{/* Form */}
+				<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+					<DialogContent className="left-auto right-0 top-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-y-0 border-r-0 border-l-border bg-card p-0 sm:max-w-xl lg:max-w-2xl">
+						<DialogHeader className="sticky top-0 z-10 border-b border-border bg-card px-5 py-4">
+							<DialogTitle className="font-serif text-xl">
+								Editar obra
+							</DialogTitle>
+							<DialogDescription>
+								Actualiza progreso, estado, metadatos y notas personales.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="px-5 py-5">
 							<form
 								onSubmit={(e) => {
 									e.preventDefault();
@@ -1242,42 +1429,6 @@ function ObraAuthed({
 															<p className="text-sm text-[#9A3B2E]">
 																El progreso no puede superar el total.
 															</p>
-														);
-													}}
-												</form.Subscribe>
-											</div>
-											<div className="sm:col-span-2 flex items-end justify-end">
-												<form.Subscribe
-													selector={(state) =>
-														[
-															state.values.progressCurrent,
-															state.values.progressTotal,
-															state.isSubmitting,
-														] as const
-													}
-												>
-													{([progressCurrent, progressTotal, isSubmitting]) => {
-														const canSaveProgress =
-															Number.isFinite(progressCurrent) &&
-															Number.isFinite(progressTotal) &&
-															progressTotal >= 0 &&
-															progressCurrent >= 0 &&
-															(progressTotal === 0 ||
-																progressCurrent <= progressTotal);
-
-														return (
-															<Button
-																type="submit"
-																disabled={isSubmitting || !canSaveProgress}
-																className={cn(
-																	"rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]",
-																	!canSaveProgress && "pointer-events-none",
-																)}
-															>
-																{isSubmitting
-																	? "Guardando..."
-																	: "Guardar cambios"}
-															</Button>
 														);
 													}}
 												</form.Subscribe>
@@ -1675,25 +1826,45 @@ function ObraAuthed({
 									</div>
 								</section>
 
-								{!hasProgress && (
-									<div className="flex justify-end">
-										<form.Subscribe selector={(state) => state.isSubmitting}>
-											{(isSubmitting) => (
+								<div className="sticky bottom-0 -mx-5 flex justify-end border-t border-border bg-card px-5 py-4">
+									<form.Subscribe
+										selector={(state) =>
+											[
+												state.values.progressCurrent,
+												state.values.progressTotal,
+												state.isSubmitting,
+											] as const
+										}
+									>
+										{([progressCurrent, progressTotal, isSubmitting]) => {
+											const canSaveProgress =
+												!hasProgress ||
+												(Number.isFinite(progressCurrent) &&
+													Number.isFinite(progressTotal) &&
+													progressTotal >= 0 &&
+													progressCurrent >= 0 &&
+													(progressTotal === 0 ||
+														progressCurrent <= progressTotal));
+
+											return (
 												<Button
 													type="submit"
-													disabled={isSubmitting}
-													className="rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]"
+													disabled={isSubmitting || !canSaveProgress}
+													className={cn(
+														"rounded-none bg-[#1A1A1A] text-[#F5F2EB] hover:bg-[#1A1A1A]/90",
+														!canSaveProgress && "pointer-events-none",
+													)}
 												>
 													{isSubmitting ? "Guardando..." : "Guardar cambios"}
 												</Button>
-											)}
-										</form.Subscribe>
-									</div>
-								)}
+											);
+										}}
+									</form.Subscribe>
+								</div>
 							</form>
 						</div>
-					</div>
-				</div>
+					</DialogContent>
+				</Dialog>
 			</div>
 		</div>
 	);
