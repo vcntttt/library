@@ -1,5 +1,5 @@
 {
-  "id": "e3de7d08-6752-465e-affa-55bcd0ccd2a5",
+  "id": "7131b020-ea63-43b0-a792-fc63cb2add6a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -339,8 +339,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "obsidian_path": {
-          "name": "obsidian_path",
+        "recommended_by": {
+          "name": "recommended_by",
           "type": "text",
           "primaryKey": false,
           "notNull": false

@@ -1,13 +1,15 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { obras } from "@/db/schema";
+import { obraQuotes, obras } from "@/db/schema";
 import type {
 	CreateObraInput,
 	ExternalReference,
 	Obra,
 	ObraMetadata,
 	ObraProgress,
+	ObraQuote,
+	ObraQuotePatch,
 	ObraStatus,
 	ObraType,
 	UpdateObraPatch,
@@ -47,13 +49,18 @@ const progressSchema = z.object({
 	total: z.number().int().nonnegative(),
 });
 
+const quotePatchSchema = z.object({
+	id: z.string().min(1).nullish(),
+	content: z.string().trim().min(1),
+	characterName: z.string().nullish(),
+});
+
 const createObraSchema = z.object({
 	title: z.string().min(1),
 	type: z.enum(obraTypes),
 	status: z.enum(obraStatuses),
 	review: z.string().nullish(),
 	tags: z.array(z.string()).nullish(),
-	notes: z.string().nullish(),
 	recommendedBy: z.string().nullish(),
 	readingUrl: z.string().nullish(),
 	external: externalSchema.nullish(),
@@ -72,7 +79,7 @@ const updatePatchSchema = z.object({
 	status: z.enum(obraStatuses).nullish(),
 	review: z.string().nullish(),
 	tags: z.array(z.string()).nullish(),
-	notes: z.string().nullish(),
+	quotes: z.array(quotePatchSchema).nullish(),
 	recommendedBy: z.string().nullish(),
 	readingUrl: z.string().nullish(),
 	external: externalSchema.nullish(),
@@ -92,6 +99,7 @@ export interface ListObrasInput {
 }
 
 type ObraRow = typeof obras.$inferSelect;
+type ObraQuoteRow = typeof obraQuotes.$inferSelect;
 
 export function parseCreateObraInput(input: unknown) {
 	return createObraSchema.parse(input) as CreateObraInput;
@@ -119,7 +127,7 @@ export async function listObras(userId: string, input: ListObrasInput = {}) {
 		.orderBy(desc(obras.updatedAt))
 		.limit(limit);
 
-	return rows.map(toObra);
+	return rows.map((row) => toObra(row));
 }
 
 export async function getObra(userId: string, id: string) {
@@ -127,7 +135,12 @@ export async function getObra(userId: string, id: string) {
 		where: and(eq(obras.id, id), eq(obras.userId, userId)),
 	});
 
-	return row ? toObra(row) : null;
+	if (!row) {
+		return null;
+	}
+
+	const quotes = await listQuotesForObra(db, userId, id);
+	return toObra(row, quotes);
 }
 
 export async function createObra(userId: string, rawInput: unknown) {
@@ -153,6 +166,12 @@ export async function createObra(userId: string, rawInput: unknown) {
 		}
 	}
 
+	if (input.type === "movie") {
+		const watchedAt = finishedAt ?? startedAt;
+		startedAt = watchedAt;
+		finishedAt = watchedAt;
+	}
+
 	const [row] = await db
 		.insert(obras)
 		.values({
@@ -163,7 +182,6 @@ export async function createObra(userId: string, rawInput: unknown) {
 			status: input.status,
 			review: normalizeOptionalString(input.review),
 			tags: normalizeTags(input.tags),
-			notes: normalizeOptionalString(input.notes),
 			recommendedBy: normalizeOptionalString(input.recommendedBy),
 			readingUrl: normalizeOptionalString(input.readingUrl),
 			externalSource: external?.source,
@@ -217,9 +235,6 @@ export async function updateObra(
 	}
 	if (hasOwn(patch, "tags")) {
 		nextPatch.tags = normalizeTags(patch.tags);
-	}
-	if (hasOwn(patch, "notes")) {
-		nextPatch.notes = normalizeOptionalString(patch.notes);
 	}
 	if (hasOwn(patch, "recommendedBy")) {
 		nextPatch.recommendedBy = normalizeOptionalString(patch.recommendedBy);
@@ -276,6 +291,7 @@ export async function updateObra(
 	}
 
 	const nextStatus = nextPatch.status ?? existing.status;
+	const nextType = nextPatch.type ?? existing.type;
 	if (
 		nextStatus === "in-progress" &&
 		existing.startedAt == null &&
@@ -301,6 +317,40 @@ export async function updateObra(
 		nextPatch.finishedAt = null;
 	}
 
+	if (nextType === "movie") {
+		const watchedAt =
+			nextPatch.finishedAt ??
+			nextPatch.startedAt ??
+			existing.finishedAt ??
+			existing.startedAt ??
+			null;
+		nextPatch.startedAt = watchedAt;
+		nextPatch.finishedAt = watchedAt;
+	}
+
+	if (hasOwn(patch, "quotes")) {
+		return db.transaction(async (tx) => {
+			const existingQuotes = await listQuotesForObra(tx, userId, id);
+			const [row] = await tx
+				.update(obras)
+				.set(nextPatch)
+				.where(and(eq(obras.id, id), eq(obras.userId, userId)))
+				.returning();
+
+			await replaceQuotesForObra(
+				tx,
+				userId,
+				id,
+				sanitizeQuotes(patch.quotes ?? []),
+				existingQuotes,
+				now,
+			);
+
+			const quotes = await listQuotesForObra(tx, userId, id);
+			return toObra(row, quotes);
+		});
+	}
+
 	const [row] = await db
 		.update(obras)
 		.set(nextPatch)
@@ -323,7 +373,7 @@ export async function removeObra(userId: string, id: string) {
 	return row;
 }
 
-export function toObra(row: ObraRow): Obra {
+export function toObra(row: ObraRow, quoteRows: ObraQuoteRow[] = []): Obra {
 	return {
 		id: row.id,
 		title: row.title,
@@ -331,7 +381,7 @@ export function toObra(row: ObraRow): Obra {
 		status: row.status,
 		review: row.review ?? undefined,
 		tags: row.tags ?? [],
-		notes: row.notes ?? undefined,
+		quotes: quoteRows.map(toObraQuote),
 		recommendedBy: row.recommendedBy ?? undefined,
 		readingUrl: row.readingUrl ?? undefined,
 		coverUrl: row.coverUrl ?? undefined,
@@ -354,6 +404,75 @@ export function toObra(row: ObraRow): Obra {
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
 	};
+}
+
+function toObraQuote(row: ObraQuoteRow): ObraQuote {
+	return {
+		id: row.id,
+		obraId: row.obraId,
+		content: row.content,
+		characterName: row.characterName ?? undefined,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt,
+	};
+}
+
+type QuoteExecutor = Pick<typeof db, "select" | "delete" | "insert">;
+
+async function listQuotesForObra(
+	executor: QuoteExecutor,
+	userId: string,
+	obraId: string,
+) {
+	return executor
+		.select()
+		.from(obraQuotes)
+		.where(and(eq(obraQuotes.userId, userId), eq(obraQuotes.obraId, obraId)))
+		.orderBy(asc(obraQuotes.createdAt));
+}
+
+async function replaceQuotesForObra(
+	executor: QuoteExecutor,
+	userId: string,
+	obraId: string,
+	quotes: ObraQuotePatch[],
+	existingQuotes: ObraQuoteRow[],
+	now: number,
+) {
+	await executor
+		.delete(obraQuotes)
+		.where(and(eq(obraQuotes.userId, userId), eq(obraQuotes.obraId, obraId)));
+
+	if (quotes.length === 0) {
+		return;
+	}
+
+	const createdAtById = new Map(
+		existingQuotes.map((quote) => [quote.id, quote.createdAt]),
+	);
+
+	await executor.insert(obraQuotes).values(
+		quotes.map((quote) => {
+			const id = quote.id ?? crypto.randomUUID();
+			return {
+				id,
+				userId,
+				obraId,
+				content: quote.content,
+				characterName: normalizeOptionalString(quote.characterName),
+				createdAt: createdAtById.get(id) ?? now,
+				updatedAt: now,
+			};
+		}),
+	);
+}
+
+function sanitizeQuotes(quotes: ObraQuotePatch[]) {
+	return quotes.map((quote) => ({
+		id: normalizeOptionalString(quote.id) ?? undefined,
+		content: quote.content.trim(),
+		characterName: normalizeOptionalString(quote.characterName) ?? undefined,
+	}));
 }
 
 function sanitizeExternal(

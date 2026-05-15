@@ -4,7 +4,7 @@ import type { Obra, ObraStatus, ObraType } from "@/lib/types";
 import { formatDateShort } from "@/lib/utils";
 
 /* ─── Mock data ─── */
-const mockObras: Obra[] = [
+const mockObras = [
 	{
 		id: "1",
 		title: "La Casa de los Espíritus",
@@ -113,7 +113,7 @@ const mockObras: Obra[] = [
 		createdAt: Date.now() - 1_100_000_000,
 		updatedAt: Date.now() - 600_000_000,
 	},
-];
+].map((obra) => ({ ...obra, quotes: [] })) satisfies Obra[];
 
 const statusLabel: Record<ObraStatus, string> = {
 	backlog: "PENDIENTE",
@@ -548,18 +548,6 @@ function Detalle({ obra, onBack }: { obra: Obra; onBack: () => void }) {
 								</p>
 								<p className="text-sm text-[#CCC] leading-relaxed">
 									{obra.review}
-								</p>
-							</div>
-						)}
-
-						{/* Notes */}
-						{obra.notes && (
-							<div className="border border-[#333] p-3">
-								<p className="text-[10px] tracking-widest text-[#555] mb-2">
-									NOTAS
-								</p>
-								<p className="text-sm text-[#888] leading-relaxed whitespace-pre-wrap">
-									{obra.notes}
 								</p>
 							</div>
 						)}

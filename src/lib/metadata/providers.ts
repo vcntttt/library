@@ -34,7 +34,7 @@ export interface MetadataSearchOutcome {
 }
 
 export const providerByType: Record<ObraType, MetadataSource> = {
-	book: "google-books",
+	book: "open-library",
 	movie: "tmdb",
 	series: "tmdb",
 	anime: "anilist",
@@ -158,17 +158,18 @@ async function searchOpenLibrary(query: string) {
 
 	const data = await fetchJson<OpenLibraryResponse>(url.toString());
 	return (
-		data.docs?.map((doc) => ({
-			source: "open-library" as const,
-			id: doc.key,
-			title: doc.title,
-			creator: doc.author_name?.join(", "),
-			year: doc.first_publish_year,
-			coverUrl: doc.cover_i
-				? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
-				: undefined,
-			pages: doc.number_of_pages_median,
-		})) ?? []
+		data.docs?.map((doc) => {
+			const id = getOpenLibrarySearchResultId(doc);
+			return {
+				source: "open-library" as const,
+				id,
+				title: doc.title,
+				creator: doc.author_name?.join(", "),
+				year: doc.first_publish_year,
+				coverUrl: doc.cover_i ? getOpenLibraryCoverUrl(doc.cover_i) : undefined,
+				pages: doc.number_of_pages_median,
+			};
+		}) ?? []
 	);
 }
 
@@ -259,18 +260,43 @@ async function getGoogleBookDetails(id: string): Promise<MetadataDetails> {
 }
 
 async function getOpenLibraryDetails(id: string): Promise<MetadataDetails> {
-	const normalized = id.startsWith("/") ? id : `/${id}`;
-	const url = `https://openlibrary.org${normalized}.json`;
-	const data = await fetchJson<OpenLibraryDetails>(url);
+	const normalized = normalizeOpenLibraryId(id);
+
+	if (normalized.startsWith("/books/")) {
+		const data = await fetchJson<OpenLibraryEditionDetails>(
+			`https://openlibrary.org${normalized}.json`,
+		);
+		const creator = await resolveOpenLibraryAuthors(data.authors);
+
+		return {
+			source: "open-library",
+			id: normalized,
+			title: data.title,
+			creator,
+			year: parseYear(data.publish_date),
+			coverUrl: getOpenLibraryCoverUrl(data.covers?.[0]),
+			pages: data.number_of_pages,
+		};
+	}
+
+	const data = await fetchJson<OpenLibraryWorkDetails>(
+		`https://openlibrary.org${normalized}.json`,
+	);
+	const creator = await resolveOpenLibraryAuthors(data.authors);
+	const bestEdition = await getBestOpenLibraryEdition(normalized);
 
 	return {
 		source: "open-library",
-		id,
+		id: normalized,
 		title: data.title,
-		year: data.first_publish_date
-			? parseYear(data.first_publish_date)
-			: undefined,
-		pages: data.number_of_pages ?? data.number_of_pages_median,
+		creator,
+		year:
+			parseYear(data.first_publish_date) ??
+			parseYear(bestEdition?.publish_date),
+		coverUrl:
+			getOpenLibraryCoverUrl(data.covers?.[0]) ??
+			getOpenLibraryCoverUrl(bestEdition?.covers?.[0]),
+		pages: bestEdition?.number_of_pages,
 	};
 }
 
@@ -754,6 +780,82 @@ function parseYear(value?: string) {
 	return match ? Number(match[0]) : undefined;
 }
 
+function getOpenLibrarySearchResultId(
+	doc: NonNullable<OpenLibraryResponse["docs"]>[number],
+) {
+	const editionId = doc.cover_edition_key ?? doc.edition_key?.[0];
+	if (editionId) return `/books/${editionId}`;
+	return normalizeOpenLibraryId(doc.key);
+}
+
+function normalizeOpenLibraryId(id: string) {
+	const normalized = id.startsWith("/") ? id : `/${id}`;
+	if (normalized.startsWith("/books/") || normalized.startsWith("/works/")) {
+		return normalized;
+	}
+
+	const olid = normalized.replace(/^\//, "");
+	if (/^OL\d+M$/i.test(olid)) return `/books/${olid}`;
+	if (/^OL\d+W$/i.test(olid)) return `/works/${olid}`;
+	return normalized;
+}
+
+function getOpenLibraryCoverUrl(coverId?: number) {
+	return coverId
+		? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
+		: undefined;
+}
+
+async function getBestOpenLibraryEdition(workId: string) {
+	try {
+		const url = new URL(`https://openlibrary.org${workId}/editions.json`);
+		url.searchParams.set("limit", "10");
+		const data = await fetchJson<OpenLibraryEditionsResponse>(url.toString());
+		const editions = data.entries ?? [];
+		return (
+			editions.find(
+				(edition) =>
+					edition.number_of_pages !== undefined &&
+					(edition.publish_date || edition.covers?.length),
+			) ??
+			editions.find((edition) => edition.number_of_pages !== undefined) ??
+			editions.find((edition) => edition.publish_date || edition.covers?.length)
+		);
+	} catch {
+		return undefined;
+	}
+}
+
+async function resolveOpenLibraryAuthors(
+	authors?: Array<{ key?: string } | { author?: { key?: string } }>,
+) {
+	const keys = authors
+		?.map((entry) => {
+			if ("key" in entry) return entry.key;
+			return entry.author?.key;
+		})
+		.filter((key): key is string => Boolean(key))
+		.slice(0, 3);
+
+	if (!keys?.length) return undefined;
+
+	try {
+		const names = await Promise.all(
+			keys.map(async (key) => {
+				const normalized = key.startsWith("/") ? key : `/authors/${key}`;
+				const author = await fetchJson<OpenLibraryAuthorDetails>(
+					`https://openlibrary.org${normalized}.json`,
+				);
+				return author.name;
+			}),
+		);
+		const resolved = names.filter((name): name is string => Boolean(name));
+		return resolved.length ? resolved.join(", ") : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 function pickGoogleCover(
 	imageLinks?: GoogleBooksItem["volumeInfo"]["imageLinks"],
 ) {
@@ -795,14 +897,33 @@ interface OpenLibraryResponse {
 		first_publish_year?: number;
 		number_of_pages_median?: number;
 		cover_i?: number;
+		edition_key?: string[];
+		cover_edition_key?: string;
+		isbn?: string[];
 	}>;
 }
 
-interface OpenLibraryDetails {
+interface OpenLibraryEditionDetails {
+	title?: string;
+	number_of_pages?: number;
+	publish_date?: string;
+	covers?: number[];
+	authors?: Array<{ key?: string }>;
+}
+
+interface OpenLibraryWorkDetails {
 	title?: string;
 	first_publish_date?: string;
-	number_of_pages?: number;
-	number_of_pages_median?: number;
+	covers?: number[];
+	authors?: Array<{ author?: { key?: string } }>;
+}
+
+interface OpenLibraryEditionsResponse {
+	entries?: OpenLibraryEditionDetails[];
+}
+
+interface OpenLibraryAuthorDetails {
+	name?: string;
 }
 
 interface TmdbResult {

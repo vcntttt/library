@@ -33,6 +33,21 @@ export interface ObraProgress {
 	total: number;
 }
 
+export interface ObraQuote {
+	id: string;
+	obraId: ObraId;
+	content: string;
+	characterName?: string;
+	createdAt: number;
+	updatedAt: number;
+}
+
+export interface ObraQuotePatch {
+	id?: string;
+	content: string;
+	characterName?: string;
+}
+
 export interface ExternalReference {
 	source: MetadataSource;
 	id: string;
@@ -45,7 +60,7 @@ export interface Obra {
 	status: ObraStatus;
 	review?: string;
 	tags: string[];
-	notes?: string;
+	quotes: ObraQuote[];
 	recommendedBy?: string;
 	readingUrl?: string;
 	coverUrl?: string;
@@ -66,7 +81,6 @@ export interface CreateObraInput {
 	status: ObraStatus;
 	review?: string;
 	tags?: string[];
-	notes?: string;
 	recommendedBy?: string;
 	readingUrl?: string;
 	external?: ExternalReference;
@@ -85,7 +99,7 @@ export interface UpdateObraPatch {
 	status?: ObraStatus;
 	review?: string;
 	tags?: string[];
-	notes?: string;
+	quotes?: ObraQuotePatch[];
 	recommendedBy?: string;
 	readingUrl?: string;
 	external?: ExternalReference;

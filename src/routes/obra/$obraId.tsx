@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, Minus, Pencil, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { RecommendationBadge } from "@/components/recommendation-badge";
 import { StatusBadge } from "@/components/status-badge";
@@ -51,6 +51,33 @@ import type {
 import { obraFromDoc } from "@/lib/obras";
 import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
 import { cn, formatDateShort } from "@/lib/utils";
+
+interface EditableQuote {
+	clientId: string;
+	id?: string;
+	content: string;
+	characterName: string;
+}
+
+interface EditFormValues {
+	readingUrl: string;
+	recommendedBy: string;
+	startedAt: string;
+	finishedAt: string;
+	review: string;
+	progressCurrent: number;
+	progressTotal: number;
+}
+
+const emptyEditFormValues: EditFormValues = {
+	readingUrl: "",
+	recommendedBy: "",
+	startedAt: "",
+	finishedAt: "",
+	review: "",
+	progressCurrent: 0,
+	progressTotal: 0,
+};
 
 const statusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
@@ -161,6 +188,26 @@ const formatDateInput = (value?: number) => {
 	if (!value) return "";
 	return new Date(value).toISOString().slice(0, 10);
 };
+
+function getEditFormValues(obra: Obra): EditFormValues {
+	return {
+		readingUrl: obra.readingUrl ?? "",
+		recommendedBy: obra.recommendedBy ?? "",
+		startedAt: formatDateInput(
+			obra.type === "movie"
+				? (obra.finishedAt ?? obra.startedAt)
+				: obra.startedAt,
+		),
+		finishedAt: formatDateInput(
+			obra.type === "movie"
+				? (obra.finishedAt ?? obra.startedAt)
+				: obra.finishedAt,
+		),
+		review: obra.review ?? "",
+		progressCurrent: obra.progress?.current ?? 0,
+		progressTotal: obra.progress?.total ?? 0,
+	};
+}
 
 const parseDateInput = (value: string) => {
 	if (!value.trim()) return undefined;
@@ -515,13 +562,21 @@ function TechnicalInfoSection({
 
 function PersonalNotesSection({ obra }: { obra: Obra }) {
 	const dateItems: DetailItem[] = [];
-	if (obra.startedAt) {
+	if (obra.type === "movie") {
+		const watchedAt = obra.finishedAt ?? obra.startedAt;
+		if (watchedAt) {
+			dateItems.push({
+				label: "Fecha",
+				value: formatDateShort(watchedAt),
+			});
+		}
+	} else if (obra.startedAt) {
 		dateItems.push({
 			label: "Fecha de inicio",
 			value: formatDateShort(obra.startedAt),
 		});
 	}
-	if (obra.finishedAt) {
+	if (obra.type !== "movie" && obra.finishedAt) {
 		dateItems.push({
 			label: "Fecha de término",
 			value: formatDateShort(obra.finishedAt),
@@ -535,19 +590,33 @@ function PersonalNotesSection({ obra }: { obra: Obra }) {
 					<p className="mb-2 text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
 						Reseña
 					</p>
-					<p className="font-serif text-xl leading-relaxed text-foreground">
-						“{obra.review}”
+					<p className="whitespace-pre-wrap font-serif text-xl leading-relaxed text-foreground">
+						{obra.review}
 					</p>
 				</div>
 			)}
-			{obra.notes && (
-				<div className="border border-border bg-card p-6">
+			{obra.quotes.length > 0 && (
+				<div className="space-y-3">
 					<p className="mb-3 text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
-						Notas
+						Citas
 					</p>
-					<p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-						{obra.notes}
-					</p>
+					<div className="grid gap-3 sm:grid-cols-2">
+						{obra.quotes.map((quote) => (
+							<figure
+								key={quote.id}
+								className="border border-border bg-card p-4"
+							>
+								<blockquote className="whitespace-pre-wrap font-serif text-lg leading-relaxed text-foreground">
+									{quote.content}
+								</blockquote>
+								{quote.characterName && (
+									<figcaption className="mt-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+										{quote.characterName}
+									</figcaption>
+								)}
+							</figure>
+						))}
+					</div>
 				</div>
 			)}
 			{dateItems.length > 0 && (
@@ -595,6 +664,7 @@ function ObraAuthed({
 	const removeObra = useMutation(api.obras.remove);
 	const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 	const [isMetadataOpen, setIsMetadataOpen] = useState(false);
+	const [editQuotes, setEditQuotes] = useState<EditableQuote[]>([]);
 	const [metadataQuery, setMetadataQuery] = useState("");
 	const [metadataResults, setMetadataResults] = useState<
 		MetadataSearchResult[]
@@ -617,18 +687,13 @@ function ObraAuthed({
 	const progressCommitTimeout = useRef<ReturnType<typeof setTimeout> | null>(
 		null,
 	);
+	const editDefaultValues = useMemo(
+		() => (doc ? getEditFormValues(doc) : emptyEditFormValues),
+		[doc],
+	);
 
 	const form = useForm({
-		defaultValues: {
-			readingUrl: "",
-			recommendedBy: "",
-			startedAt: "",
-			finishedAt: "",
-			review: "",
-			notes: "",
-			progressCurrent: 0,
-			progressTotal: 0,
-		},
+		defaultValues: editDefaultValues,
 		onSubmit: async ({ value }) => {
 			const hasProgress = doc?.type !== "movie";
 			const previousProgress = doc?.progress;
@@ -646,13 +711,30 @@ function ObraAuthed({
 
 			if (!canSaveProgress) return;
 
+			const movieWatchedAt =
+				doc?.type === "movie"
+					? (parseDateInput(value.finishedAt) ??
+						parseDateInput(value.startedAt))
+					: undefined;
 			const patch: Record<string, unknown> = {
 				readingUrl: value.readingUrl.trim() || undefined,
 				recommendedBy: value.recommendedBy.trim(),
-				startedAt: parseDateInput(value.startedAt),
-				finishedAt: parseDateInput(value.finishedAt),
+				startedAt:
+					doc?.type === "movie"
+						? movieWatchedAt
+						: parseDateInput(value.startedAt),
+				finishedAt:
+					doc?.type === "movie"
+						? movieWatchedAt
+						: parseDateInput(value.finishedAt),
 				review: value.review.trim() || undefined,
-				notes: value.notes.trim() || undefined,
+				quotes: editQuotes
+					.map((quote) => ({
+						id: quote.id,
+						content: quote.content.trim(),
+						characterName: quote.characterName.trim() || undefined,
+					}))
+					.filter((quote) => quote.content),
 			};
 
 			if (hasProgress && value.progressTotal > 0) {
@@ -676,21 +758,27 @@ function ObraAuthed({
 		},
 	});
 
+	const resetEditFormFromDoc = useCallback(
+		(nextDoc: Obra) => {
+			form.reset(getEditFormValues(nextDoc));
+			setEditQuotes(
+				nextDoc.quotes.map((quote) => ({
+					clientId: quote.id,
+					id: quote.id,
+					content: quote.content,
+					characterName: quote.characterName ?? "",
+				})),
+			);
+		},
+		[form],
+	);
+
 	useEffect(() => {
 		if (!doc) {
 			return;
 		}
-		form.reset({
-			readingUrl: doc.readingUrl ?? "",
-			recommendedBy: doc.recommendedBy ?? "",
-			startedAt: formatDateInput(doc.startedAt),
-			finishedAt: formatDateInput(doc.finishedAt),
-			review: doc.review ?? "",
-			notes: doc.notes ?? "",
-			progressCurrent: doc.progress?.current ?? 0,
-			progressTotal: doc.progress?.total ?? 0,
-		});
-	}, [doc, form]);
+		resetEditFormFromDoc(doc);
+	}, [doc, resetEditFormFromDoc]);
 
 	useEffect(() => {
 		return () => {
@@ -1190,13 +1278,54 @@ function ObraAuthed({
 		? `/api/metadata/details?source=${encodeURIComponent(previewResult.source)}&id=${encodeURIComponent(previewResult.id)}&type=${encodeURIComponent(obra.type)}`
 		: null;
 
+	const handleOpenEdit = () => {
+		resetEditFormFromDoc(obra);
+		setIsEditOpen(true);
+	};
+
+	const handleEditOpenChange = (open: boolean) => {
+		if (open) {
+			resetEditFormFromDoc(obra);
+		}
+		setIsEditOpen(open);
+	};
+
+	const handleAddQuote = () => {
+		setEditQuotes((quotes) => [
+			...quotes,
+			{
+				clientId: `new-${crypto.randomUUID()}`,
+				content: "",
+				characterName: "",
+			},
+		]);
+	};
+
+	const handleRemoveQuote = (clientId: string) => {
+		setEditQuotes((quotes) =>
+			quotes.filter((quote) => quote.clientId !== clientId),
+		);
+	};
+
+	const handleQuoteChange = (
+		clientId: string,
+		field: "content" | "characterName",
+		value: string,
+	) => {
+		setEditQuotes((quotes) =>
+			quotes.map((quote) =>
+				quote.clientId === clientId ? { ...quote, [field]: value } : quote,
+			),
+		);
+	};
+
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
 			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 				<ObraActionBar
 					obra={obra}
 					onDelete={handleDelete}
-					onEdit={() => setIsEditOpen(true)}
+					onEdit={handleOpenEdit}
 					onOpenReadingLink={handleOpenReadingLink}
 				/>
 
@@ -1208,14 +1337,14 @@ function ObraAuthed({
 					technicalItems={technicalItems}
 				/>
 
-				<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+				<Dialog open={isEditOpen} onOpenChange={handleEditOpenChange}>
 					<DialogContent className="left-auto right-0 top-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-y-0 border-r-0 border-l-border bg-card p-0 sm:max-w-xl lg:max-w-2xl">
 						<DialogHeader className="sticky top-0 z-10 border-b border-border bg-card px-5 py-4">
 							<DialogTitle className="font-serif text-xl">
 								Editar obra
 							</DialogTitle>
 							<DialogDescription>
-								Actualiza progreso, estado, metadatos y notas personales.
+								Actualiza progreso, estado, metadatos, reseña y citas.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="px-5 py-5">
@@ -1763,38 +1892,62 @@ function ObraAuthed({
 												)}
 											</form.Field>
 										</div>
-										<div className="space-y-2">
-											<Label>Fecha de inicio</Label>
-											<form.Field name="startedAt">
-												{(field) => (
-													<Input
-														type="date"
-														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
-														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
-													/>
-												)}
-											</form.Field>
-										</div>
-										<div className="space-y-2">
-											<Label>Fecha de término</Label>
-											<form.Field name="finishedAt">
-												{(field) => (
-													<Input
-														type="date"
-														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
-														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
-													/>
-												)}
-											</form.Field>
-										</div>
+										{obra.type === "movie" ? (
+											<div className="space-y-2">
+												<Label>Fecha</Label>
+												<form.Field name="finishedAt">
+													{(field) => (
+														<Input
+															type="date"
+															value={field.state.value}
+															onChange={(e) =>
+																field.handleChange(e.target.value)
+															}
+															className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+														/>
+													)}
+												</form.Field>
+											</div>
+										) : (
+											<>
+												<div className="space-y-2">
+													<Label>Fecha de inicio</Label>
+													<form.Field name="startedAt">
+														{(field) => (
+															<Input
+																type="date"
+																value={field.state.value}
+																onChange={(e) =>
+																	field.handleChange(e.target.value)
+																}
+																className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+															/>
+														)}
+													</form.Field>
+												</div>
+												<div className="space-y-2">
+													<Label>Fecha de término</Label>
+													<form.Field name="finishedAt">
+														{(field) => (
+															<Input
+																type="date"
+																value={field.state.value}
+																onChange={(e) =>
+																	field.handleChange(e.target.value)
+																}
+																className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+															/>
+														)}
+													</form.Field>
+												</div>
+											</>
+										)}
 									</div>
 								</section>
 
 								<section className="border border-border bg-card p-5 space-y-4">
-									<p className="text-sm font-medium">Notas y reseña</p>
-									<div className="grid gap-4 sm:grid-cols-2">
+									<p className="text-sm font-medium">Reseña y citas</p>
+									<div className="space-y-5">
 										<div className="space-y-2">
 											<Label>Reseña</Label>
 											<form.Field name="review">
@@ -1802,26 +1955,82 @@ function ObraAuthed({
 													<Textarea
 														value={field.state.value}
 														onChange={(e) => field.handleChange(e.target.value)}
-														placeholder="Qué te dejó esta obra?"
-														rows={4}
+														placeholder="Escribe tu reseña..."
+														rows={10}
 														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 													/>
 												)}
 											</form.Field>
 										</div>
-										<div className="space-y-2">
-											<Label>Notas</Label>
-											<form.Field name="notes">
-												{(field) => (
-													<Textarea
-														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
-														placeholder="Ideas, citas, preguntas..."
-														rows={8}
-														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
-													/>
-												)}
-											</form.Field>
+
+										<div className="space-y-3">
+											<div className="flex items-center justify-between gap-3">
+												<Label>Citas</Label>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={handleAddQuote}
+													className="rounded-none border-border hover:border-primary hover:text-primary"
+												>
+													<Plus className="mr-2 h-4 w-4" />
+													Agregar cita
+												</Button>
+											</div>
+											{editQuotes.length === 0 ? (
+												<div className="border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+													Todavía no hay citas para esta obra.
+												</div>
+											) : (
+												<div className="space-y-3">
+													{editQuotes.map((quote) => (
+														<div
+															key={quote.clientId}
+															className="space-y-3 border border-border bg-muted/30 p-3"
+														>
+															<div className="flex items-start gap-2">
+																<Textarea
+																	value={quote.content}
+																	onChange={(e) =>
+																		handleQuoteChange(
+																			quote.clientId,
+																			"content",
+																			e.target.value,
+																		)
+																	}
+																	placeholder="Cita"
+																	rows={3}
+																	className="min-h-24 rounded-none border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+																/>
+																<Button
+																	type="button"
+																	variant="ghost"
+																	size="icon"
+																	aria-label="Eliminar cita"
+																	onClick={() =>
+																		handleRemoveQuote(quote.clientId)
+																	}
+																	className="shrink-0 rounded-none text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+																>
+																	<Trash2 className="h-4 w-4" />
+																</Button>
+															</div>
+															<Input
+																value={quote.characterName}
+																onChange={(e) =>
+																	handleQuoteChange(
+																		quote.clientId,
+																		"characterName",
+																		e.target.value,
+																	)
+																}
+																placeholder="Personaje"
+																className="rounded-none border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+															/>
+														</div>
+													))}
+												</div>
+											)}
 										</div>
 									</div>
 								</section>

@@ -70,7 +70,7 @@ const metadataSourceByType: Record<
 	ObraType,
 	keyof typeof metadataSourceLabels
 > = {
-	book: "google-books",
+	book: "open-library",
 	movie: "tmdb",
 	series: "tmdb",
 	anime: "anilist",
@@ -161,6 +161,8 @@ export function AddObraDialog({
 			const year = Number.isFinite(parsedYear) ? parsedYear : undefined;
 			const startedAt = parseDateInput(value.startedAt);
 			const finishedAt = parseDateInput(value.finishedAt);
+			const movieWatchedAt =
+				value.type === "movie" ? (finishedAt ?? startedAt) : undefined;
 
 			await createObra({
 				title: value.title.trim(),
@@ -168,8 +170,8 @@ export function AddObraDialog({
 				status: value.status,
 				creator: value.creator.trim() || undefined,
 				year,
-				startedAt,
-				finishedAt,
+				startedAt: value.type === "movie" ? movieWatchedAt : startedAt,
+				finishedAt: value.type === "movie" ? movieWatchedAt : finishedAt,
 				recommendedBy: value.recommendedBy.trim() || undefined,
 				readingUrl: value.readingUrl.trim() || undefined,
 				tags: value.tags
@@ -839,10 +841,37 @@ export function AddObraDialog({
 							)}
 						</form.Field>
 
-						<form.Subscribe selector={(state) => state.values.status}>
-							{(status) => {
+						<form.Subscribe
+							selector={(state) => ({
+								status: state.values.status,
+								type: state.values.type,
+							})}
+						>
+							{({ status, type }) => {
 								if (status !== "in-progress" && status !== "finished") {
 									return null;
+								}
+
+								if (type === "movie") {
+									return (
+										<div className="grid gap-4 sm:grid-cols-2">
+											<form.Field name="finishedAt">
+												{(field) => (
+													<div className="space-y-2">
+														<Label htmlFor={finishedAtId}>Fecha</Label>
+														<Input
+															id={finishedAtId}
+															type="date"
+															value={field.state.value}
+															onChange={(e) =>
+																field.handleChange(e.target.value)
+															}
+														/>
+													</div>
+												)}
+											</form.Field>
+										</div>
+									);
 								}
 
 								return (

@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775437768934,
-      "tag": "0000_careful_tarantula",
+      "when": 1778817299150,
+      "tag": "0000_misty_madelyne_pryor",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1776750000000,
-      "tag": "0001_drop_obsidian_path",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1778362571355,
-      "tag": "0002_sturdy_rick_jones",
+      "when": 1778818469569,
+      "tag": "0001_kind_randall_flagg",
       "breakpoints": true
     }
   ]

@@ -207,7 +207,6 @@ function obra(overrides: Record<string, unknown> = {}) {
 		status: "in-progress",
 		review: null,
 		tags: [],
-		notes: null,
 		readingUrl: null,
 		externalSource: "anilist",
 		externalId: "123",

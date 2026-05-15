@@ -48,7 +48,7 @@ CREATE TABLE "obras" (
 	"review" text,
 	"tags" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"notes" text,
-	"obsidian_path" text,
+	"recommended_by" text,
 	"reading_url" text,
 	"external_source" text,
 	"external_id" text,

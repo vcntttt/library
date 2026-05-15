@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Obra, ObraStatus, ObraType } from "@/lib/types";
 
 /* ─── Mock data ─── */
-const mockObras: Obra[] = [
+const mockObras = [
 	{
 		id: "1",
 		title: "La Casa de los Espíritus",
@@ -112,7 +112,7 @@ const mockObras: Obra[] = [
 		createdAt: Date.now() - 1_100_000_000,
 		updatedAt: Date.now() - 600_000_000,
 	},
-];
+].map((obra) => ({ ...obra, quotes: [] })) satisfies Obra[];
 
 const statusLabel: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
@@ -518,17 +518,6 @@ function Detalle({ obra, onBack }: { obra: Obra; onBack: () => void }) {
 							</p>
 							<p className="font-serif text-xl leading-relaxed text-[#1A1A1A]">
 								“{obra.review}”
-							</p>
-						</div>
-					)}
-
-					{obra.notes && (
-						<div className="bg-white border border-[#D6D0C7] p-6">
-							<p className="text-[0.65rem] uppercase tracking-[0.3em] text-[#8C8279] mb-3">
-								Notas
-							</p>
-							<p className="text-sm leading-relaxed text-[#4A4A4A]">
-								{obra.notes}
 							</p>
 						</div>
 					)}
