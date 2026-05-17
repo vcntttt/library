@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireSessionFromRequest } from "@/lib/auth-server";
 import { providerByType, searchMetadata } from "@/lib/metadata/providers";
 import type { MetadataSource } from "@/lib/metadata/types";
+import { requireConvexSessionFromRequest } from "@/lib/server/convex";
 import { json, jsonError } from "@/lib/server/http";
-import { ensureAppRuntimeStarted } from "@/lib/server/runtime";
 import type { ObraType } from "@/lib/types";
 
 const obraTypes = ["book", "movie", "series", "anime", "manga"] as const;
 const metadataSources = [
 	"google-books",
 	"open-library",
+	"apple-books",
 	"tmdb",
 	"anilist",
 ] as const;
@@ -24,9 +24,8 @@ export const Route = createFileRoute("/api/metadata/search")({
 	server: {
 		handlers: {
 			GET: async ({ request }) => {
-				ensureAppRuntimeStarted();
 				try {
-					await requireSessionFromRequest(request);
+					await requireConvexSessionFromRequest(request);
 				} catch {
 					return jsonError("No autorizado.", 401);
 				}
