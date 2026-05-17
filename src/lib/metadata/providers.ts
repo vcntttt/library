@@ -10,6 +10,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const providerRateLimits: Record<MetadataSource, number> = {
 	"google-books": 250,
 	"open-library": 250,
+	"apple-books": 250,
 	tmdb: 300,
 	anilist: 300,
 };
@@ -34,7 +35,7 @@ export interface MetadataSearchOutcome {
 }
 
 export const providerByType: Record<ObraType, MetadataSource> = {
-	book: "open-library",
+	book: "google-books",
 	movie: "tmdb",
 	series: "tmdb",
 	anime: "anilist",
@@ -93,11 +94,24 @@ async function searchMetadataForProvider(
 
 	switch (provider) {
 		case "google-books":
-			return searchGoogleBooks(query, obraType);
+			return obraType === "book"
+				? {
+						provider: "google-books",
+						results: await searchBookCatalog(query),
+					}
+				: searchGoogleBooks(query, { fallbackToOpenLibrary: true });
 		case "open-library":
 			return {
 				provider: "open-library",
-				results: await searchOpenLibrary(query),
+				results:
+					obraType === "book"
+						? await searchBookCatalog(query)
+						: await searchOpenLibrary(query),
+			};
+		case "apple-books":
+			return {
+				provider: "apple-books",
+				results: await searchAppleBooks(query),
 			};
 		case "tmdb":
 			return {
@@ -116,7 +130,7 @@ async function searchMetadataForProvider(
 
 async function searchGoogleBooks(
 	query: string,
-	obraType?: ObraType,
+	options: { fallbackToOpenLibrary?: boolean } = {},
 ): Promise<MetadataSearchOutcome> {
 	const url = new URL("https://www.googleapis.com/books/v1/volumes");
 	url.searchParams.set("q", query);
@@ -131,24 +145,90 @@ async function searchGoogleBooks(
 		const data = await fetchJson<{ items?: GoogleBooksItem[] }>(url.toString());
 		return {
 			provider: "google-books",
-			results:
-				data.items?.map((item) => ({
-					source: "google-books" as const,
-					id: item.id,
-					title: item.volumeInfo.title,
-					creator: item.volumeInfo.authors?.join(", "),
-					year: parseYear(item.volumeInfo.publishedDate),
-					coverUrl: pickGoogleCover(item.volumeInfo.imageLinks),
-					pages: item.volumeInfo.pageCount,
-				})) ?? [],
+			results: data.items?.map(mapGoogleBookItem) ?? [],
 		};
 	} catch (error) {
-		if (isGoogleBooksQuotaError(error)) {
-			return searchMetadataForProvider("open-library", query, obraType);
+		if (options.fallbackToOpenLibrary && isGoogleBooksQuotaError(error)) {
+			return {
+				provider: "open-library",
+				results: await searchOpenLibrary(query),
+			};
 		}
 
 		throw error;
 	}
+}
+
+async function searchBookCatalog(query: string) {
+	const [openLibraryResults, googleOutcome, appleBooksResults] =
+		await Promise.allSettled([
+			searchOpenLibrary(query),
+			searchGoogleBooks(query),
+			searchAppleBooks(query),
+		]);
+
+	const googleResults =
+		googleOutcome.status === "fulfilled" ? googleOutcome.value.results : [];
+	const openLibrary =
+		openLibraryResults.status === "fulfilled" ? openLibraryResults.value : [];
+	const appleBooks =
+		appleBooksResults.status === "fulfilled"
+			? appleBooksResults.value.map((result) => {
+					const isbn13 = extractAppleBookIsbn(result);
+					return isbn13 ? { ...result, isbn13 } : result;
+				})
+			: [];
+
+	const results = [...googleResults, ...appleBooks, ...openLibrary];
+
+	if (!results.length) {
+		if (openLibraryResults.status === "rejected")
+			throw openLibraryResults.reason;
+		if (
+			googleOutcome.status === "rejected" &&
+			!isGoogleBooksQuotaError(googleOutcome.reason)
+		) {
+			throw googleOutcome.reason;
+		}
+		if (appleBooksResults.status === "rejected") throw appleBooksResults.reason;
+	}
+
+	return dedupeBookResults(results).slice(0, 8);
+}
+
+async function searchAppleBooks(query: string) {
+	const url = new URL("https://itunes.apple.com/search");
+	url.searchParams.set("term", query);
+	url.searchParams.set("entity", "ebook");
+	url.searchParams.set("country", "ES");
+	url.searchParams.set("limit", "6");
+
+	const data = await fetchJson<AppleBooksSearchResponse>(url.toString());
+	return data.results?.map(mapAppleBookItem) ?? [];
+}
+
+async function enrichAppleBookResult(result: MetadataSearchResult) {
+	if (result.source !== "apple-books") return result;
+	if (result.pages && result.isbn13) return result;
+
+	const isbn13 = result.isbn13 ?? extractAppleBookIsbn(result);
+	const candidates = await searchGoogleBooksForEnrichment({
+		isbn13,
+		title: result.title,
+		creator: result.creator,
+	});
+	const bestMatch = selectBestGoogleBookMatch(candidates, {
+		...result,
+		isbn13,
+	});
+	if (!bestMatch) {
+		return isbn13 ? { ...result, isbn13 } : result;
+	}
+
+	return mergeBookMetadata(result, {
+		...bestMatch,
+		isbn13: bestMatch.isbn13 ?? isbn13,
+	});
 }
 
 async function searchOpenLibrary(query: string) {
@@ -168,6 +248,13 @@ async function searchOpenLibrary(query: string) {
 				year: doc.first_publish_year,
 				coverUrl: doc.cover_i ? getOpenLibraryCoverUrl(doc.cover_i) : undefined,
 				pages: doc.number_of_pages_median,
+				isbn10: pickIsbn(doc.isbn, 10),
+				isbn13: pickIsbn(doc.isbn, 13),
+				publisher: doc.publisher?.[0],
+				publishedDate: doc.first_publish_year
+					? String(doc.first_publish_year)
+					: undefined,
+				language: doc.language?.[0],
 			};
 		}) ?? []
 	);
@@ -252,10 +339,20 @@ async function getGoogleBookDetails(id: string): Promise<MetadataDetails> {
 		source: "google-books",
 		id,
 		title: data.volumeInfo.title,
+		subtitle: data.volumeInfo.subtitle,
 		creator: data.volumeInfo.authors?.join(", "),
 		year: parseYear(data.volumeInfo.publishedDate),
 		coverUrl: pickGoogleCover(data.volumeInfo.imageLinks),
 		pages: data.volumeInfo.pageCount,
+		publisher: data.volumeInfo.publisher,
+		publishedDate: data.volumeInfo.publishedDate,
+		language: data.volumeInfo.language,
+		isbn10: getGoogleIndustryIdentifier(data.volumeInfo, "ISBN_10"),
+		isbn13: getGoogleIndustryIdentifier(data.volumeInfo, "ISBN_13"),
+		categories: data.volumeInfo.categories,
+		description: stripHtml(data.volumeInfo.description),
+		canonicalUrl:
+			data.volumeInfo.canonicalVolumeLink ?? data.volumeInfo.infoLink,
 	};
 }
 
@@ -272,10 +369,18 @@ async function getOpenLibraryDetails(id: string): Promise<MetadataDetails> {
 			source: "open-library",
 			id: normalized,
 			title: data.title,
+			subtitle: data.subtitle,
 			creator,
 			year: parseYear(data.publish_date),
 			coverUrl: getOpenLibraryCoverUrl(data.covers?.[0]),
 			pages: data.number_of_pages,
+			publisher: data.publishers?.[0],
+			publishedDate: data.publish_date,
+			language: await resolveOpenLibraryLanguage(data.languages?.[0]?.key),
+			isbn10: data.isbn_10?.[0],
+			isbn13: data.isbn_13?.[0],
+			categories: normalizeBookSubjects(data.subjects),
+			canonicalUrl: `https://openlibrary.org${normalized}`,
 		};
 	}
 
@@ -289,6 +394,7 @@ async function getOpenLibraryDetails(id: string): Promise<MetadataDetails> {
 		source: "open-library",
 		id: normalized,
 		title: data.title,
+		subtitle: data.subtitle,
 		creator,
 		year:
 			parseYear(data.first_publish_date) ??
@@ -297,6 +403,15 @@ async function getOpenLibraryDetails(id: string): Promise<MetadataDetails> {
 			getOpenLibraryCoverUrl(data.covers?.[0]) ??
 			getOpenLibraryCoverUrl(bestEdition?.covers?.[0]),
 		pages: bestEdition?.number_of_pages,
+		publisher: bestEdition?.publishers?.[0],
+		publishedDate: data.first_publish_date ?? bestEdition?.publish_date,
+		language: await resolveOpenLibraryLanguage(
+			bestEdition?.languages?.[0]?.key,
+		),
+		isbn10: bestEdition?.isbn_10?.[0],
+		isbn13: bestEdition?.isbn_13?.[0],
+		categories: normalizeBookSubjects(data.subjects),
+		canonicalUrl: `https://openlibrary.org${normalized}`,
 	};
 }
 
@@ -378,7 +493,9 @@ async function getAnilistDetails(
 	const nextEpisode = media.nextAiringEpisode;
 	const latestChapterInfo =
 		obraType === "manga" ? await resolveLatestMangaChapter(media) : undefined;
-	const resolvedChapter = latestChapterInfo?.latestChapter ?? media.chapters;
+	const resolvedChapter =
+		latestChapterInfo?.latestChapter ??
+		(typeof media.chapters === "number" ? media.chapters : undefined);
 
 	return {
 		source: "anilist",
@@ -449,7 +566,7 @@ async function resolveLatestMangaChapter(
 		} satisfies MangaLatestChapterInfo;
 	}
 
-	if (media.chapters !== undefined) {
+	if (typeof media.chapters === "number") {
 		return {
 			latestChapter: media.chapters,
 			source: "anilist" as const,
@@ -646,6 +763,9 @@ export async function getMetadataDetails(
 		case "open-library":
 			details = await getOpenLibraryDetails(id);
 			break;
+		case "apple-books":
+			details = await getAppleBookDetails(id);
+			break;
 		case "tmdb":
 			details = await getTmdbDetails(id, obraType);
 			break;
@@ -780,6 +900,238 @@ function parseYear(value?: string) {
 	return match ? Number(match[0]) : undefined;
 }
 
+function mapGoogleBookItem(item: GoogleBooksItem): MetadataSearchResult {
+	return {
+		source: "google-books",
+		id: item.id,
+		title: item.volumeInfo.title,
+		subtitle: item.volumeInfo.subtitle,
+		creator: item.volumeInfo.authors?.join(", "),
+		year: parseYear(item.volumeInfo.publishedDate),
+		coverUrl: pickGoogleCover(item.volumeInfo.imageLinks),
+		pages: item.volumeInfo.pageCount,
+		publisher: item.volumeInfo.publisher,
+		publishedDate: item.volumeInfo.publishedDate,
+		language: item.volumeInfo.language,
+		isbn10: getGoogleIndustryIdentifier(item.volumeInfo, "ISBN_10"),
+		isbn13: getGoogleIndustryIdentifier(item.volumeInfo, "ISBN_13"),
+		categories: item.volumeInfo.categories,
+		description: stripHtml(item.volumeInfo.description),
+		canonicalUrl:
+			item.volumeInfo.canonicalVolumeLink ?? item.volumeInfo.infoLink,
+	};
+}
+
+function mapAppleBookItem(item: AppleBooksItem): MetadataSearchResult {
+	return {
+		source: "apple-books",
+		id: String(item.trackId),
+		title: item.trackName,
+		creator: item.artistName,
+		year: parseYear(item.releaseDate),
+		coverUrl: upgradeAppleArtwork(item.artworkUrl100),
+		publisher: item.publisher,
+		publishedDate: item.releaseDate?.slice(0, 10),
+		language: item.language,
+		categories: item.genres,
+		description: stripHtml(item.description),
+		canonicalUrl: item.trackViewUrl,
+	};
+}
+
+async function getAppleBookDetails(id: string): Promise<MetadataDetails> {
+	const url = new URL("https://itunes.apple.com/lookup");
+	url.searchParams.set("id", id);
+	url.searchParams.set("entity", "ebook");
+	url.searchParams.set("country", "ES");
+
+	const data = await fetchJson<AppleBooksSearchResponse>(url.toString());
+	const item = data.results?.[0];
+	if (!item) throw new Error("No se encontraron metadatos en Apple Books.");
+	const details = mapAppleBookItem(item);
+	return enrichAppleBookResult(details);
+}
+
+function upgradeAppleArtwork(url?: string) {
+	return url?.replace(/\/\d+x\d+bb\.jpg$/i, "/600x900bb.jpg");
+}
+
+async function searchGoogleBooksForEnrichment(input: {
+	isbn13?: string;
+	title: string;
+	creator?: string;
+}) {
+	const queries = [
+		input.isbn13 ? `isbn:${input.isbn13}` : undefined,
+		[input.title, input.creator].filter(Boolean).join(" "),
+	].filter((value): value is string => Boolean(value));
+
+	for (const query of queries) {
+		try {
+			const outcome = await searchGoogleBooks(query);
+			if (outcome.results.length > 0) return outcome.results;
+		} catch (error) {
+			if (isGoogleBooksQuotaError(error)) return [];
+			throw error;
+		}
+	}
+
+	return [];
+}
+
+function selectBestGoogleBookMatch(
+	candidates: MetadataSearchResult[],
+	target: MetadataSearchResult,
+) {
+	const targetTitle = normalizeTitle(target.title);
+	const targetCreator = normalizeTitle(target.creator);
+	return candidates.find((candidate) => {
+		const sameIsbn =
+			Boolean(target.isbn13) && candidate.isbn13 === target.isbn13;
+		const sameTitle = normalizeTitle(candidate.title) === targetTitle;
+		const sameCreator =
+			!targetCreator || normalizeTitle(candidate.creator) === targetCreator;
+		return sameIsbn || (sameTitle && sameCreator);
+	});
+}
+
+function mergeBookMetadata(
+	base: MetadataSearchResult | MetadataDetails,
+	enrichment: MetadataSearchResult,
+): MetadataSearchResult {
+	return {
+		...enrichment,
+		...base,
+		pages: base.pages ?? enrichment.pages,
+		subtitle: base.subtitle ?? enrichment.subtitle,
+		publisher: base.publisher ?? enrichment.publisher,
+		publishedDate: base.publishedDate ?? enrichment.publishedDate,
+		language: base.language ?? enrichment.language,
+		isbn10: base.isbn10 ?? enrichment.isbn10,
+		isbn13: base.isbn13 ?? enrichment.isbn13,
+		categories: base.categories?.length
+			? base.categories
+			: enrichment.categories,
+		description: base.description ?? enrichment.description,
+		canonicalUrl: base.canonicalUrl ?? enrichment.canonicalUrl,
+		coverUrl: pickMergedBookCover(base, enrichment),
+	};
+}
+
+function pickMergedBookCover(
+	base: MetadataSearchResult | MetadataDetails,
+	enrichment: MetadataSearchResult,
+) {
+	if (!enrichment.coverUrl) return base.coverUrl;
+	if (!base.coverUrl) return enrichment.coverUrl;
+	if (
+		base.source === "google-books" &&
+		(enrichment.source === "apple-books" ||
+			enrichment.source === "open-library")
+	) {
+		return enrichment.coverUrl;
+	}
+	return base.coverUrl;
+}
+
+function extractAppleBookIsbn(
+	result: Pick<MetadataSearchResult, "source" | "coverUrl" | "canonicalUrl">,
+) {
+	if (result.source !== "apple-books") return undefined;
+	for (const value of [result.coverUrl, result.canonicalUrl]) {
+		const match = value?.match(/(?:^|\/)(97[89]\d{10})(?:[/.?]|$)/);
+		if (match?.[1]) return match[1];
+	}
+	return undefined;
+}
+
+function dedupeBookResults(results: MetadataSearchResult[]) {
+	const indexByKey = new Map<string, number>();
+	const deduped: MetadataSearchResult[] = [];
+
+	for (const result of results) {
+		const keys = getBookResultMergeKeys(result);
+		const existingIndex = keys
+			.map((key) => indexByKey.get(key))
+			.find((index): index is number => index !== undefined);
+
+		if (existingIndex !== undefined) {
+			deduped[existingIndex] = mergeBookMetadata(
+				deduped[existingIndex],
+				result,
+			);
+			for (const key of getBookResultMergeKeys(deduped[existingIndex])) {
+				indexByKey.set(key, existingIndex);
+			}
+			continue;
+		}
+
+		const index = deduped.length;
+		for (const key of keys) {
+			indexByKey.set(key, index);
+		}
+		deduped.push(result);
+	}
+
+	return deduped.sort((a, b) => getBookResultScore(b) - getBookResultScore(a));
+}
+
+function getBookResultMergeKeys(result: MetadataSearchResult) {
+	return [
+		result.isbn13 ? `isbn13:${normalizeIsbn(result.isbn13)}` : undefined,
+		result.isbn10 ? `isbn10:${normalizeIsbn(result.isbn10)}` : undefined,
+		`${normalizeTitle(result.title)}:${normalizeTitle(result.creator)}`,
+	].filter((key): key is string => Boolean(key));
+}
+
+function getBookResultScore(result: MetadataSearchResult) {
+	let score = 0;
+	if (result.coverUrl) score += 3;
+	if (result.isbn13) score += 3;
+	if (result.isbn10) score += 2;
+	if (result.pages) score += 2;
+	if (result.publisher) score += 1;
+	if (result.description) score += 1;
+	if (result.source === "google-books") score += 1;
+	return score;
+}
+
+function getGoogleIndustryIdentifier(
+	volumeInfo: GoogleBooksItem["volumeInfo"],
+	type: "ISBN_10" | "ISBN_13",
+) {
+	return volumeInfo.industryIdentifiers?.find(
+		(identifier) => identifier.type === type,
+	)?.identifier;
+}
+
+function pickIsbn(values: string[] | undefined, length: 10 | 13) {
+	return values?.find((value) => normalizeIsbn(value).length === length);
+}
+
+function normalizeIsbn(value: string) {
+	return value.replace(/[^0-9X]/gi, "").toUpperCase();
+}
+
+function normalizeBookSubjects(subjects?: string[]) {
+	return subjects
+		?.map((subject) => subject.trim())
+		.filter(Boolean)
+		.slice(0, 8);
+}
+
+function stripHtml(value?: string) {
+	if (!value) return undefined;
+	return value
+		.replace(/<br\s*\/?>/gi, "\n")
+		.replace(/<[^>]+>/g, "")
+		.replace(/&nbsp;/g, " ")
+		.replace(/&amp;/g, "&")
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;/g, "'")
+		.trim();
+}
+
 function getOpenLibrarySearchResultId(
 	doc: NonNullable<OpenLibraryResponse["docs"]>[number],
 ) {
@@ -798,6 +1150,19 @@ function normalizeOpenLibraryId(id: string) {
 	if (/^OL\d+M$/i.test(olid)) return `/books/${olid}`;
 	if (/^OL\d+W$/i.test(olid)) return `/works/${olid}`;
 	return normalized;
+}
+
+async function resolveOpenLibraryLanguage(key?: string) {
+	if (!key) return undefined;
+	try {
+		const normalized = key.startsWith("/") ? key : `/languages/${key}`;
+		const language = await fetchJson<OpenLibraryLanguageDetails>(
+			`https://openlibrary.org${normalized}.json`,
+		);
+		return language.name;
+	} catch {
+		return key.split("/").pop();
+	}
 }
 
 function getOpenLibraryCoverUrl(coverId?: number) {
@@ -831,8 +1196,8 @@ async function resolveOpenLibraryAuthors(
 ) {
 	const keys = authors
 		?.map((entry) => {
-			if ("key" in entry) return entry.key;
-			return entry.author?.key;
+			if ("author" in entry) return entry.author?.key;
+			return (entry as { key?: string }).key;
 		})
 		.filter((key): key is string => Boolean(key))
 		.slice(0, 3);
@@ -876,9 +1241,20 @@ interface GoogleBooksItem {
 	id: string;
 	volumeInfo: {
 		title: string;
+		subtitle?: string;
 		authors?: string[];
+		publisher?: string;
 		publishedDate?: string;
+		description?: string;
+		industryIdentifiers?: Array<{
+			type?: string;
+			identifier?: string;
+		}>;
 		pageCount?: number;
+		categories?: string[];
+		language?: string;
+		infoLink?: string;
+		canonicalVolumeLink?: string;
 		imageLinks?: {
 			thumbnail?: string;
 			small?: string;
@@ -900,21 +1276,31 @@ interface OpenLibraryResponse {
 		edition_key?: string[];
 		cover_edition_key?: string;
 		isbn?: string[];
+		publisher?: string[];
+		language?: string[];
 	}>;
 }
 
 interface OpenLibraryEditionDetails {
 	title?: string;
+	subtitle?: string;
 	number_of_pages?: number;
 	publish_date?: string;
 	covers?: number[];
+	publishers?: string[];
+	languages?: Array<{ key?: string }>;
+	isbn_10?: string[];
+	isbn_13?: string[];
+	subjects?: string[];
 	authors?: Array<{ key?: string }>;
 }
 
 interface OpenLibraryWorkDetails {
 	title?: string;
+	subtitle?: string;
 	first_publish_date?: string;
 	covers?: number[];
+	subjects?: string[];
 	authors?: Array<{ author?: { key?: string } }>;
 }
 
@@ -924,6 +1310,27 @@ interface OpenLibraryEditionsResponse {
 
 interface OpenLibraryAuthorDetails {
 	name?: string;
+}
+
+interface OpenLibraryLanguageDetails {
+	name?: string;
+}
+
+interface AppleBooksSearchResponse {
+	results?: AppleBooksItem[];
+}
+
+interface AppleBooksItem {
+	trackId: number;
+	trackName: string;
+	artistName?: string;
+	releaseDate?: string;
+	description?: string;
+	genres?: string[];
+	language?: string;
+	publisher?: string;
+	trackViewUrl?: string;
+	artworkUrl100?: string;
 }
 
 interface TmdbResult {

@@ -32,6 +32,7 @@ export const getObraMetaLine = (obra: Obra) => {
 	if (obra.type === "book") {
 		if (metadata?.pages)
 			parts.push(`${metadata.pages.toLocaleString()} páginas`);
+		if (metadata?.publisher) parts.push(metadata.publisher);
 		if (!parts.length && obra.year) parts.push(`Año ${obra.year}`);
 	}
 
