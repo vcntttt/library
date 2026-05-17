@@ -1,9 +1,11 @@
-import { QueryClientProvider } from "@tanstack/react-query";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { ConvexReactClient } from "convex/react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { getQueryClient } from "@/lib/query-client";
 import Header from "../components/Header";
 import appCss from "../styles.css?url";
+
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -44,20 +46,18 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-	const queryClient = getQueryClient();
-
 	return (
 		<html lang="es" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>
 			<body suppressHydrationWarning>
-				<QueryClientProvider client={queryClient}>
+				<ConvexAuthProvider client={convex}>
 					<ThemeProvider>
 						<Header />
 						{children}
 					</ThemeProvider>
-				</QueryClientProvider>
+				</ConvexAuthProvider>
 				<Scripts />
 			</body>
 		</html>

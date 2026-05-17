@@ -1,4 +1,7 @@
+import { api as convexApi } from "@convex/_generated/api";
+import { useAuthToken } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "convex/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +22,6 @@ import {
 	SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation } from "@/lib/api/client";
-import { api } from "@/lib/api/definitions";
 import type {
 	MetadataDetails,
 	MetadataSearchResult,
@@ -62,6 +63,7 @@ const obraStatusLabels: Record<ObraStatus, string> = {
 const metadataSourceLabels = {
 	"google-books": "Google Books",
 	"open-library": "Open Library",
+	"apple-books": "Apple Books",
 	tmdb: "TMDB",
 	anilist: "AniList",
 };
@@ -70,7 +72,7 @@ const metadataSourceByType: Record<
 	ObraType,
 	keyof typeof metadataSourceLabels
 > = {
-	book: "open-library",
+	book: "google-books",
 	movie: "tmdb",
 	series: "tmdb",
 	anime: "anilist",
@@ -122,6 +124,7 @@ export function AddObraDialog({
 	const [activeType, setActiveType] = useState<ObraType | "">("");
 	const metadataAbortRef = useRef<AbortController | null>(null);
 	const metadataDebounceRef = useRef<number | null>(null);
+	const authToken = useAuthToken();
 	const titleId = useId();
 	const typeId = useId();
 	const statusId = useId();
@@ -133,7 +136,7 @@ export function AddObraDialog({
 	const readingUrlId = useId();
 	const totalId = useId();
 	const tagsId = useId();
-	const createObra = useMutation(api.obras.create);
+	const createObra = useMutation(convexApi.obras.create);
 
 	const form = useForm({
 		defaultValues: {
@@ -242,7 +245,12 @@ export function AddObraDialog({
 					`/api/metadata/search?type=${encodeURIComponent(
 						activeType,
 					)}&q=${encodeURIComponent(query)}`,
-					{ signal: controller.signal },
+					{
+						headers: authToken
+							? { authorization: `Bearer ${authToken}` }
+							: undefined,
+						signal: controller.signal,
+					},
 				);
 				setLastMetadataSearchUrl(response.url);
 				if (!response.ok) {
@@ -288,7 +296,7 @@ export function AddObraDialog({
 				window.clearTimeout(metadataDebounceRef.current);
 			}
 		};
-	}, [open, metadataQuery, activeType, selectedMetadata]);
+	}, [open, metadataQuery, activeType, selectedMetadata, authToken]);
 
 	const handleOpenChange = (nextOpen: boolean) => {
 		setOpen(nextOpen);
@@ -327,6 +335,11 @@ export function AddObraDialog({
 				)}&id=${encodeURIComponent(result.id)}&type=${encodeURIComponent(
 					activeType,
 				)}`,
+				{
+					headers: authToken
+						? { authorization: `Bearer ${authToken}` }
+						: undefined,
+				},
 			);
 			if (!response.ok) {
 				const payload = await response.json().catch(() => ({}));
@@ -412,15 +425,30 @@ export function AddObraDialog({
 		previewRows.push({
 			label: "Páginas",
 			value:
-				previewMetadata.pages !== undefined
+				typeof previewMetadata.pages === "number"
 					? previewMetadata.pages.toLocaleString()
 					: undefined,
 			showLoading: activeType === "book",
 		});
 		previewRows.push({
+			label: "Editorial",
+			value: previewMetadata.publisher,
+			showLoading: activeType === "book",
+		});
+		previewRows.push({
+			label: "ISBN",
+			value: previewMetadata.isbn13 ?? previewMetadata.isbn10,
+			showLoading: activeType === "book",
+		});
+		previewRows.push({
+			label: "Idioma",
+			value: previewMetadata.language,
+			showLoading: activeType === "book",
+		});
+		previewRows.push({
 			label: "Temporadas",
 			value:
-				previewMetadata.seasons !== undefined
+				typeof previewMetadata.seasons === "number"
 					? previewMetadata.seasons.toLocaleString()
 					: undefined,
 			showLoading: activeType === "series",
@@ -428,7 +456,7 @@ export function AddObraDialog({
 		previewRows.push({
 			label: "Episodios",
 			value:
-				previewMetadata.episodes !== undefined
+				typeof previewMetadata.episodes === "number"
 					? previewMetadata.episodes.toLocaleString()
 					: undefined,
 			showLoading: activeType === "series" || activeType === "anime",
@@ -436,7 +464,7 @@ export function AddObraDialog({
 		previewRows.push({
 			label: "Episodios emitidos",
 			value:
-				previewMetadata.episodesAired !== undefined
+				typeof previewMetadata.episodesAired === "number"
 					? previewMetadata.episodesAired.toLocaleString()
 					: undefined,
 			showLoading: activeType === "series" || activeType === "anime",
@@ -457,7 +485,7 @@ export function AddObraDialog({
 		previewRows.push({
 			label: "Capítulos totales",
 			value:
-				mangaChapterPreview !== undefined
+				typeof mangaChapterPreview === "number"
 					? mangaChapterPreview.toLocaleString()
 					: undefined,
 			showLoading: activeType === "manga",
@@ -465,7 +493,7 @@ export function AddObraDialog({
 		previewRows.push({
 			label: "Volúmenes",
 			value:
-				previewMetadata.volumes !== undefined
+				typeof previewMetadata.volumes === "number"
 					? previewMetadata.volumes.toLocaleString()
 					: undefined,
 			showLoading: activeType === "manga",
@@ -528,6 +556,15 @@ export function AddObraDialog({
 
 		const payload = {
 			pages: source.pages ?? undefined,
+			subtitle: source.subtitle ?? undefined,
+			publisher: source.publisher ?? undefined,
+			publishedDate: source.publishedDate ?? undefined,
+			language: source.language ?? undefined,
+			isbn10: source.isbn10 ?? undefined,
+			isbn13: source.isbn13 ?? undefined,
+			categories: source.categories ?? undefined,
+			description: source.description ?? undefined,
+			canonicalUrl: source.canonicalUrl ?? undefined,
 			seasons: source.seasons ?? undefined,
 			episodes: source.episodes ?? undefined,
 			episodesAired: source.episodesAired ?? undefined,
@@ -921,7 +958,7 @@ export function AddObraDialog({
 										id={recommendedById}
 										value={field.state.value}
 										onChange={(e) => field.handleChange(e.target.value)}
-										placeholder="Ej: Vale, Reddit, Discord"
+										placeholder=""
 									/>
 								</div>
 							)}
