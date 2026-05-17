@@ -1,4 +1,7 @@
+import { api as convexApi } from "@convex/_generated/api";
+import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
 import { Link, useRouter } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
 import { ChevronDown, LogOut } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -11,7 +14,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 const MAX_INITIALS = 2;
@@ -28,10 +30,11 @@ const getInitials = (name: string) => {
 
 export function UserMenu() {
 	const router = useRouter();
-	const { data: session, isPending } = authClient.useSession();
+	const { isAuthenticated, isLoading } = useConvexAuth();
+	const { signOut } = useAuthActions();
+	const user = useQuery(convexApi.users.current);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 
-	const user = session?.user;
 	const displayName = useMemo(() => {
 		if (user?.name?.trim()) return user.name.trim();
 		if (user?.email) return user.email.split("@")[0] ?? "Usuario";
@@ -44,16 +47,16 @@ export function UserMenu() {
 		if (isSigningOut) return;
 		setIsSigningOut(true);
 		try {
-			await authClient.signOut();
+			await signOut();
 			await router.navigate({ to: "/login" });
 		} catch {
 			setIsSigningOut(false);
 		}
 	};
 
-	if (isPending) return null;
+	if (isLoading) return null;
 
-	if (!session) {
+	if (!isAuthenticated) {
 		return (
 			<Link
 				to="/login"

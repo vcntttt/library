@@ -1,12 +1,12 @@
+import { api as convexApi } from "@convex/_generated/api";
+import { useConvexAuth } from "@convex-dev/auth/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
 import { LayoutGrid, List } from "lucide-react";
 import { useState } from "react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@/lib/api/client";
-import { api } from "@/lib/api/definitions";
-import { authClient } from "@/lib/auth-client";
 import { obraFromDoc } from "@/lib/obras";
 import { cn } from "@/lib/utils";
 
@@ -16,12 +16,12 @@ export const Route = createFileRoute("/")({
 });
 
 function DashboardPage() {
-	const { data: session, isPending } = authClient.useSession();
-	if (isPending || session === undefined) {
+	const { isAuthenticated, isLoading } = useConvexAuth();
+	if (isLoading) {
 		return <DashboardPageSkeleton />;
 	}
 
-	if (session === null) {
+	if (!isAuthenticated) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
 				<div className="max-w-lg border border-border bg-card p-6 space-y-3">
@@ -92,7 +92,7 @@ function DashboardPageSkeleton() {
 }
 
 function DashboardAuthed() {
-	const docs = useQuery(api.obras.list, {});
+	const docs = useQuery(convexApi.obras.list, {});
 	const obras = (docs ?? []).map(obraFromDoc);
 	const [view, setView] = useState<"list" | "grid">("list");
 	const isGridView = view === "grid";

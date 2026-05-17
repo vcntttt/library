@@ -1,7 +1,7 @@
+import { api as convexApi } from "@convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
+import { createConvexServerClient } from "@/lib/server/convex";
 import { json, jsonError, readJson } from "@/lib/server/http";
-import { markNotificationChapterRead } from "@/lib/server/notifications";
-import { ensureAppRuntimeStarted } from "@/lib/server/runtime";
 
 function assertAlfredSecret(request: Request) {
 	const expected = process.env.ALFRED_NOTIFY_SECRET;
@@ -20,7 +20,6 @@ export const Route = createFileRoute(
 	server: {
 		handlers: {
 			POST: async ({ request }) => {
-				ensureAppRuntimeStarted();
 				try {
 					assertAlfredSecret(request);
 				} catch (error) {
@@ -34,7 +33,13 @@ export const Route = createFileRoute(
 					return jsonError("Payload invalido.");
 				}
 
-				return json(await markNotificationChapterRead(body.eventId));
+				const client = createConvexServerClient();
+				return json(
+					await client.mutation(convexApi.notifications.markRead, {
+						secret: request.headers.get("x-library-secret") ?? "",
+						eventId: body.eventId,
+					}),
+				);
 			},
 		},
 	},

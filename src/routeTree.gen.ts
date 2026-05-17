@@ -16,11 +16,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
-import { Route as ApiObrasRouteImport } from './routes/api/obras'
-import { Route as ApiObrasObraIdRouteImport } from './routes/api/obras/$obraId'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
 import { Route as InternalAlfredNotificationsMarkReadRouteImport } from './routes/internal/alfred/notifications/mark-read'
 import { Route as InternalAlfredNotificationsAckRouteImport } from './routes/internal/alfred/notifications/ack'
@@ -60,16 +57,6 @@ const ObraObraIdRoute = ObraObraIdRouteImport.update({
   path: '/obra/$obraId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiObrasRoute = ApiObrasRouteImport.update({
-  id: '/api/obras',
-  path: '/api/obras',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiObrasObraIdRoute = ApiObrasObraIdRouteImport.update({
-  id: '/$obraId',
-  path: '/$obraId',
-  getParentRoute: () => ApiObrasRoute,
-} as any)
 const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
   id: '/api/metadata/search',
   path: '/api/metadata/search',
@@ -78,11 +65,6 @@ const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
 const ApiMetadataDetailsRoute = ApiMetadataDetailsRouteImport.update({
   id: '/api/metadata/details',
   path: '/api/metadata/details',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InternalAlfredNotificationsPullRoute =
@@ -111,12 +93,9 @@ export interface FileRoutesByFullPath {
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
-  '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
-  '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -128,12 +107,9 @@ export interface FileRoutesByTo {
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
-  '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
-  '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -146,12 +122,9 @@ export interface FileRoutesById {
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
-  '/api/obras': typeof ApiObrasRouteWithChildren
   '/obra/$obraId': typeof ObraObraIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
-  '/api/obras/$obraId': typeof ApiObrasObraIdRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -165,12 +138,9 @@ export interface FileRouteTypes {
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
-    | '/api/obras'
     | '/obra/$obraId'
-    | '/api/auth/$'
     | '/api/metadata/details'
     | '/api/metadata/search'
-    | '/api/obras/$obraId'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -182,12 +152,9 @@ export interface FileRouteTypes {
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
-    | '/api/obras'
     | '/obra/$obraId'
-    | '/api/auth/$'
     | '/api/metadata/details'
     | '/api/metadata/search'
-    | '/api/obras/$obraId'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -199,12 +166,9 @@ export interface FileRouteTypes {
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
-    | '/api/obras'
     | '/obra/$obraId'
-    | '/api/auth/$'
     | '/api/metadata/details'
     | '/api/metadata/search'
-    | '/api/obras/$obraId'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -217,9 +181,7 @@ export interface RootRouteChildren {
   VariantARoute: typeof VariantARoute
   VariantBRoute: typeof VariantBRoute
   VariantCRoute: typeof VariantCRoute
-  ApiObrasRoute: typeof ApiObrasRouteWithChildren
   ObraObraIdRoute: typeof ObraObraIdRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
   InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
@@ -278,20 +240,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ObraObraIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/obras': {
-      id: '/api/obras'
-      path: '/api/obras'
-      fullPath: '/api/obras'
-      preLoaderRoute: typeof ApiObrasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/obras/$obraId': {
-      id: '/api/obras/$obraId'
-      path: '/$obraId'
-      fullPath: '/api/obras/$obraId'
-      preLoaderRoute: typeof ApiObrasObraIdRouteImport
-      parentRoute: typeof ApiObrasRoute
-    }
     '/api/metadata/search': {
       id: '/api/metadata/search'
       path: '/api/metadata/search'
@@ -304,13 +252,6 @@ declare module '@tanstack/react-router' {
       path: '/api/metadata/details'
       fullPath: '/api/metadata/details'
       preLoaderRoute: typeof ApiMetadataDetailsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/internal/alfred/notifications/pull': {
@@ -337,18 +278,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ApiObrasRouteChildren {
-  ApiObrasObraIdRoute: typeof ApiObrasObraIdRoute
-}
-
-const ApiObrasRouteChildren: ApiObrasRouteChildren = {
-  ApiObrasObraIdRoute: ApiObrasObraIdRoute,
-}
-
-const ApiObrasRouteWithChildren = ApiObrasRoute._addFileChildren(
-  ApiObrasRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
@@ -356,9 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   VariantARoute: VariantARoute,
   VariantBRoute: VariantBRoute,
   VariantCRoute: VariantCRoute,
-  ApiObrasRoute: ApiObrasRouteWithChildren,
   ObraObraIdRoute: ObraObraIdRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
   InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,

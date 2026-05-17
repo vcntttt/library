@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Obra, ObraStatus, ObraType } from "@/lib/types";
 
 /* ─── Mock data ─── */
-const mockObras = [
+const mockObras: Obra[] = [
 	{
 		id: "1",
 		title: "La Casa de los Espíritus",
@@ -112,7 +112,7 @@ const mockObras = [
 		createdAt: Date.now() - 1_100_000_000,
 		updatedAt: Date.now() - 600_000_000,
 	},
-].map((obra) => ({ ...obra, quotes: [] })) satisfies Obra[];
+].map((obra) => ({ ...obra, quotes: [] }) as Obra);
 
 const statusLabel: Record<ObraStatus, string> = {
 	backlog: "Pendiente",

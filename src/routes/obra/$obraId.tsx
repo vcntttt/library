@@ -1,5 +1,9 @@
+import { api as convexApi } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useAuthToken, useConvexAuth } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Minus, Pencil, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
@@ -39,9 +43,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation, useQuery } from "@/lib/api/client";
-import { api } from "@/lib/api/definitions";
-import { authClient } from "@/lib/auth-client";
 import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
 import type {
 	MetadataDetails,
@@ -49,6 +50,7 @@ import type {
 	MetadataSource,
 } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
+import { getInitialProgressTotal } from "@/lib/progress";
 import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
 import { cn, formatDateShort } from "@/lib/utils";
 
@@ -121,6 +123,7 @@ const seasonLabels: Record<string, string> = {
 const metadataSourceLabels: Record<MetadataSource, string> = {
 	"google-books": "Google Books",
 	"open-library": "Open Library",
+	"apple-books": "Apple Books",
 	tmdb: "TMDB",
 	anilist: "AniList",
 };
@@ -142,6 +145,15 @@ const buildMetadataPayload = (
 	metadata: Pick<
 		MetadataSearchResult,
 		| "pages"
+		| "subtitle"
+		| "publisher"
+		| "publishedDate"
+		| "language"
+		| "isbn10"
+		| "isbn13"
+		| "categories"
+		| "description"
+		| "canonicalUrl"
 		| "seasons"
 		| "episodes"
 		| "episodesAired"
@@ -163,6 +175,15 @@ const buildMetadataPayload = (
 
 	const payload = {
 		pages: metadata.pages ?? undefined,
+		subtitle: metadata.subtitle ?? undefined,
+		publisher: metadata.publisher ?? undefined,
+		publishedDate: metadata.publishedDate ?? undefined,
+		language: metadata.language ?? undefined,
+		isbn10: metadata.isbn10 ?? undefined,
+		isbn13: metadata.isbn13 ?? undefined,
+		categories: metadata.categories ?? undefined,
+		description: metadata.description ?? undefined,
+		canonicalUrl: metadata.canonicalUrl ?? undefined,
 		seasons: metadata.seasons ?? undefined,
 		episodes: metadata.episodes ?? undefined,
 		episodesAired: metadata.episodesAired ?? undefined,
@@ -205,7 +226,7 @@ function getEditFormValues(obra: Obra): EditFormValues {
 		),
 		review: obra.review ?? "",
 		progressCurrent: obra.progress?.current ?? 0,
-		progressTotal: obra.progress?.total ?? 0,
+		progressTotal: getInitialProgressTotal(obra),
 	};
 }
 
@@ -231,13 +252,13 @@ function ObraPage() {
 	const { obraId } = Route.useParams();
 	const id = obraId as ObraId;
 	const navigate = Route.useNavigate();
-	const { data: session, isPending } = authClient.useSession();
+	const { isAuthenticated, isLoading } = useConvexAuth();
 
-	if (isPending || session === undefined) {
+	if (isLoading) {
 		return <ObraPageSkeleton />;
 	}
 
-	if (session === null) {
+	if (!isAuthenticated) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
 				<div className="max-w-lg border border-border bg-card p-6 space-y-3">
@@ -659,9 +680,11 @@ function ObraAuthed({
 	id: ObraId;
 	navigate: (opts: { to: string }) => void;
 }) {
-	const doc = useQuery(api.obras.get, { id });
-	const updateObra = useMutation(api.obras.update);
-	const removeObra = useMutation(api.obras.remove);
+	const convexId = id as Id<"obras">;
+	const doc = useQuery(convexApi.obras.get, { id: convexId });
+	const updateObra = useMutation(convexApi.obras.update);
+	const removeObra = useMutation(convexApi.obras.remove);
+	const authToken = useAuthToken();
 	const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 	const [isMetadataOpen, setIsMetadataOpen] = useState(false);
 	const [editQuotes, setEditQuotes] = useState<EditableQuote[]>([]);
@@ -753,7 +776,7 @@ function ObraAuthed({
 				patch.status = "in-progress";
 			}
 
-			await updateObra({ id, patch });
+			await updateObra({ id: convexId, patch });
 			setIsEditOpen(false);
 		},
 	});
@@ -811,7 +834,8 @@ function ObraAuthed({
 	const obra = obraFromDoc(doc);
 	const hasProgress = obra.type !== "movie";
 	const progressUnitLabel = progressUnitLabels[obra.type];
-	const metadataSource = metadataSourceByType[obra.type];
+	const metadataSource =
+		obra.external?.source ?? metadataSourceByType[obra.type];
 	const metadataSourceLabel = metadataSourceLabels[metadataSource];
 	const canSearchMetadata =
 		metadataQuery.trim().length > 0 && !isSearchingMetadata;
@@ -837,6 +861,24 @@ function ObraAuthed({
 			metadataItems.push({
 				label: "Páginas",
 				value: metadata.pages.toLocaleString(),
+			});
+		}
+		if (obra.type === "book" && metadata.publisher) {
+			metadataItems.push({
+				label: "Editorial",
+				value: metadata.publisher,
+			});
+		}
+		if (obra.type === "book" && (metadata.isbn13 || metadata.isbn10)) {
+			metadataItems.push({
+				label: "ISBN",
+				value: metadata.isbn13 ?? metadata.isbn10 ?? "",
+			});
+		}
+		if (obra.type === "book" && metadata.language) {
+			metadataItems.push({
+				label: "Idioma",
+				value: metadata.language,
 			});
 		}
 		if (obra.type === "movie" && metadata.runtime) {
@@ -939,11 +981,11 @@ function ObraAuthed({
 	}
 
 	const handleStatusChange = async (status: ObraStatus) => {
-		await updateObra({ id, patch: { status } });
+		await updateObra({ id: convexId, patch: { status } });
 	};
 
 	const handleDelete = async () => {
-		await removeObra({ id });
+		await removeObra({ id: convexId });
 		navigate({ to: "/biblioteca" });
 	};
 
@@ -970,7 +1012,7 @@ function ObraAuthed({
 
 		setIsUpdatingProgress(true);
 		try {
-			await updateObra({ id, patch });
+			await updateObra({ id: convexId, patch });
 			form.setFieldValue("progressCurrent", safeCurrent);
 			form.setFieldValue("progressTotal", nextTotal);
 		} finally {
@@ -1030,6 +1072,11 @@ function ObraAuthed({
 				`/api/metadata/search?type=${encodeURIComponent(
 					obra.type,
 				)}&q=${encodeURIComponent(metadataQuery.trim())}`,
+				{
+					headers: authToken
+						? { authorization: `Bearer ${authToken}` }
+						: undefined,
+				},
 			);
 			setLastMetadataSearchUrl(response.url);
 			if (!response.ok) {
@@ -1079,6 +1126,11 @@ function ObraAuthed({
 				)}&id=${encodeURIComponent(result.id)}&type=${encodeURIComponent(
 					obra.type,
 				)}`,
+				{
+					headers: authToken
+						? { authorization: `Bearer ${authToken}` }
+						: undefined,
+				},
 			);
 			if (detailsResponse.ok) {
 				const payload = await detailsResponse.json();
@@ -1132,7 +1184,7 @@ function ObraAuthed({
 			if (coverUrl) patch.coverUrl = coverUrl;
 			if (metadataPayload) patch.metadata = metadataPayload;
 
-			await updateObra({ id, patch });
+			await updateObra({ id: convexId, patch });
 			setIsMetadataPreviewOpen(false);
 			setIsMetadataOpen(false);
 		} catch (error) {
@@ -1182,15 +1234,30 @@ function ObraAuthed({
 		previewRows.push({
 			label: "Páginas",
 			value:
-				previewMetadata.pages !== undefined
+				typeof previewMetadata.pages === "number"
 					? previewMetadata.pages.toLocaleString()
 					: undefined,
 			showLoading: obra.type === "book",
 		});
 		previewRows.push({
+			label: "Editorial",
+			value: previewMetadata.publisher,
+			showLoading: obra.type === "book",
+		});
+		previewRows.push({
+			label: "ISBN",
+			value: previewMetadata.isbn13 ?? previewMetadata.isbn10,
+			showLoading: obra.type === "book",
+		});
+		previewRows.push({
+			label: "Idioma",
+			value: previewMetadata.language,
+			showLoading: obra.type === "book",
+		});
+		previewRows.push({
 			label: "Temporadas",
 			value:
-				previewMetadata.seasons !== undefined
+				typeof previewMetadata.seasons === "number"
 					? previewMetadata.seasons.toLocaleString()
 					: undefined,
 			showLoading: obra.type === "series",
@@ -1198,7 +1265,7 @@ function ObraAuthed({
 		previewRows.push({
 			label: "Episodios",
 			value:
-				previewMetadata.episodes !== undefined
+				typeof previewMetadata.episodes === "number"
 					? previewMetadata.episodes.toLocaleString()
 					: undefined,
 			showLoading: obra.type === "series" || obra.type === "anime",
@@ -1206,7 +1273,7 @@ function ObraAuthed({
 		previewRows.push({
 			label: "Episodios emitidos",
 			value:
-				previewMetadata.episodesAired !== undefined
+				typeof previewMetadata.episodesAired === "number"
 					? previewMetadata.episodesAired.toLocaleString()
 					: undefined,
 			showLoading: obra.type === "series" || obra.type === "anime",
@@ -1214,7 +1281,7 @@ function ObraAuthed({
 		previewRows.push({
 			label: "Próximo episodio",
 			value:
-				previewMetadata.nextEpisodeDate !== undefined
+				typeof previewMetadata.nextEpisodeDate === "number"
 					? new Date(previewMetadata.nextEpisodeDate).toLocaleString()
 					: undefined,
 			showLoading: obra.type === "series" || obra.type === "anime",
@@ -1227,7 +1294,7 @@ function ObraAuthed({
 		previewRows.push({
 			label: "Último capítulo",
 			value:
-				mangaChapterPreview !== undefined
+				typeof mangaChapterPreview === "number"
 					? mangaChapterPreview.toLocaleString()
 					: undefined,
 			showLoading: obra.type === "manga",
@@ -1235,7 +1302,7 @@ function ObraAuthed({
 		previewRows.push({
 			label: "Volúmenes",
 			value:
-				previewMetadata.volumes !== undefined
+				typeof previewMetadata.volumes === "number"
 					? previewMetadata.volumes.toLocaleString()
 					: undefined,
 			showLoading: obra.type === "manga",
@@ -1584,76 +1651,103 @@ function ObraAuthed({
 											>
 												Buscar metadatos
 											</DialogTrigger>
-											<DialogContent className="sm:max-w-lg rounded-none border-[#D6D0C7]">
+											<DialogContent className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-lg border-border bg-card p-0 sm:max-w-2xl">
 												<DialogHeader>
-													<DialogTitle className="text-lg font-semibold font-serif">
-														Buscar metadatos
-													</DialogTitle>
-													<DialogDescription>
-														Proveedor: {metadataSourceLabel}
-													</DialogDescription>
+													<div className="border-b border-border px-5 py-4">
+														<DialogTitle className="text-lg font-semibold font-serif">
+															Buscar metadatos
+														</DialogTitle>
+														<DialogDescription className="mt-1">
+															Proveedor: {metadataSourceLabel}
+														</DialogDescription>
+													</div>
 												</DialogHeader>
-												<div className="space-y-3">
-													<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+												<div className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-5">
+													<div className="flex flex-col gap-2 sm:flex-row">
 														<Input
 															value={metadataQuery}
 															onChange={(e) => setMetadataQuery(e.target.value)}
 															placeholder={`Buscar en ${metadataSourceLabel}`}
-															className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+															className="h-11 rounded-md border-border bg-background focus-visible:ring-primary"
 														/>
 														<Button
 															type="button"
 															disabled={!canSearchMetadata}
 															onClick={handleMetadataSearch}
-															className="rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]"
+															className="h-11 rounded-md px-5"
 														>
 															{isSearchingMetadata ? "Buscando..." : "Buscar"}
 														</Button>
 													</div>
 													{metadataError && (
-														<p className="text-sm text-[#9A3B2E]">
+														<p className="text-sm text-destructive">
 															{metadataError}
 														</p>
 													)}
 													{metadataResults.length === 0 &&
 														!metadataError &&
 														!isSearchingMetadata && (
-															<p className="text-sm text-[#8C8279]">
+															<p className="rounded-md border border-dashed border-border bg-background/50 px-4 py-6 text-center text-sm text-muted-foreground">
 																Ingresa un término para buscar.
 															</p>
 														)}
 													{metadataResults.length > 0 && (
-														<div className="space-y-2 max-h-64 overflow-auto">
+														<div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
 															{metadataResults.map((result) => {
 																const details = [
 																	result.creator,
 																	result.year?.toString(),
+																	result.pages
+																		? `${result.pages.toLocaleString()} páginas`
+																		: undefined,
 																]
 																	.filter(Boolean)
 																	.join(" • ");
+																const sourceLabel =
+																	metadataSourceLabels[result.source];
+
 																return (
 																	<div
 																		key={`${result.source}-${result.id}`}
-																		className="flex items-center justify-between gap-3 border border-[#D6D0C7] bg-[#F5F2EB] px-3 py-2"
+																		className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3 rounded-md border border-border bg-background/70 p-3 transition-colors hover:border-primary/60 hover:bg-background sm:grid-cols-[48px_minmax(0,1fr)_120px]"
 																	>
-																		<div className="min-w-0">
-																			<p className="text-sm font-medium truncate">
-																				{result.title}
-																			</p>
+																		<div className="h-16 w-12 overflow-hidden rounded-sm border border-border bg-muted">
+																			{result.coverUrl ? (
+																				<img
+																					src={result.coverUrl}
+																					alt={`Portada de ${result.title}`}
+																					className="h-full w-full object-cover"
+																					loading="lazy"
+																				/>
+																			) : null}
+																		</div>
+																		<div className="min-w-0 space-y-1">
+																			<div className="flex flex-wrap items-center gap-2">
+																				<p className="min-w-0 truncate text-sm font-medium">
+																					{result.title}
+																				</p>
+																				<Badge
+																					variant="outline"
+																					className="shrink-0 rounded-sm border-border text-[10px] uppercase tracking-[0.16em] text-muted-foreground"
+																				>
+																					{sourceLabel}
+																				</Badge>
+																			</div>
 																			{details && (
-																				<p className="text-xs text-[#8C8279]">
+																				<p className="truncate text-xs text-muted-foreground">
 																					{details}
 																				</p>
 																			)}
 																		</div>
 																		<Button
 																			type="button"
+																			variant="outline"
 																			size="sm"
 																			disabled={isLoadingPreviewDetails}
 																			onClick={() =>
 																				handleOpenMetadataPreview(result)
 																			}
-																			className="rounded-none bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[#F5F2EB]"
+																			className="col-span-2 rounded-md sm:col-span-1 sm:w-full"
 																		>
 																			Vista previa
 																		</Button>
@@ -1666,7 +1760,7 @@ function ObraAuthed({
 														open={isMetadataPreviewOpen}
 														onOpenChange={setIsMetadataPreviewOpen}
 													>
-														<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-none border-[#D6D0C7]">
+														<DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg border-border bg-card">
 															<DialogHeader>
 																<DialogTitle className="font-serif">
 																	Vista previa de metadatos
@@ -1678,12 +1772,12 @@ function ObraAuthed({
 															</DialogHeader>
 															<div className="space-y-4">
 																{isLoadingPreviewDetails && (
-																	<p className="text-sm text-[#8C8279]">
+																	<p className="text-sm text-muted-foreground">
 																		Cargando detalles...
 																	</p>
 																)}
 																{previewError && (
-																	<p className="text-sm text-[#9A3B2E]">
+																	<p className="text-sm text-destructive">
 																		{previewError}
 																	</p>
 																)}
@@ -1693,7 +1787,7 @@ function ObraAuthed({
 																			<img
 																				src={previewMetadata.coverUrl}
 																				alt={`Portada de ${previewMetadata.title}`}
-																				className="h-44 w-32 object-cover border border-[#D6D0C7]"
+																				className="h-44 w-32 rounded-md border border-border object-cover"
 																				loading="lazy"
 																			/>
 																		)}
@@ -1710,14 +1804,14 @@ function ObraAuthed({
 																						key={`${row.label}-${row.value}`}
 																						className="text-sm"
 																					>
-																						<span className="text-[#8C8279]">
+																						<span className="text-muted-foreground">
 																							{row.label}:
 																						</span>{" "}
 																						{row.value ? (
 																							<span>{row.value}</span>
 																						) : isLoadingPreviewDetails &&
 																							row.showLoading ? (
-																							<span className="inline-block h-3.5 w-28 animate-pulse bg-[#D6D0C7] align-middle" />
+																							<span className="inline-block h-3.5 w-28 animate-pulse rounded bg-muted-foreground/25 align-middle" />
 																						) : null}
 																					</div>
 																				))}
@@ -1725,30 +1819,30 @@ function ObraAuthed({
 																		{!isLoadingPreviewDetails &&
 																			obra.type === "manga" &&
 																			mangaChapterPreview === undefined && (
-																				<p className="text-sm text-[#8C8279]">
+																				<p className="text-sm text-muted-foreground">
 																					Último capítulo: No disponible en el
 																					proveedor.
 																				</p>
 																			)}
 																		<details>
-																			<summary className="cursor-pointer text-sm text-[#8C8279]">
+																			<summary className="cursor-pointer text-sm text-muted-foreground">
 																				Request debug
 																			</summary>
 																			<div className="mt-2 space-y-2">
 																				{(lastMetadataSearchUrl ||
 																					requestDebugSearch) && (
-																					<pre className="border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto">
+																					<pre className="overflow-x-auto rounded-md border border-border bg-background p-3 text-xs">
 																						{`GET ${lastMetadataSearchUrl ?? requestDebugSearch}`}
 																					</pre>
 																				)}
 																				{requestDebugDetails && (
-																					<pre className="border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto">
+																					<pre className="overflow-x-auto rounded-md border border-border bg-background p-3 text-xs">
 																						{`GET ${requestDebugDetails}`}
 																					</pre>
 																				)}
 																				{previewResult?.source ===
 																					"anilist" && (
-																					<pre className="border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+																					<pre className="overflow-x-auto whitespace-pre-wrap rounded-md border border-border bg-background p-3 text-xs">
 																						{`POST https://graphql.anilist.co\nContent-Type: application/json\n\n${JSON.stringify(
 																							{
 																								query:
@@ -1765,10 +1859,10 @@ function ObraAuthed({
 																			</div>
 																		</details>
 																		<details>
-																			<summary className="cursor-pointer text-sm text-[#8C8279]">
+																			<summary className="cursor-pointer text-sm text-muted-foreground">
 																				Ver JSON completo
 																			</summary>
-																			<pre className="mt-2 border border-[#D6D0C7] bg-[#F5F2EB] p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+																			<pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-md border border-border bg-background p-3 text-xs">
 																				{JSON.stringify(
 																					previewMetadata,
 																					null,
@@ -1786,7 +1880,7 @@ function ObraAuthed({
 																	onClick={() =>
 																		setIsMetadataPreviewOpen(false)
 																	}
-																	className="rounded-none border-[#D6D0C7] hover:border-[#B85C38]"
+																	className="rounded-md"
 																>
 																	Cerrar
 																</Button>
@@ -1796,7 +1890,7 @@ function ObraAuthed({
 																		!previewResult || isApplyingMetadata
 																	}
 																	onClick={handleApplyMetadata}
-																	className="rounded-none bg-[#B85C38] hover:bg-[#B85C38]/90 text-white"
+																	className="rounded-md"
 																>
 																	{isApplyingMetadata
 																		? "Aplicando..."
@@ -1811,7 +1905,7 @@ function ObraAuthed({
 														type="button"
 														variant="outline"
 														onClick={() => setIsMetadataOpen(false)}
-														className="rounded-none border-[#D6D0C7] hover:border-[#B85C38]"
+														className="rounded-md"
 													>
 														Cerrar
 													</Button>
@@ -1886,7 +1980,7 @@ function ObraAuthed({
 													<Input
 														value={field.state.value}
 														onChange={(e) => field.handleChange(e.target.value)}
-														placeholder="Ej: Vale, Reddit, Discord"
+														placeholder=""
 														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 													/>
 												)}

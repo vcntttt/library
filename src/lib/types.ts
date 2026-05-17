@@ -10,6 +10,15 @@ export type ObraId = string;
 
 export interface ObraMetadata {
 	pages?: number;
+	subtitle?: string;
+	publisher?: string;
+	publishedDate?: string;
+	language?: string;
+	isbn10?: string;
+	isbn13?: string;
+	categories?: string[];
+	description?: string;
+	canonicalUrl?: string;
 	seasons?: number;
 	episodes?: number;
 	episodesAired?: number;

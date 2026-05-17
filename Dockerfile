@@ -18,7 +18,6 @@ COPY bun.lock package.json ./
 RUN bun install --production --frozen-lockfile
 
 COPY --from=build /app/.output ./.output
-COPY drizzle ./drizzle
 COPY scripts ./scripts
 
 EXPOSE 3000

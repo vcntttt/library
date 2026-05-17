@@ -7,7 +7,7 @@ This file is guidance for agentic coding tools working in this repo.
 - App name: Library (private personal media library)
 - Frontend: React + TanStack Router (file-based routes in `src/routes`)
 - Build tool: Vite (TanStack Start plugin) + Nitro
-- Backend: TanStack Start server routes + PostgreSQL (Drizzle ORM)
+- Backend: Convex self-hosted + TanStack Start server routes for metadata/internal bridges
 - Styling: Tailwind v4 + shadcn/ui
 - Tests: Vitest
 - Lint/format: Biome
@@ -72,9 +72,10 @@ bun run dev:web
 bun run build
 bun run preview
 
-# db
-bun run db:generate
-bun run db:migrate
+# convex
+bun run convex:dev
+bun run convex:push
+bun run convex:deploy
 
 # lint/format (Biome; tabs + double quotes)
 bun run lint
@@ -91,31 +92,28 @@ bunx vitest
 ## Repo layout
 
 - `src/routes/*`: TanStack Router file-based routes (most routes set `ssr: false`).
+- `convex/*`: Convex schema, auth, functions and crons.
 - `src/components/*`: App components.
 - `src/components/ui/*`: shadcn/ui primitives.
-- `src/lib/*`: app types and mapping helpers.
-- `src/lib/auth-*`: Better Auth client/server helpers.
-- `src/db/*`: Drizzle schema, client y migraciones.
-- `src/lib/server/*`: servicios server-side (auth, obras, notificaciones, runtime).
-- Local PostgreSQL is shared across repos from `~/dev/postgres`; this repo no longer owns a local `docker-compose` stack.
+- `src/lib/*`: app types, metadata providers and mapping helpers.
+- `src/lib/server/*`: server-side helpers for TanStack Start routes.
 
-Generated files (do not edit): `src/routeTree.gen.ts`, `drizzle/meta/*`.
+Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
 
 ## Environment variables
 
 - Local config lives in `.env.local` (never commit secrets).
-- Database:
-  - `DATABASE_URL`
-- Auth:
-  - `BETTER_AUTH_SECRET`
-  - `BETTER_AUTH_URL`
+- Convex:
+  - `VITE_CONVEX_URL`
+  - `CONVEX_SELF_HOSTED_URL`
+  - `CONVEX_SELF_HOSTED_ADMIN_KEY`
+  - `CONVEX_SITE_URL`
 - App:
   - `VITE_SITE_URL`
   - `OBSIDIAN_VAULT_PATH`
   - `TMDB_API_KEY`
   - `ALFRED_NOTIFY_SECRET`
   - `ALFRED_NOTIFY_URL`
-  - `MANGA_RELEASE_WORKER_INTERVAL_MS`
 
 ## Code style and conventions
 
@@ -162,11 +160,11 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `drizzle/meta/*`.
 
 ### Backend guidelines
 
-- Validate API inputs before touching the DB.
-- Use indexes where needed and keep them in `src/db/schema.ts`.
+- Validate Convex/API inputs before touching the DB.
+- Use indexes where needed and keep them in `convex/schema.ts`.
 - Use `Date.now()` for app timestamps; keep `createdAt` immutable and update `updatedAt`.
 - Error handling: throw `new Error("...")` with a clear, user-facing message.
-- Keep server services small and deterministic; isolate polling/worker logic in `src/lib/server/*`.
+- Keep Convex functions small and deterministic; isolate external fetches in actions and scheduled work in `convex/crons.ts`.
 
 Access control (important):
 
@@ -175,14 +173,14 @@ Access control (important):
 
 Data model notes:
 
-- Auth state lives in Better Auth tables (`user`, `session`, `account`, `verification`).
-- In the UI, map DB-backed payloads to app types via `obraFromDoc` (`src/lib/obras.ts`).
+- Auth state lives in Convex Auth tables.
+- In the UI, map Convex-backed payloads to app types via `obraFromDoc` (`src/lib/obras.ts`).
 
 ### Auth / privacy
 
 - The goal is a private app; do not leave write operations unauthenticated.
-- Better Auth runs directly against PostgreSQL.
-- Protect server routes and API handlers, and add a login gate in UI.
+- Convex Auth protects user-facing reads/writes.
+- Protect server routes and API handlers, and keep login gates in UI.
 - Never commit secrets; use `.env.local` for local config.
 
 ## Editing notes
@@ -206,6 +204,6 @@ pnpm dlx shadcn@latest add button
 ### Database notes
 
 - Prefer explicit enums/unions for stable storage values.
-- Keep Drizzle schema as the source of truth in `src/db/schema.ts`.
-- Generate SQL with `bun run db:generate` and apply it with `bun run db:migrate`.
+- Keep Convex schema as the source of truth in `convex/schema.ts`.
+- Deploy Convex schema/functions with `bun run convex:deploy`.
 - The `.cursorrules` file also contains schema guidance; use it as reference for unions, optional fields, and indexes.

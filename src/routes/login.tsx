@@ -1,3 +1,4 @@
+import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useId, useState } from "react";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { authClient } from "@/lib/auth-client";
 
 function getErrorMessage(err: unknown) {
 	if (err instanceof Error) return err.message;
@@ -23,7 +23,8 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
 	const router = useRouter();
-	const { data: session, isPending } = authClient.useSession();
+	const { isAuthenticated, isLoading } = useConvexAuth();
+	const { signIn } = useAuthActions();
 	const nameId = useId();
 	const emailId = useId();
 	const passwordId = useId();
@@ -39,20 +40,14 @@ function LoginPage() {
 		onSubmit: async ({ value }) => {
 			setError(null);
 			try {
+				const formData = new FormData();
+				formData.set("email", value.email);
+				formData.set("password", value.password);
+				formData.set("flow", value.mode === "signup" ? "signUp" : "signIn");
 				if (value.mode === "signup") {
-					const { error } = await authClient.signUp.email({
-						email: value.email,
-						password: value.password,
-						name: value.name.trim() || "Usuario",
-					});
-					if (error) throw error;
-				} else {
-					const { error } = await authClient.signIn.email({
-						email: value.email,
-						password: value.password,
-					});
-					if (error) throw error;
+					formData.set("name", value.name.trim() || "Usuario");
 				}
+				await signIn("password", formData);
 
 				await router.navigate({ to: "/" });
 			} catch (err) {
@@ -62,11 +57,11 @@ function LoginPage() {
 		},
 	});
 
-	if (isPending || session === undefined) {
+	if (isLoading) {
 		return <LoginPageSkeleton />;
 	}
 
-	if (session) {
+	if (isAuthenticated) {
 		void router.navigate({ to: "/" });
 		return null;
 	}
