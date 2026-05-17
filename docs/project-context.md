@@ -11,8 +11,8 @@ Library es una app privada de media library personal.
 - Stack principal:
   - React + TanStack Router
   - TanStack Start
-  - PostgreSQL + Drizzle
-  - Better Auth
+  - Convex self-hosted
+  - Convex Auth
   - Tailwind v4 + shadcn/ui
   - Vitest + Biome
   - Bun
@@ -43,4 +43,3 @@ La dirección actual es consolidar ese flujo para que sea el primer tipo realmen
 - `latestChapter` es la referencia operativa para seguimiento.
 - `chapters` sigue siendo fallback o dato de catálogo.
 - No ampliar el alcance a series/películas/libros salvo cambios compartidos necesarios para no romper manga.
-

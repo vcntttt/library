@@ -23,7 +23,7 @@ No es una red social: no hay feeds, recomendaciones, algoritmos ni perfiles publ
 - Uso rapido (registrar algo no debe generar friccion)
 - Texto libre como base para notas y reflexion
 
-Nota: la app ahora corre sobre PostgreSQL local con Better Auth y una API propia en TanStack Start. El foco sigue siendo privacidad, control de acceso y cero dependencia de servicios cloud para el backend.
+Nota: la app ahora corre sobre Convex self-hosted con Convex Auth. El foco sigue siendo privacidad, control de acceso y backend propio.
 
 ## Funcionalidades (concepto + prototipo)
 
@@ -69,9 +69,9 @@ Estado actual: el modelo ya contempla `notes`/`review`, pero la UI todavia es ba
 
 - React + TanStack Router (file-based en `src/routes`)
 - Vite
-- TanStack Start server routes (backend)
-- PostgreSQL + Drizzle ORM
-- Better Auth (auth)
+- TanStack Start server routes para endpoints internos/metadata
+- Convex self-hosted (database, functions, crons)
+- Convex Auth (auth)
 - Tailwind CSS + shadcn/ui
 - Vitest (tests)
 - Biome (lint/format)
@@ -79,8 +79,8 @@ Estado actual: el modelo ya contempla `notes`/`review`, pero la UI todavia es ba
 ## Privacidad y acceso
 
 - La app es privada: requiere login.
-- Auth: Better Auth sobre PostgreSQL.
-- Objetivo: que cada usuario vea solo sus datos (multi-usuario real) o, alternativamente, modo single-user con sign-up deshabilitado. Esto se decide al aterrizar el modelo de acceso.
+- Auth: Convex Auth con email/password.
+- Cada usuario ve solo sus datos por scoping en funciones Convex.
 
 ## Desarrollo local
 
@@ -98,39 +98,24 @@ bun run dev
 
 `bun run dev` ahora:
 
-- levanta el PostgreSQL compartido de `~/dev/postgres`
-- aplica migraciones de Drizzle
+- sincroniza `convex/*` con el deployment via `convex dev`
+- regenera `convex/_generated/*`
 - arranca Vite en `http://localhost:3000`
 
-La DB local ya no vive en este repo. Se espera un PostgreSQL compartido corriendo en `~/dev/postgres`.
+Dev y prod apuntan al mismo deployment Convex self-hosted. Las mutaciones locales afectan datos reales.
 
 ### Variables de entorno
 
 Configurar en `.env.local` o copiar desde `.env.example`:
 
-- `DATABASE_URL`
-- `BETTER_AUTH_SECRET`
-- `BETTER_AUTH_URL`
+- `VITE_CONVEX_URL`
+- `CONVEX_SELF_HOSTED_URL`
+- `CONVEX_SELF_HOSTED_ADMIN_KEY` (solo local/CI, no commitear)
+- `CONVEX_SITE_URL`
 - `VITE_SITE_URL`
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
-
-Opcional:
-
-- `MANGA_RELEASE_WORKER_INTERVAL_MS`
-
-### PostgreSQL local
-
-La base local corre en el stack compartido `~/dev/postgres` usando estas credenciales por defecto:
-
-- host: `127.0.0.1`
-- puerto: `5432`
-- db: `library`
-- user: `postgres`
-- password: `postgres`
-
-`bun run db:down` apaga esa instancia compartida completa, no solo esta app.
 
 ## Scripts
 
@@ -141,33 +126,35 @@ bun run test
 bun run lint
 bun run format
 bun run check
-bun run db:up
-bun run db:down
-bun run db:logs
-bun run db:generate
-bun run db:migrate
+bun run convex:dev
+bun run convex:push
+bun run convex:deploy
+bun run deploy
 ```
+
+Convex Auth requiere `JWT_PRIVATE_KEY` y `JWKS` configuradas como variables del deployment Convex. No son variables del frontend ni del contenedor web de Library. Configuralas en tu instancia/deployment Convex self-hosted, por ejemplo con `convex env set` o desde la administración de tu self-host.
 
 ## Producción
 
-Para deploy en Dokploy ahora necesitás un PostgreSQL accesible desde la app y estas variables en el entorno de runtime:
+Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime:
 
-- `DATABASE_URL`
-- `BETTER_AUTH_SECRET`
-- `BETTER_AUTH_URL`
+- `VITE_CONVEX_URL`
+- `CONVEX_SELF_HOSTED_URL`
+- `CONVEX_SELF_HOSTED_ADMIN_KEY`
+- `CONVEX_SITE_URL`
 - `VITE_SITE_URL`
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
-- `MANGA_RELEASE_WORKER_INTERVAL_MS` opcional
 
 Variables viejas para eliminar del deploy:
 
-- `VITE_CONVEX_URL`
-- `VITE_CONVEX_SITE_URL`
-- cualquier `CONVEX_*`
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `MANGA_RELEASE_WORKER_INTERVAL_MS`
 
-La imagen ahora corre `Drizzle` migrations al arrancar antes de levantar el server. Eso significa que Dokploy solo tiene que construir y arrancar el contenedor con los env vars correctos; ya no hay un paso separado de Convex.
+`bun run deploy` primero ejecuta `bun run convex:deploy` y despues triggerea Dokploy. La imagen de la app ya no corre migraciones al arrancar.
 
 ## Filosofia de datos (direccion)
 
@@ -175,7 +162,7 @@ La imagen ahora corre `Drizzle` migrations al arrancar antes de levantar el serv
 - El texto libre guarda pensamiento
 - Datos exportables, respaldables y legibles por humanos (sin lock-in)
 
-Nota: el concepto original contemplaba SQLite + archivos locales. Hoy priorizamos PostgreSQL local para mantener estructura y consultas fuertes sin lock-in cloud; export/import estructurado sigue siendo una posibilidad futura.
+Export/import estructurado sigue siendo una posibilidad futura, pero la migración actual empezó con datos limpios en Convex.
 
 ## No-objetivos
 
@@ -196,7 +183,7 @@ Estado actual de trabajo:
 
 ## Roadmap (corto)
 
-- Autenticacion (Better Auth) + proteccion de rutas/API
+- Endurecer flujo de alta/login en Convex Auth
 - UI de notas y review
 - Progreso editable (current/total) y fechas (inicio/termino)
 - Etiquetas/filtros mas potentes
