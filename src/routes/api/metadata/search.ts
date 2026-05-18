@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { providerByType, searchMetadata } from "@/lib/metadata/providers";
 import type { MetadataSource } from "@/lib/metadata/types";
-import { requireConvexSessionFromRequest } from "@/lib/server/convex";
+import {
+	isUnauthorizedError,
+	requireConvexSessionFromRequest,
+} from "@/lib/server/convex";
 import { json, jsonError } from "@/lib/server/http";
 import type { ObraType } from "@/lib/types";
 
@@ -26,7 +29,11 @@ export const Route = createFileRoute("/api/metadata/search")({
 			GET: async ({ request }) => {
 				try {
 					await requireConvexSessionFromRequest(request);
-				} catch {
+				} catch (error) {
+					if (!isUnauthorizedError(error)) {
+						console.error("[metadata/search] session validation failed", error);
+						return jsonError("No se pudo validar la sesion.", 500);
+					}
 					return jsonError("No autorizado.", 401);
 				}
 

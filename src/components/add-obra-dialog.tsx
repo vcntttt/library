@@ -618,7 +618,7 @@ export function AddObraDialog({
 					<span className="sr-only">Agregar obra</span>
 				)}
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-lg rounded-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
+			<DialogContent className="sm:max-w-xl rounded-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-lg font-semibold font-serif">
 						Nueva obra
