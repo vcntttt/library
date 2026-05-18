@@ -51,6 +51,7 @@ import type {
 } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import { getInitialProgressTotal } from "@/lib/progress";
+import { getStatusLabel } from "@/lib/status";
 import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
 import { cn, formatDateShort } from "@/lib/utils";
 
@@ -71,6 +72,8 @@ interface EditFormValues {
 	progressTotal: number;
 }
 
+type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
+
 const emptyEditFormValues: EditFormValues = {
 	readingUrl: "",
 	recommendedBy: "",
@@ -79,13 +82,6 @@ const emptyEditFormValues: EditFormValues = {
 	review: "",
 	progressCurrent: 0,
 	progressTotal: 0,
-};
-
-const statusLabels: Record<ObraStatus, string> = {
-	backlog: "Pendiente",
-	"in-progress": "En progreso",
-	finished: "Terminada",
-	dropped: "Abandonada",
 };
 
 const progressUnitLabels: Record<ObraType, string> = {
@@ -235,6 +231,73 @@ const parseDateInput = (value: string) => {
 	const timestamp = new Date(value).getTime();
 	return Number.isNaN(timestamp) ? undefined : timestamp;
 };
+
+function buildPersonalPatch(values: EditFormValues, obra: Obra) {
+	const movieWatchedAt =
+		obra.type === "movie"
+			? (parseDateInput(values.finishedAt) ?? parseDateInput(values.startedAt))
+			: undefined;
+
+	return {
+		readingUrl: values.readingUrl.trim() || undefined,
+		recommendedBy: values.recommendedBy.trim(),
+		startedAt:
+			obra.type === "movie" ? movieWatchedAt : parseDateInput(values.startedAt),
+		finishedAt:
+			obra.type === "movie"
+				? movieWatchedAt
+				: parseDateInput(values.finishedAt),
+		review: values.review.trim() || undefined,
+	};
+}
+
+function buildProgressPatch(
+	values: Pick<EditFormValues, "progressCurrent" | "progressTotal">,
+	obra: Obra,
+	nextStatus?: ObraStatus,
+) {
+	if (obra.type === "movie") return null;
+	if (
+		!Number.isFinite(values.progressCurrent) ||
+		!Number.isFinite(values.progressTotal) ||
+		values.progressTotal < 0 ||
+		values.progressCurrent < 0 ||
+		(values.progressTotal > 0 && values.progressCurrent > values.progressTotal)
+	) {
+		return null;
+	}
+
+	const patch: Record<string, unknown> = {
+		progress:
+			values.progressTotal === 0
+				? null
+				: {
+						current: Math.min(values.progressCurrent, values.progressTotal),
+						total: values.progressTotal,
+					},
+	};
+	const inferredStatus =
+		values.progressTotal === 0
+			? undefined
+			: (nextStatus ??
+				(obra.status !== "in-progress" && values.progressCurrent > 0
+					? "in-progress"
+					: undefined));
+	if (inferredStatus) patch.status = inferredStatus;
+	return patch;
+}
+
+function buildQuotesPatch(quotes: EditableQuote[]) {
+	return {
+		quotes: quotes
+			.map((quote) => ({
+				id: quote.id,
+				content: quote.content.trim(),
+				characterName: quote.characterName.trim() || undefined,
+			}))
+			.filter((quote) => quote.content),
+	};
+}
 
 const normalizeReadingUrl = (value: string) => {
 	const trimmed = value.trim();
@@ -707,9 +770,11 @@ function ObraAuthed({
 	);
 	const [previewError, setPreviewError] = useState<string | null>(null);
 	const [isLoadingPreviewDetails, setIsLoadingPreviewDetails] = useState(false);
-	const progressCommitTimeout = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
+	const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+	const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+	const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+	const pendingSavePatches = useRef(new Map<string, Record<string, unknown>>());
+	const lastFailedPatch = useRef<Record<string, unknown> | null>(null);
 	const editDefaultValues = useMemo(
 		() => (doc ? getEditFormValues(doc) : emptyEditFormValues),
 		[doc],
@@ -717,69 +782,78 @@ function ObraAuthed({
 
 	const form = useForm({
 		defaultValues: editDefaultValues,
-		onSubmit: async ({ value }) => {
-			const hasProgress = doc?.type !== "movie";
-			const previousProgress = doc?.progress;
-			const progressChanged =
-				value.progressCurrent !== (previousProgress?.current ?? 0) ||
-				value.progressTotal !== (previousProgress?.total ?? 0);
-			const canSaveProgress =
-				!hasProgress ||
-				(Number.isFinite(value.progressCurrent) &&
-					Number.isFinite(value.progressTotal) &&
-					value.progressTotal >= 0 &&
-					value.progressCurrent >= 0 &&
-					(value.progressTotal === 0 ||
-						value.progressCurrent <= value.progressTotal));
-
-			if (!canSaveProgress) return;
-
-			const movieWatchedAt =
-				doc?.type === "movie"
-					? (parseDateInput(value.finishedAt) ??
-						parseDateInput(value.startedAt))
-					: undefined;
-			const patch: Record<string, unknown> = {
-				readingUrl: value.readingUrl.trim() || undefined,
-				recommendedBy: value.recommendedBy.trim(),
-				startedAt:
-					doc?.type === "movie"
-						? movieWatchedAt
-						: parseDateInput(value.startedAt),
-				finishedAt:
-					doc?.type === "movie"
-						? movieWatchedAt
-						: parseDateInput(value.finishedAt),
-				review: value.review.trim() || undefined,
-				quotes: editQuotes
-					.map((quote) => ({
-						id: quote.id,
-						content: quote.content.trim(),
-						characterName: quote.characterName.trim() || undefined,
-					}))
-					.filter((quote) => quote.content),
-			};
-
-			if (hasProgress && value.progressTotal > 0) {
-				patch.progress = {
-					current: Math.min(value.progressCurrent, value.progressTotal),
-					total: value.progressTotal,
-				};
-			}
-
-			if (
-				hasProgress &&
-				progressChanged &&
-				value.progressCurrent > 0 &&
-				doc?.status !== "in-progress"
-			) {
-				patch.status = "in-progress";
-			}
-
-			await updateObra({ id: convexId, patch });
-			setIsEditOpen(false);
-		},
 	});
+
+	const commitPatch = useCallback(
+		async (patch: Record<string, unknown>) => {
+			setAutoSaveStatus("saving");
+			setAutoSaveError(null);
+			try {
+				await updateObra({ id: convexId, patch });
+				lastFailedPatch.current = null;
+				setAutoSaveStatus("saved");
+				return true;
+			} catch (error) {
+				lastFailedPatch.current = patch;
+				setAutoSaveStatus("error");
+				setAutoSaveError(
+					error instanceof Error ? error.message : "No se pudo guardar.",
+				);
+				return false;
+			}
+		},
+		[convexId, updateObra],
+	);
+
+	const savePatch = useCallback(
+		(
+			patch: Record<string, unknown>,
+			options?: { debounceKey?: string; delayMs?: number },
+		) => {
+			const { debounceKey, delayMs = 700 } = options ?? {};
+			if (!debounceKey) {
+				void commitPatch(patch);
+				return;
+			}
+
+			const existingTimer = saveTimers.current.get(debounceKey);
+			if (existingTimer) {
+				clearTimeout(existingTimer);
+			}
+			pendingSavePatches.current.set(debounceKey, patch);
+			setAutoSaveStatus("saving");
+			setAutoSaveError(null);
+			const timer = setTimeout(() => {
+				saveTimers.current.delete(debounceKey);
+				const pendingPatch = pendingSavePatches.current.get(debounceKey);
+				pendingSavePatches.current.delete(debounceKey);
+				if (pendingPatch) {
+					void commitPatch(pendingPatch);
+				}
+			}, delayMs);
+			saveTimers.current.set(debounceKey, timer);
+		},
+		[commitPatch],
+	);
+
+	const flushPendingSaves = useCallback(() => {
+		for (const [key, timer] of saveTimers.current) {
+			clearTimeout(timer);
+			const pendingPatch = pendingSavePatches.current.get(key);
+			pendingSavePatches.current.delete(key);
+			if (pendingPatch) {
+				void commitPatch(pendingPatch);
+			}
+		}
+		saveTimers.current.clear();
+	}, [commitPatch]);
+
+	const handleRetryAutoSave = () => {
+		const patch = lastFailedPatch.current;
+		if (patch) {
+			void commitPatch(patch);
+		}
+	};
 
 	const resetEditFormFromDoc = useCallback(
 		(nextDoc: Obra) => {
@@ -800,16 +874,25 @@ function ObraAuthed({
 		if (!doc) {
 			return;
 		}
+		if (isEditOpen) {
+			return;
+		}
 		resetEditFormFromDoc(doc);
-	}, [doc, resetEditFormFromDoc]);
+	}, [doc, isEditOpen, resetEditFormFromDoc]);
 
 	useEffect(() => {
 		return () => {
-			if (progressCommitTimeout.current) {
-				clearTimeout(progressCommitTimeout.current);
+			for (const [key, timer] of saveTimers.current) {
+				clearTimeout(timer);
+				const pendingPatch = pendingSavePatches.current.get(key);
+				if (pendingPatch) {
+					void updateObra({ id: convexId, patch: pendingPatch });
+				}
 			}
+			saveTimers.current.clear();
+			pendingSavePatches.current.clear();
 		};
-	}, []);
+	}, [convexId, updateObra]);
 
 	if (doc === undefined) {
 		return <ObraPageSkeleton />;
@@ -980,8 +1063,8 @@ function ObraAuthed({
 		technicalItems.push({ label: "Fuente", value: metadataSourceLabel });
 	}
 
-	const handleStatusChange = async (status: ObraStatus) => {
-		await updateObra({ id: convexId, patch: { status } });
+	const handleStatusChange = (status: ObraStatus) => {
+		savePatch({ status });
 	};
 
 	const handleDelete = async () => {
@@ -997,22 +1080,16 @@ function ObraAuthed({
 		if (isUpdatingProgress) return;
 		if (!Number.isFinite(nextTotal) || nextTotal <= 0) return;
 		const safeCurrent = Math.min(Math.max(nextCurrent, 0), nextTotal);
-		const patch: Record<string, unknown> = {
-			progress: {
-				current: safeCurrent,
-				total: nextTotal,
-			},
-		};
-		const inferredStatus =
-			nextStatus ??
-			(obra.status !== "in-progress" && safeCurrent > 0
-				? "in-progress"
-				: undefined);
-		if (inferredStatus) patch.status = inferredStatus;
+		const patch = buildProgressPatch(
+			{ progressCurrent: safeCurrent, progressTotal: nextTotal },
+			obra,
+			nextStatus,
+		);
+		if (!patch) return;
 
 		setIsUpdatingProgress(true);
 		try {
-			await updateObra({ id: convexId, patch });
+			await commitPatch(patch);
 			form.setFieldValue("progressCurrent", safeCurrent);
 			form.setFieldValue("progressTotal", nextTotal);
 		} finally {
@@ -1024,17 +1101,13 @@ function ObraAuthed({
 		if (!Number.isFinite(nextTotal) || nextTotal <= 0) return;
 		const safeCurrent = Math.min(Math.max(nextCurrent, 0), nextTotal);
 		form.setFieldValue("progressCurrent", safeCurrent);
-		scheduleProgressCommit(safeCurrent, nextTotal);
-	};
-
-	const scheduleProgressCommit = (nextCurrent: number, nextTotal: number) => {
-		if (progressCommitTimeout.current) {
-			clearTimeout(progressCommitTimeout.current);
+		const patch = buildProgressPatch(
+			{ progressCurrent: safeCurrent, progressTotal: nextTotal },
+			obra,
+		);
+		if (patch) {
+			savePatch(patch, { debounceKey: "progress", delayMs: 600 });
 		}
-		progressCommitTimeout.current = setTimeout(() => {
-			progressCommitTimeout.current = null;
-			void handleQuickProgressUpdate(nextCurrent, nextTotal);
-		}, 600);
 	};
 
 	const handleOpenReadingLink = (urlValue: string) => {
@@ -1184,7 +1257,8 @@ function ObraAuthed({
 			if (coverUrl) patch.coverUrl = coverUrl;
 			if (metadataPayload) patch.metadata = metadataPayload;
 
-			await updateObra({ id: convexId, patch });
+			const didSave = await commitPatch(patch);
+			if (!didSave) return;
 			setIsMetadataPreviewOpen(false);
 			setIsMetadataOpen(false);
 		} catch (error) {
@@ -1353,6 +1427,10 @@ function ObraAuthed({
 	const handleEditOpenChange = (open: boolean) => {
 		if (open) {
 			resetEditFormFromDoc(obra);
+			setAutoSaveStatus("idle");
+			setAutoSaveError(null);
+		} else {
+			flushPendingSaves();
 		}
 		setIsEditOpen(open);
 	};
@@ -1368,10 +1446,41 @@ function ObraAuthed({
 		]);
 	};
 
+	const getCurrentEditValues = () => form.state.values as EditFormValues;
+
+	const savePersonalValues = (
+		values: EditFormValues,
+		options?: { debounceKey?: string; delayMs?: number },
+	) => {
+		savePatch(buildPersonalPatch(values, obra), options);
+	};
+
+	const handleProgressTotalChange = (nextTotal: number) => {
+		const progressCurrent =
+			nextTotal === 0 ? 0 : getCurrentEditValues().progressCurrent;
+		if (nextTotal === 0) {
+			form.setFieldValue("progressCurrent", 0);
+		}
+		const values = {
+			...getCurrentEditValues(),
+			progressCurrent,
+			progressTotal: nextTotal,
+		};
+		const patch = buildProgressPatch(values, obra);
+		if (patch) {
+			savePatch(patch, { debounceKey: "progress", delayMs: 600 });
+		}
+	};
+
 	const handleRemoveQuote = (clientId: string) => {
-		setEditQuotes((quotes) =>
-			quotes.filter((quote) => quote.clientId !== clientId),
-		);
+		setEditQuotes((quotes) => {
+			const quoteToRemove = quotes.find((quote) => quote.clientId === clientId);
+			const nextQuotes = quotes.filter((quote) => quote.clientId !== clientId);
+			if (quoteToRemove?.id) {
+				savePatch(buildQuotesPatch(nextQuotes));
+			}
+			return nextQuotes;
+		});
 	};
 
 	const handleQuoteChange = (
@@ -1379,12 +1488,23 @@ function ObraAuthed({
 		field: "content" | "characterName",
 		value: string,
 	) => {
-		setEditQuotes((quotes) =>
-			quotes.map((quote) =>
+		setEditQuotes((quotes) => {
+			const nextQuotes = quotes.map((quote) =>
 				quote.clientId === clientId ? { ...quote, [field]: value } : quote,
-			),
-		);
+			);
+			savePatch(buildQuotesPatch(nextQuotes), { debounceKey: "quotes" });
+			return nextQuotes;
+		});
 	};
+
+	const autoSaveLabel =
+		autoSaveStatus === "saving"
+			? "Guardando..."
+			: autoSaveStatus === "saved"
+				? "Guardado"
+				: autoSaveStatus === "error"
+					? "Error al guardar"
+					: "Sin cambios";
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
@@ -1407,22 +1527,45 @@ function ObraAuthed({
 				<Dialog open={isEditOpen} onOpenChange={handleEditOpenChange}>
 					<DialogContent className="left-auto right-0 top-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-y-0 border-r-0 border-l-border bg-card p-0 sm:max-w-xl lg:max-w-2xl">
 						<DialogHeader className="sticky top-0 z-10 border-b border-border bg-card px-5 py-4">
-							<DialogTitle className="font-serif text-xl">
-								Editar obra
-							</DialogTitle>
-							<DialogDescription>
-								Actualiza progreso, estado, metadatos, reseña y citas.
-							</DialogDescription>
+							<div className="flex items-start justify-between gap-4">
+								<div className="min-w-0 space-y-1">
+									<DialogTitle className="font-serif text-xl">
+										Editar obra
+									</DialogTitle>
+									<DialogDescription>
+										Los cambios se guardan automáticamente.
+									</DialogDescription>
+								</div>
+								<div className="flex shrink-0 flex-col items-end gap-1 text-right">
+									<span
+										className={cn(
+											"text-xs font-medium",
+											autoSaveStatus === "error"
+												? "text-destructive"
+												: "text-muted-foreground",
+										)}
+									>
+										{autoSaveLabel}
+									</span>
+									{autoSaveStatus === "error" && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={handleRetryAutoSave}
+											className="h-7 rounded-none px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+										>
+											Reintentar
+										</Button>
+									)}
+								</div>
+							</div>
+							{autoSaveError && (
+								<p className="mt-2 text-xs text-destructive">{autoSaveError}</p>
+							)}
 						</DialogHeader>
 						<div className="px-5 py-5">
-							<form
-								onSubmit={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									void form.handleSubmit();
-								}}
-								className="space-y-8"
-							>
+							<div className="space-y-8">
 								{hasProgress && (
 									<section className="border border-border bg-card p-5 space-y-4">
 										<p className="text-sm font-medium">Progreso</p>
@@ -1544,10 +1687,14 @@ function ObraAuthed({
 																					const nextValue = rawValue
 																						? Number(rawValue)
 																						: 0;
-																					field.handleChange(
-																						Number.isNaN(nextValue)
-																							? 0
-																							: nextValue,
+																					const safeNextValue = Number.isNaN(
+																						nextValue,
+																					)
+																						? 0
+																						: nextValue;
+																					field.handleChange(safeNextValue);
+																					handleProgressTotalChange(
+																						safeNextValue,
 																					);
 																				}}
 																				className="max-w-[140px] rounded-none border-border bg-background focus-visible:ring-primary"
@@ -1923,7 +2070,17 @@ function ObraAuthed({
 												{(field) => (
 													<Input
 														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
+														onChange={(e) => {
+															const nextValue = e.target.value;
+															field.handleChange(nextValue);
+															savePersonalValues(
+																{
+																	...getCurrentEditValues(),
+																	readingUrl: nextValue,
+																},
+																{ debounceKey: "readingUrl" },
+															);
+														}}
 														placeholder="https://cubari.moe/..."
 														className="flex-1 rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 													/>
@@ -1946,8 +2103,7 @@ function ObraAuthed({
 											</form.Subscribe>
 										</div>
 										<p className="text-xs text-[#8C8279]">
-											Guarda tu link personal del sitio donde lees los
-											capítulos.
+											Se usará para abrir tu lectura desde la obra.
 										</p>
 									</div>
 								</section>
@@ -1961,14 +2117,22 @@ function ObraAuthed({
 										>
 											<SelectTrigger className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus:ring-[#B85C38]">
 												<span className="truncate">
-													{statusLabels[obra.status]}
+													{getStatusLabel(obra.status, obra.type)}
 												</span>
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="backlog">Pendiente</SelectItem>
-												<SelectItem value="in-progress">En progreso</SelectItem>
-												<SelectItem value="finished">Terminada</SelectItem>
-												<SelectItem value="dropped">Abandonada</SelectItem>
+												<SelectItem value="backlog">
+													{getStatusLabel("backlog", obra.type)}
+												</SelectItem>
+												<SelectItem value="in-progress">
+													{getStatusLabel("in-progress", obra.type)}
+												</SelectItem>
+												<SelectItem value="finished">
+													{getStatusLabel("finished", obra.type)}
+												</SelectItem>
+												<SelectItem value="dropped">
+													{getStatusLabel("dropped", obra.type)}
+												</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
@@ -1979,7 +2143,17 @@ function ObraAuthed({
 												{(field) => (
 													<Input
 														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
+														onChange={(e) => {
+															const nextValue = e.target.value;
+															field.handleChange(nextValue);
+															savePersonalValues(
+																{
+																	...getCurrentEditValues(),
+																	recommendedBy: nextValue,
+																},
+																{ debounceKey: "recommendedBy" },
+															);
+														}}
 														placeholder=""
 														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 													/>
@@ -1994,9 +2168,21 @@ function ObraAuthed({
 														<Input
 															type="date"
 															value={field.state.value}
-															onChange={(e) =>
-																field.handleChange(e.target.value)
-															}
+															onChange={(e) => {
+																const nextValue = e.target.value;
+																field.handleChange(nextValue);
+																savePersonalValues(
+																	{
+																		...getCurrentEditValues(),
+																		startedAt: nextValue,
+																		finishedAt: nextValue,
+																	},
+																	{
+																		debounceKey: "movieDate",
+																		delayMs: 300,
+																	},
+																);
+															}}
 															className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 														/>
 													)}
@@ -2011,9 +2197,20 @@ function ObraAuthed({
 															<Input
 																type="date"
 																value={field.state.value}
-																onChange={(e) =>
-																	field.handleChange(e.target.value)
-																}
+																onChange={(e) => {
+																	const nextValue = e.target.value;
+																	field.handleChange(nextValue);
+																	savePersonalValues(
+																		{
+																			...getCurrentEditValues(),
+																			startedAt: nextValue,
+																		},
+																		{
+																			debounceKey: "startedAt",
+																			delayMs: 300,
+																		},
+																	);
+																}}
 																className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 															/>
 														)}
@@ -2026,9 +2223,20 @@ function ObraAuthed({
 															<Input
 																type="date"
 																value={field.state.value}
-																onChange={(e) =>
-																	field.handleChange(e.target.value)
-																}
+																onChange={(e) => {
+																	const nextValue = e.target.value;
+																	field.handleChange(nextValue);
+																	savePersonalValues(
+																		{
+																			...getCurrentEditValues(),
+																			finishedAt: nextValue,
+																		},
+																		{
+																			debounceKey: "finishedAt",
+																			delayMs: 300,
+																		},
+																	);
+																}}
 																className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
 															/>
 														)}
@@ -2048,7 +2256,17 @@ function ObraAuthed({
 												{(field) => (
 													<Textarea
 														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
+														onChange={(e) => {
+															const nextValue = e.target.value;
+															field.handleChange(nextValue);
+															savePersonalValues(
+																{
+																	...getCurrentEditValues(),
+																	review: nextValue,
+																},
+																{ debounceKey: "review" },
+															);
+														}}
 														placeholder="Escribe tu reseña..."
 														rows={10}
 														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
@@ -2128,43 +2346,7 @@ function ObraAuthed({
 										</div>
 									</div>
 								</section>
-
-								<div className="sticky bottom-0 -mx-5 flex justify-end border-t border-border bg-card px-5 py-4">
-									<form.Subscribe
-										selector={(state) =>
-											[
-												state.values.progressCurrent,
-												state.values.progressTotal,
-												state.isSubmitting,
-											] as const
-										}
-									>
-										{([progressCurrent, progressTotal, isSubmitting]) => {
-											const canSaveProgress =
-												!hasProgress ||
-												(Number.isFinite(progressCurrent) &&
-													Number.isFinite(progressTotal) &&
-													progressTotal >= 0 &&
-													progressCurrent >= 0 &&
-													(progressTotal === 0 ||
-														progressCurrent <= progressTotal));
-
-											return (
-												<Button
-													type="submit"
-													disabled={isSubmitting || !canSaveProgress}
-													className={cn(
-														"rounded-none bg-[#1A1A1A] text-[#F5F2EB] hover:bg-[#1A1A1A]/90",
-														!canSaveProgress && "pointer-events-none",
-													)}
-												>
-													{isSubmitting ? "Guardando..." : "Guardar cambios"}
-												</Button>
-											);
-										}}
-									</form.Subscribe>
-								</div>
-							</form>
+							</div>
 						</div>
 					</DialogContent>
 				</Dialog>

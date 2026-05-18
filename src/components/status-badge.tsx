@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import type { ObraStatus } from "@/lib/types";
+import { getStatusLabel } from "@/lib/status";
+import type { ObraStatus, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<ObraStatus, string> = {
@@ -10,26 +11,20 @@ const statusColors: Record<ObraStatus, string> = {
 	dropped: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
-const statusDots: Record<ObraStatus, string> = {
+export const statusDots: Record<ObraStatus, string> = {
 	backlog: "bg-muted-foreground",
 	"in-progress": "bg-primary",
 	finished: "bg-emerald-700",
 	dropped: "bg-destructive",
 };
 
-const statusLabels: Record<ObraStatus, string> = {
-	backlog: "Pendiente",
-	"in-progress": "En progreso",
-	finished: "Terminada",
-	dropped: "Abandonada",
-};
-
 interface StatusBadgeProps {
 	status: ObraStatus;
+	type?: ObraType;
 	className?: string;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, type, className }: StatusBadgeProps) {
 	return (
 		<Badge
 			className={cn(
@@ -39,7 +34,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 			)}
 		>
 			<span className={cn("h-1.5 w-1.5 rounded-full", statusDots[status])} />
-			{statusLabels[status]}
+			{getStatusLabel(status, type)}
 		</Badge>
 	);
 }

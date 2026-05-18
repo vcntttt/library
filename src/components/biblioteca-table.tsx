@@ -3,7 +3,6 @@
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, LayoutGrid, List } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,9 +29,7 @@ import type { Obra, ObraStatus, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Search } from "./icons";
 import { ObraCard } from "./obra-card";
-import { ProgressBar } from "./progress-bar";
-import { RecommendationBadge } from "./recommendation-badge";
-import { StatusBadge } from "./status-badge";
+import { ObraStatusCell } from "./obra-status-cell";
 import { TypeBadge } from "./type-badge";
 
 type SortKey = "title" | "type" | "status" | "updatedAt";
@@ -363,13 +360,11 @@ export function BibliotecaTable({
 									</TableRow>
 								) : (
 									filteredObras.map((obra) => {
-										const metaLine = getObraMetaLine(obra);
+										const metaLine = getObraMetaLine(obra, "list");
 										const showOngoingBadge =
 											(obra.type === "series" || obra.type === "anime") &&
 											isMetadataOngoing(obra.metadata?.status);
 										const showUpToDateBadge = isObraUpToDate(obra);
-										const showProgress =
-											obra.type !== "movie" && (obra.progress?.total ?? 0) > 0;
 										const readingUrl = normalizeReadingUrl(obra.readingUrl);
 										return (
 											<TableRow
@@ -420,37 +415,11 @@ export function BibliotecaTable({
 													<TypeBadge type={obra.type} showIcon={false} />
 												</TableCell>
 												<TableCell>
-													<div className="space-y-2">
-														<div className="flex flex-wrap items-center gap-2">
-															<StatusBadge status={obra.status} />
-															{obra.recommendedBy && <RecommendationBadge />}
-															{showOngoingBadge && (
-																<Badge
-																	variant="outline"
-																	className="rounded-none border-[#4A4E69]/40 bg-[#4A4E69]/10 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] text-[#4A4E69] dark:text-[#B9BEDB]"
-																>
-																	En emisión
-																</Badge>
-															)}
-															{showUpToDateBadge && (
-																<Badge
-																	variant="outline"
-																	className="rounded-none border-[#3A5A40]/40 bg-[#3A5A40]/10 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] text-[#3A5A40] dark:text-[#A8D5AD]"
-																>
-																	Al día
-																</Badge>
-															)}
-														</div>
-														{showProgress && obra.progress && (
-															<ProgressBar
-																current={obra.progress.current}
-																total={obra.progress.total}
-																type={obra.type}
-																showLabel={false}
-																className="w-28"
-															/>
-														)}
-													</div>
+													<ObraStatusCell
+														obra={obra}
+														showOngoingBadge={showOngoingBadge}
+														showUpToDateBadge={showUpToDateBadge}
+													/>
 												</TableCell>
 												<TableCell className="hidden sm:table-cell">
 													<div className="flex flex-wrap gap-2">

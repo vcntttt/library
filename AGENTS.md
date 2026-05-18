@@ -144,6 +144,11 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
 - Routes: keep data fetching in the route component; pass typed data to UI.
 - Copy/labels: product language should be Spanish (per current direction);
   internal enum values may remain English, but UI should map to Spanish labels.
+- Existing obra edits auto-save: do not add global "Guardar" buttons for
+  persisted fields on existing obras. Use debounced saves for text fields,
+  immediate saves for discrete controls, and always show save/error state.
+- Creation, destructive actions, external search, and explicit external apply
+  flows remain user-confirmed actions.
 
 ### Naming
 
