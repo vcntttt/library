@@ -1,10 +1,7 @@
 export default {
 	providers: [
 		{
-			domain:
-				process.env.CONVEX_SITE_URL ??
-				process.env.CONVEX_SELF_HOSTED_URL ??
-				"https://convex-library.tailf8b14c.ts.net:3210",
+			domain: process.env.CONVEX_SITE_URL ?? process.env.VITE_CONVEX_SITE_URL,
 			applicationID: "convex",
 		},
 	],
