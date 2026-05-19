@@ -1,16 +1,20 @@
 "use client";
 
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, LayoutGrid, List } from "lucide-react";
+import { ChevronDown, ExternalLink, LayoutGrid, List, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-} from "@/components/ui/select";
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -33,23 +37,25 @@ import { ObraStatusCell } from "./obra-status-cell";
 import { TypeBadge } from "./type-badge";
 
 type SortKey = "title" | "type" | "status" | "updatedAt";
-
-const typeLabels: Record<ObraType | "all", string> = {
-	all: "Todos los tipos",
-	book: "Libro",
-	movie: "Película",
-	series: "Serie",
-	anime: "Anime",
-	manga: "Manga",
+type FilterOption<T extends string> = {
+	value: T;
+	label: string;
 };
 
-const statusLabels: Record<ObraStatus | "all", string> = {
-	all: "Todos los estados",
-	backlog: "Pendiente",
-	"in-progress": "En progreso",
-	finished: "Terminada",
-	dropped: "Abandonada",
-};
+const typeOptions: FilterOption<ObraType>[] = [
+	{ value: "book", label: "Libro" },
+	{ value: "movie", label: "Película" },
+	{ value: "series", label: "Serie" },
+	{ value: "anime", label: "Anime" },
+	{ value: "manga", label: "Manga" },
+];
+
+const statusOptions: FilterOption<ObraStatus>[] = [
+	{ value: "backlog", label: "Pendiente" },
+	{ value: "in-progress", label: "En progreso" },
+	{ value: "finished", label: "Terminada" },
+	{ value: "dropped", label: "Abandonada" },
+];
 
 const VIEW_STORAGE_KEY = "library:biblioteca:view";
 const MOBILE_LIST_SKELETON_KEYS = ["m1", "m2", "m3", "m4"];
@@ -75,6 +81,100 @@ const normalizeReadingUrl = (value?: string) => {
 	return `https://${trimmed}`;
 };
 
+const toggleValue = <T extends string>(values: T[], value: T) =>
+	values.includes(value)
+		? values.filter((item) => item !== value)
+		: [...values, value];
+
+const getFilterSummary = <T extends string>(
+	selected: T[],
+	options: FilterOption<T>[],
+	emptyLabel: string,
+) => {
+	if (selected.length === 0) return emptyLabel;
+	if (selected.length === 1) {
+		return (
+			options.find((option) => option.value === selected[0])?.label ??
+			emptyLabel
+		);
+	}
+	return `${selected.length} seleccionados`;
+};
+
+function MultiFilter<T extends string>({
+	label,
+	emptyLabel,
+	options,
+	selected,
+	counts,
+	onToggle,
+	onClear,
+}: {
+	label: string;
+	emptyLabel: string;
+	options: FilterOption<T>[];
+	selected: T[];
+	counts: Record<T, number>;
+	onToggle: (value: T) => void;
+	onClear: () => void;
+}) {
+	const summary = getFilterSummary(selected, options, emptyLabel);
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					className={cn(
+						"h-10 w-full justify-between rounded-none border-border bg-background px-3 text-base font-normal shadow-none sm:w-[220px] sm:text-sm",
+						selected.length > 0 && "border-foreground text-foreground",
+					)}
+				>
+					<span className="truncate">{summary}</span>
+					<ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent className="w-[240px] rounded-none" align="start">
+				<DropdownMenuGroup>
+					<div className="flex items-center justify-between gap-2 px-1.5 py-1">
+						<DropdownMenuLabel className="px-0 py-0">{label}</DropdownMenuLabel>
+						{selected.length > 0 && (
+							<DropdownMenuItem
+								onClick={onClear}
+								className="h-7 px-2 text-xs text-muted-foreground"
+							>
+								<X className="size-3.5" />
+								Limpiar
+							</DropdownMenuItem>
+						)}
+					</div>
+					<DropdownMenuSeparator />
+					{options.map((option) => {
+						const checked = selected.includes(option.value);
+
+						return (
+							<DropdownMenuCheckboxItem
+								key={option.value}
+								checked={checked}
+								onCheckedChange={() => onToggle(option.value)}
+								className="min-h-9 rounded-none"
+							>
+								<span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+									<span className="truncate">{option.label}</span>
+									<span className="text-xs tabular-nums text-muted-foreground">
+										{counts[option.value] ?? 0}
+									</span>
+								</span>
+							</DropdownMenuCheckboxItem>
+						);
+					})}
+				</DropdownMenuGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
+
 export function BibliotecaTable({
 	obras,
 	isLoading = false,
@@ -83,8 +183,8 @@ export function BibliotecaTable({
 	isLoading?: boolean;
 }) {
 	const [search, setSearch] = useState("");
-	const [typeFilter, setTypeFilter] = useState<ObraType | "all">("all");
-	const [statusFilter, setStatusFilter] = useState<ObraStatus | "all">("all");
+	const [typeFilters, setTypeFilters] = useState<ObraType[]>([]);
+	const [statusFilters, setStatusFilters] = useState<ObraStatus[]>([]);
 	const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 	const [view, setView] = useState<"list" | "grid">(() => {
@@ -111,12 +211,12 @@ export function BibliotecaTable({
 			);
 		}
 
-		if (typeFilter !== "all") {
-			result = result.filter((w) => w.type === typeFilter);
+		if (typeFilters.length > 0) {
+			result = result.filter((w) => typeFilters.includes(w.type));
 		}
 
-		if (statusFilter !== "all") {
-			result = result.filter((w) => w.status === statusFilter);
+		if (statusFilters.length > 0) {
+			result = result.filter((w) => statusFilters.includes(w.status));
 		}
 
 		result.sort((a, b) => {
@@ -140,7 +240,37 @@ export function BibliotecaTable({
 		});
 
 		return result;
-	}, [obras, search, typeFilter, statusFilter, sortKey, sortDir]);
+	}, [obras, search, typeFilters, statusFilters, sortKey, sortDir]);
+
+	const typeCounts = useMemo(
+		() =>
+			typeOptions.reduce(
+				(counts, option) => {
+					counts[option.value] = obras.filter(
+						(obra) => obra.type === option.value,
+					).length;
+					return counts;
+				},
+				{} as Record<ObraType, number>,
+			),
+		[obras],
+	);
+
+	const statusCounts = useMemo(
+		() =>
+			statusOptions.reduce(
+				(counts, option) => {
+					counts[option.value] = obras.filter(
+						(obra) => obra.status === option.value,
+					).length;
+					return counts;
+				},
+				{} as Record<ObraStatus, number>,
+			),
+		[obras],
+	);
+
+	const activeFiltersCount = typeFilters.length + statusFilters.length;
 
 	const handleSort = (key: SortKey) => {
 		if (sortKey === key) {
@@ -154,8 +284,8 @@ export function BibliotecaTable({
 	return (
 		<div className="space-y-6">
 			<div className="border border-border bg-card p-4">
-				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-					<div className="relative w-full lg:max-w-md">
+				<div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto] lg:items-center">
+					<div className="relative w-full">
 						<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							aria-label="Buscar obras"
@@ -165,39 +295,45 @@ export function BibliotecaTable({
 							className="rounded-none border-border bg-background pl-9 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-primary sm:text-sm"
 						/>
 					</div>
-					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
-						<Select
-							value={typeFilter}
-							onValueChange={(v) => setTypeFilter(v as ObraType | "all")}
-						>
-							<SelectTrigger className="w-full rounded-none border-border bg-background text-base shadow-none sm:w-[220px] sm:text-sm">
-								<span className="truncate">{typeLabels[typeFilter]}</span>
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todos los tipos</SelectItem>
-								<SelectItem value="book">Libro</SelectItem>
-								<SelectItem value="movie">Película</SelectItem>
-								<SelectItem value="series">Serie</SelectItem>
-								<SelectItem value="anime">Anime</SelectItem>
-								<SelectItem value="manga">Manga</SelectItem>
-							</SelectContent>
-						</Select>
-						<Select
-							value={statusFilter}
-							onValueChange={(v) => setStatusFilter(v as ObraStatus | "all")}
-						>
-							<SelectTrigger className="w-full rounded-none border-border bg-background text-base shadow-none sm:w-[220px] sm:text-sm">
-								<span className="truncate">{statusLabels[statusFilter]}</span>
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todos los estados</SelectItem>
-								<SelectItem value="backlog">Pendiente</SelectItem>
-								<SelectItem value="in-progress">En progreso</SelectItem>
-								<SelectItem value="finished">Terminada</SelectItem>
-								<SelectItem value="dropped">Abandonada</SelectItem>
-							</SelectContent>
-						</Select>
-						<div className="inline-flex w-full items-center overflow-hidden border border-border bg-card sm:w-auto">
+					<div className="grid w-full gap-2 sm:grid-cols-[minmax(180px,220px)_minmax(180px,220px)_auto] sm:items-center lg:w-auto lg:grid-cols-[220px_220px_auto_auto]">
+						<MultiFilter
+							label="Tipos"
+							emptyLabel="Todos los tipos"
+							options={typeOptions}
+							selected={typeFilters}
+							counts={typeCounts}
+							onToggle={(value) =>
+								setTypeFilters((current) => toggleValue(current, value))
+							}
+							onClear={() => setTypeFilters([])}
+						/>
+						<MultiFilter
+							label="Estados"
+							emptyLabel="Todos los estados"
+							options={statusOptions}
+							selected={statusFilters}
+							counts={statusCounts}
+							onToggle={(value) =>
+								setStatusFilters((current) => toggleValue(current, value))
+							}
+							onClear={() => setStatusFilters([])}
+						/>
+						{activeFiltersCount > 0 && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								className="h-10 justify-start rounded-none px-3 text-sm text-muted-foreground hover:text-foreground sm:justify-center"
+								onClick={() => {
+									setTypeFilters([]);
+									setStatusFilters([]);
+								}}
+							>
+								<X className="size-3.5" />
+								Limpiar filtros
+							</Button>
+						)}
+						<div className="inline-flex w-full items-center overflow-hidden border border-border bg-card sm:w-auto lg:col-auto">
 							<Button
 								size="sm"
 								variant="ghost"
@@ -389,22 +525,22 @@ export function BibliotecaTable({
 																params={{
 																	obraId: obra.id,
 																}}
-																className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+																className="block truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
 															>
 																{obra.title}
 															</Link>
 															{obra.creator && (
-																<p className="text-sm text-muted-foreground">
+																<p className="truncate text-sm text-muted-foreground">
 																	{obra.creator}
 																</p>
 															)}
 															{metaLine && (
-																<p className="text-sm text-muted-foreground">
+																<p className="truncate text-sm text-muted-foreground">
 																	{metaLine}
 																</p>
 															)}
 															{obra.recommendedBy && (
-																<p className="text-sm text-muted-foreground">
+																<p className="truncate text-sm text-muted-foreground">
 																	Recomendada por {obra.recommendedBy}
 																</p>
 															)}

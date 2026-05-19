@@ -65,6 +65,8 @@ export interface ExternalReference {
 export interface Obra {
 	id: ObraId;
 	title: string;
+	originalTitle?: string;
+	customTitle?: string;
 	type: ObraType;
 	status: ObraStatus;
 	review?: string;
@@ -73,8 +75,14 @@ export interface Obra {
 	recommendedBy?: string;
 	readingUrl?: string;
 	coverUrl?: string;
+	originalCoverUrl?: string;
+	customCoverUrl?: string;
 	creator?: string;
+	originalCreator?: string;
+	customCreator?: string;
 	year?: number;
+	originalYear?: number;
+	customYear?: number;
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
 	progress?: ObraProgress;
@@ -95,8 +103,12 @@ export interface CreateObraInput {
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
 	coverUrl?: string;
+	customCoverUrl?: string;
 	creator?: string;
+	customCreator?: string;
 	year?: number;
+	customYear?: number;
+	customTitle?: string;
 	progress?: ObraProgress;
 	startedAt?: number;
 	finishedAt?: number;
@@ -114,8 +126,12 @@ export interface UpdateObraPatch {
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
 	coverUrl?: string;
+	customCoverUrl?: string;
 	creator?: string;
+	customCreator?: string;
 	year?: number;
+	customYear?: number;
+	customTitle?: string;
 	progress?: ObraProgress;
 	startedAt?: number;
 	finishedAt?: number;

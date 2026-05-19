@@ -63,6 +63,10 @@ interface EditableQuote {
 }
 
 interface EditFormValues {
+	customTitle: string;
+	customCreator: string;
+	customYear: string;
+	customCoverUrl: string;
 	readingUrl: string;
 	recommendedBy: string;
 	startedAt: string;
@@ -75,6 +79,10 @@ interface EditFormValues {
 type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 
 const emptyEditFormValues: EditFormValues = {
+	customTitle: "",
+	customCreator: "",
+	customYear: "",
+	customCoverUrl: "",
 	readingUrl: "",
 	recommendedBy: "",
 	startedAt: "",
@@ -208,6 +216,10 @@ const formatDateInput = (value?: number) => {
 
 function getEditFormValues(obra: Obra): EditFormValues {
 	return {
+		customTitle: obra.title,
+		customCreator: obra.creator ?? "",
+		customYear: obra.year ? String(obra.year) : "",
+		customCoverUrl: obra.coverUrl ?? "",
 		readingUrl: obra.readingUrl ?? "",
 		recommendedBy: obra.recommendedBy ?? "",
 		startedAt: formatDateInput(
@@ -249,6 +261,63 @@ function buildPersonalPatch(values: EditFormValues, obra: Obra) {
 				: parseDateInput(values.finishedAt),
 		review: values.review.trim() || undefined,
 	};
+}
+
+function buildCustomPatch(
+	values: Pick<
+		EditFormValues,
+		"customTitle" | "customCreator" | "customYear" | "customCoverUrl"
+	>,
+	obra: Obra,
+) {
+	const patch: Record<string, unknown> = {};
+
+	const nextTitle = values.customTitle.trim();
+	if (nextTitle) {
+		if (nextTitle !== obra.originalTitle) {
+			patch.customTitle = nextTitle;
+		} else {
+			patch.customTitle = undefined;
+		}
+	} else {
+		patch.customTitle = undefined;
+	}
+
+	const nextCreator = values.customCreator.trim();
+	if (nextCreator) {
+		if (nextCreator !== obra.originalCreator) {
+			patch.customCreator = nextCreator;
+		} else {
+			patch.customCreator = undefined;
+		}
+	} else {
+		patch.customCreator = undefined;
+	}
+
+	const nextYearStr = values.customYear.trim();
+	const nextYear = nextYearStr ? Number.parseInt(nextYearStr, 10) : undefined;
+	if (nextYear !== undefined && !Number.isNaN(nextYear)) {
+		if (nextYear !== obra.originalYear) {
+			patch.customYear = nextYear;
+		} else {
+			patch.customYear = undefined;
+		}
+	} else {
+		patch.customYear = undefined;
+	}
+
+	const nextCoverUrl = values.customCoverUrl.trim();
+	if (nextCoverUrl) {
+		if (nextCoverUrl !== obra.originalCoverUrl) {
+			patch.customCoverUrl = nextCoverUrl;
+		} else {
+			patch.customCoverUrl = undefined;
+		}
+	} else {
+		patch.customCoverUrl = undefined;
+	}
+
+	return patch;
 }
 
 function buildProgressPatch(
@@ -1566,6 +1635,132 @@ function ObraAuthed({
 						</DialogHeader>
 						<div className="px-5 py-5">
 							<div className="space-y-8">
+								<section className="border border-border bg-card p-5 space-y-4">
+									<p className="text-sm font-medium">Información básica</p>
+									<div className="space-y-2">
+										<Label>Título</Label>
+										<form.Field name="customTitle">
+											{(field) => (
+												<Input
+													value={field.state.value}
+													onChange={(e) => {
+														const nextValue = e.target.value;
+														field.handleChange(nextValue);
+														savePatch(
+															buildCustomPatch(
+																{
+																	...getCurrentEditValues(),
+																	customTitle: nextValue,
+																},
+																obra,
+															),
+															{ debounceKey: "customTitle" },
+														);
+													}}
+													className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+												/>
+											)}
+										</form.Field>
+										{obra.originalTitle && obra.customTitle && (
+											<p className="text-xs text-muted-foreground">
+												Original: {obra.originalTitle}
+											</p>
+										)}
+									</div>
+									<div className="space-y-2">
+										<Label>Creador</Label>
+										<form.Field name="customCreator">
+											{(field) => (
+												<Input
+													value={field.state.value}
+													onChange={(e) => {
+														const nextValue = e.target.value;
+														field.handleChange(nextValue);
+														savePatch(
+															buildCustomPatch(
+																{
+																	...getCurrentEditValues(),
+																	customCreator: nextValue,
+																},
+																obra,
+															),
+															{ debounceKey: "customCreator" },
+														);
+													}}
+													className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+												/>
+											)}
+										</form.Field>
+										{obra.originalCreator && obra.customCreator && (
+											<p className="text-xs text-muted-foreground">
+												Original: {obra.originalCreator}
+											</p>
+										)}
+									</div>
+									<div className="grid gap-4 sm:grid-cols-2">
+										<div className="space-y-2">
+											<Label>Año</Label>
+											<form.Field name="customYear">
+												{(field) => (
+													<Input
+														type="number"
+														value={field.state.value}
+														onChange={(e) => {
+															const nextValue = e.target.value;
+															field.handleChange(nextValue);
+															savePatch(
+																buildCustomPatch(
+																	{
+																		...getCurrentEditValues(),
+																		customYear: nextValue,
+																	},
+																	obra,
+																),
+																{ debounceKey: "customYear" },
+															);
+														}}
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+											{obra.originalYear && obra.customYear && (
+												<p className="text-xs text-muted-foreground">
+													Original: {obra.originalYear}
+												</p>
+											)}
+										</div>
+										<div className="space-y-2">
+											<Label>Portada (URL)</Label>
+											<form.Field name="customCoverUrl">
+												{(field) => (
+													<Input
+														value={field.state.value}
+														onChange={(e) => {
+															const nextValue = e.target.value;
+															field.handleChange(nextValue);
+															savePatch(
+																buildCustomPatch(
+																	{
+																		...getCurrentEditValues(),
+																		customCoverUrl: nextValue,
+																	},
+																	obra,
+																),
+																{ debounceKey: "customCoverUrl" },
+															);
+														}}
+														className="rounded-none border-[#D6D0C7] bg-[#F5F2EB] focus-visible:ring-[#B85C38]"
+													/>
+												)}
+											</form.Field>
+											{obra.originalCoverUrl && obra.customCoverUrl && (
+												<p className="text-xs text-muted-foreground">
+													Original: {obra.originalCoverUrl}
+												</p>
+											)}
+										</div>
+									</div>
+								</section>
 								{hasProgress && (
 									<section className="border border-border bg-card p-5 space-y-4">
 										<p className="text-sm font-medium">Progreso</p>

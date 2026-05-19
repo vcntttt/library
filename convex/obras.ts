@@ -123,9 +123,13 @@ export const create = mutation({
 			externalSource: external?.source,
 			externalId: external?.id,
 			metadata,
-			coverUrl: normalizeOptionalString(input.coverUrl),
-			creator: normalizeOptionalString(input.creator),
-			year: nullableNumber(input.year),
+		coverUrl: normalizeOptionalString(input.coverUrl),
+		customCoverUrl: normalizeOptionalString(input.customCoverUrl),
+		creator: normalizeOptionalString(input.creator),
+		customCreator: normalizeOptionalString(input.customCreator),
+		year: nullableNumber(input.year),
+		customYear: nullableNumber(input.customYear),
+		customTitle: normalizeOptionalString(input.customTitle),
 			progressCurrent: progress?.current,
 			progressTotal: progress?.total,
 			startedAt,
@@ -188,11 +192,23 @@ export const update = mutation({
 		if (hasOwn(patch, "coverUrl")) {
 			nextPatch.coverUrl = normalizeOptionalString(patch.coverUrl);
 		}
+		if (hasOwn(patch, "customCoverUrl")) {
+			nextPatch.customCoverUrl = normalizeOptionalString(patch.customCoverUrl);
+		}
 		if (hasOwn(patch, "creator")) {
 			nextPatch.creator = normalizeOptionalString(patch.creator);
 		}
+		if (hasOwn(patch, "customCreator")) {
+			nextPatch.customCreator = normalizeOptionalString(patch.customCreator);
+		}
 		if (hasOwn(patch, "year")) {
 			nextPatch.year = nullableNumber(patch.year);
+		}
+		if (hasOwn(patch, "customYear")) {
+			nextPatch.customYear = nullableNumber(patch.customYear);
+		}
+		if (hasOwn(patch, "customTitle")) {
+			nextPatch.customTitle = normalizeOptionalString(patch.customTitle);
 		}
 		if (hasOwn(patch, "progress")) {
 			const progress = sanitizeProgress(patch.progress);
@@ -299,7 +315,9 @@ export const remove = mutation({
 function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 	return {
 		id: row._id,
-		title: row.title,
+		title: row.customTitle ?? row.title,
+		originalTitle: row.title,
+		customTitle: row.customTitle,
 		type: row.type,
 		status: row.status,
 		review: row.review,
@@ -314,9 +332,15 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		})),
 		recommendedBy: row.recommendedBy,
 		readingUrl: row.readingUrl,
-		coverUrl: row.coverUrl,
-		creator: row.creator,
-		year: row.year,
+		coverUrl: row.customCoverUrl ?? row.coverUrl,
+		originalCoverUrl: row.coverUrl,
+		customCoverUrl: row.customCoverUrl,
+		creator: row.customCreator ?? row.creator,
+		originalCreator: row.creator,
+		customCreator: row.customCreator,
+		year: row.customYear ?? row.year,
+		originalYear: row.year,
+		customYear: row.customYear,
 		external:
 			row.externalSource && row.externalId
 				? { source: row.externalSource, id: row.externalId }
