@@ -1,8 +1,16 @@
 "use client";
 
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ExternalLink, LayoutGrid, List, X } from "lucide-react";
+import {
+	ExternalLink,
+	LayoutGrid,
+	List,
+	SlidersHorizontal,
+	Table2,
+	X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -15,6 +23,12 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -36,11 +50,26 @@ import { ObraCard } from "./obra-card";
 import { ObraStatusCell } from "./obra-status-cell";
 import { TypeBadge } from "./type-badge";
 
-type SortKey = "title" | "type" | "status" | "updatedAt";
+type SortKey =
+	| "title"
+	| "type"
+	| "status"
+	| "year"
+	| "startedAt"
+	| "finishedAt"
+	| "createdAt"
+	| "updatedAt";
+type SortDir = "asc" | "desc";
+type SortValue = `${SortKey}:${SortDir}`;
 type FilterOption<T extends string> = {
 	value: T;
 	label: string;
 };
+
+interface SortOption {
+	value: SortValue;
+	label: string;
+}
 
 const typeOptions: FilterOption<ObraType>[] = [
 	{ value: "book", label: "Libro" },
@@ -57,7 +86,89 @@ const statusOptions: FilterOption<ObraStatus>[] = [
 	{ value: "dropped", label: "Abandonada" },
 ];
 
+const sortOptions: SortOption[] = [
+	{ value: "updatedAt:desc", label: "Actualización reciente" },
+	{ value: "finishedAt:desc", label: "Terminadas recientemente" },
+	{ value: "finishedAt:asc", label: "Fecha de término antigua" },
+	{ value: "startedAt:desc", label: "Inicio reciente" },
+	{ value: "createdAt:desc", label: "Agregadas recientemente" },
+	{ value: "title:asc", label: "Título A-Z" },
+	{ value: "title:desc", label: "Título Z-A" },
+	{ value: "year:desc", label: "Año más reciente" },
+	{ value: "year:asc", label: "Año más antiguo" },
+	{ value: "type:asc", label: "Tipo" },
+	{ value: "status:asc", label: "Estado" },
+];
+
 const VIEW_STORAGE_KEY = "library:biblioteca:view";
+const FILTERS_STORAGE_KEY = "library:biblioteca:filters";
+const SORT_STORAGE_KEY = "library:biblioteca:sort";
+const COLUMNS_STORAGE_KEY = "library:biblioteca:columns";
+
+interface VisibleColumns {
+	type: boolean;
+	status: boolean;
+	reading: boolean;
+}
+
+const defaultVisibleColumns: VisibleColumns = {
+	type: true,
+	status: true,
+	reading: true,
+};
+
+function readColumns(): VisibleColumns {
+	try {
+		const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY);
+		if (!raw) return defaultVisibleColumns;
+		const parsed = JSON.parse(raw) as Partial<VisibleColumns>;
+		return {
+			type: parsed.type ?? true,
+			status: parsed.status ?? true,
+			reading: parsed.reading ?? true,
+		};
+	} catch {
+		return defaultVisibleColumns;
+	}
+}
+
+function readFilters() {
+	try {
+		const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+		if (!raw) return { types: [] as ObraType[], statuses: [] as ObraStatus[] };
+		const parsed = JSON.parse(raw) as {
+			types?: ObraType[];
+			statuses?: ObraStatus[];
+		};
+		return {
+			types: Array.isArray(parsed.types) ? parsed.types : ([] as ObraType[]),
+			statuses: Array.isArray(parsed.statuses)
+				? parsed.statuses
+				: ([] as ObraStatus[]),
+		};
+	} catch {
+		return { types: [] as ObraType[], statuses: [] as ObraStatus[] };
+	}
+}
+
+function readSort(): { key: SortKey; dir: SortDir } {
+	try {
+		const raw = window.localStorage.getItem(SORT_STORAGE_KEY);
+		if (!raw) return { key: "updatedAt", dir: "desc" };
+		const parsed = JSON.parse(raw) as { key?: SortKey; dir?: SortDir };
+		const key =
+			parsed.key &&
+			sortOptions.some((o) => o.value.startsWith(`${parsed.key}:`))
+				? parsed.key
+				: "updatedAt";
+		const dir =
+			parsed.dir === "asc" || parsed.dir === "desc" ? parsed.dir : "desc";
+		return { key, dir };
+	} catch {
+		return { key: "updatedAt", dir: "desc" };
+	}
+}
+
 const MOBILE_LIST_SKELETON_KEYS = ["m1", "m2", "m3", "m4"];
 const DESKTOP_LIST_SKELETON_KEYS = ["d1", "d2", "d3", "d4", "d5", "d6"];
 const GRID_SKELETON_KEYS = [
@@ -86,94 +197,26 @@ const toggleValue = <T extends string>(values: T[], value: T) =>
 		? values.filter((item) => item !== value)
 		: [...values, value];
 
-const getFilterSummary = <T extends string>(
-	selected: T[],
-	options: FilterOption<T>[],
-	emptyLabel: string,
+const sortValueFromParts = (key: SortKey, dir: SortDir): SortValue =>
+	`${key}:${dir}`;
+
+const compareOptionalNumber = (
+	a: number | undefined,
+	b: number | undefined,
+	direction: SortDir,
 ) => {
-	if (selected.length === 0) return emptyLabel;
-	if (selected.length === 1) {
-		return (
-			options.find((option) => option.value === selected[0])?.label ??
-			emptyLabel
-		);
-	}
-	return `${selected.length} seleccionados`;
+	const aHasValue = typeof a === "number";
+	const bHasValue = typeof b === "number";
+	if (!aHasValue && !bHasValue) return 0;
+	if (!aHasValue) return 1;
+	if (!bHasValue) return -1;
+
+	const comparison = a - b;
+	return direction === "asc" ? comparison : -comparison;
 };
 
-function MultiFilter<T extends string>({
-	label,
-	emptyLabel,
-	options,
-	selected,
-	counts,
-	onToggle,
-	onClear,
-}: {
-	label: string;
-	emptyLabel: string;
-	options: FilterOption<T>[];
-	selected: T[];
-	counts: Record<T, number>;
-	onToggle: (value: T) => void;
-	onClear: () => void;
-}) {
-	const summary = getFilterSummary(selected, options, emptyLabel);
-
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					type="button"
-					variant="outline"
-					className={cn(
-						"h-10 w-full justify-between rounded-none border-border bg-background px-3 text-base font-normal shadow-none sm:w-[220px] sm:text-sm",
-						selected.length > 0 && "border-foreground text-foreground",
-					)}
-				>
-					<span className="truncate">{summary}</span>
-					<ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-[240px] rounded-none" align="start">
-				<DropdownMenuGroup>
-					<div className="flex items-center justify-between gap-2 px-1.5 py-1">
-						<DropdownMenuLabel className="px-0 py-0">{label}</DropdownMenuLabel>
-						{selected.length > 0 && (
-							<DropdownMenuItem
-								onClick={onClear}
-								className="h-7 px-2 text-xs text-muted-foreground"
-							>
-								<X className="size-3.5" />
-								Limpiar
-							</DropdownMenuItem>
-						)}
-					</div>
-					<DropdownMenuSeparator />
-					{options.map((option) => {
-						const checked = selected.includes(option.value);
-
-						return (
-							<DropdownMenuCheckboxItem
-								key={option.value}
-								checked={checked}
-								onCheckedChange={() => onToggle(option.value)}
-								className="min-h-9 rounded-none"
-							>
-								<span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-									<span className="truncate">{option.label}</span>
-									<span className="text-xs tabular-nums text-muted-foreground">
-										{counts[option.value] ?? 0}
-									</span>
-								</span>
-							</DropdownMenuCheckboxItem>
-						);
-					})}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
-	);
-}
+const getDefaultSortDir = (key: SortKey): SortDir =>
+	key === "title" || key === "type" || key === "status" ? "asc" : "desc";
 
 export function BibliotecaTable({
 	obras,
@@ -183,19 +226,56 @@ export function BibliotecaTable({
 	isLoading?: boolean;
 }) {
 	const [search, setSearch] = useState("");
-	const [typeFilters, setTypeFilters] = useState<ObraType[]>([]);
-	const [statusFilters, setStatusFilters] = useState<ObraStatus[]>([]);
-	const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
-	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+	const [typeFilters, setTypeFilters] = useState<ObraType[]>(() => {
+		if (typeof window === "undefined") return [];
+		return readFilters().types;
+	});
+	const [statusFilters, setStatusFilters] = useState<ObraStatus[]>(() => {
+		if (typeof window === "undefined") return [];
+		return readFilters().statuses;
+	});
+	const [sortKey, setSortKey] = useState<SortKey>(() => {
+		if (typeof window === "undefined") return "updatedAt";
+		return readSort().key;
+	});
+	const [sortDir, setSortDir] = useState<SortDir>(() => {
+		if (typeof window === "undefined") return "desc";
+		return readSort().dir;
+	});
 	const [view, setView] = useState<"list" | "grid">(() => {
 		if (typeof window === "undefined") return "list";
 		const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
 		return stored === "grid" ? "grid" : "list";
 	});
+	const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(() => {
+		if (typeof window === "undefined") return defaultVisibleColumns;
+		return readColumns();
+	});
 
 	useEffect(() => {
 		window.localStorage.setItem(VIEW_STORAGE_KEY, view);
 	}, [view]);
+
+	useEffect(() => {
+		window.localStorage.setItem(
+			FILTERS_STORAGE_KEY,
+			JSON.stringify({ types: typeFilters, statuses: statusFilters }),
+		);
+	}, [typeFilters, statusFilters]);
+
+	useEffect(() => {
+		window.localStorage.setItem(
+			SORT_STORAGE_KEY,
+			JSON.stringify({ key: sortKey, dir: sortDir }),
+		);
+	}, [sortKey, sortDir]);
+
+	useEffect(() => {
+		window.localStorage.setItem(
+			COLUMNS_STORAGE_KEY,
+			JSON.stringify(visibleColumns),
+		);
+	}, [visibleColumns]);
 
 	const filteredObras = useMemo(() => {
 		let result = [...obras];
@@ -206,8 +286,7 @@ export function BibliotecaTable({
 				(w) =>
 					w.title.toLowerCase().includes(q) ||
 					w.creator?.toLowerCase().includes(q) ||
-					w.recommendedBy?.toLowerCase().includes(q) ||
-					w.tags.some((t: string) => t.toLowerCase().includes(q)),
+					w.recommendedBy?.toLowerCase().includes(q),
 			);
 		}
 
@@ -231,12 +310,31 @@ export function BibliotecaTable({
 				case "status":
 					comparison = a.status.localeCompare(b.status);
 					break;
+				case "year":
+					comparison = compareOptionalNumber(a.year, b.year, sortDir);
+					break;
+				case "startedAt":
+					comparison = compareOptionalNumber(a.startedAt, b.startedAt, sortDir);
+					break;
+				case "finishedAt":
+					comparison = compareOptionalNumber(
+						a.finishedAt,
+						b.finishedAt,
+						sortDir,
+					);
+					break;
+				case "createdAt":
+					comparison = compareOptionalNumber(a.createdAt, b.createdAt, sortDir);
+					break;
 				case "updatedAt":
-					comparison =
-						new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+					comparison = compareOptionalNumber(a.updatedAt, b.updatedAt, sortDir);
 					break;
 			}
-			return sortDir === "asc" ? comparison : -comparison;
+			if (sortKey === "title" || sortKey === "type" || sortKey === "status") {
+				comparison = sortDir === "asc" ? comparison : -comparison;
+			}
+			if (comparison !== 0) return comparison;
+			return a.title.localeCompare(b.title);
 		});
 
 		return result;
@@ -277,63 +375,238 @@ export function BibliotecaTable({
 			setSortDir(sortDir === "asc" ? "desc" : "asc");
 		} else {
 			setSortKey(key);
-			setSortDir("asc");
+			setSortDir(getDefaultSortDir(key));
 		}
 	};
+
+	const sortValue = sortValueFromParts(sortKey, sortDir);
+	const columnCount =
+		1 +
+		(visibleColumns.type ? 1 : 0) +
+		(visibleColumns.status ? 1 : 0) +
+		(visibleColumns.reading ? 1 : 0);
 
 	return (
 		<div className="space-y-6">
 			<div className="border border-border bg-card p-4">
-				<div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto] lg:items-center">
-					<div className="relative w-full">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+					<div className="relative min-w-0 flex-1">
 						<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							aria-label="Buscar obras"
-							placeholder="Buscar por título, autor o etiqueta..."
+							placeholder="Buscar por título, autor o recomendación..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="rounded-none border-border bg-background pl-9 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-primary sm:text-sm"
+							className="h-10 rounded-none border-border bg-background pl-9 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-primary sm:text-sm"
 						/>
 					</div>
-					<div className="grid w-full gap-2 sm:grid-cols-[minmax(180px,220px)_minmax(180px,220px)_auto] sm:items-center lg:w-auto lg:grid-cols-[220px_220px_auto_auto]">
-						<MultiFilter
-							label="Tipos"
-							emptyLabel="Todos los tipos"
-							options={typeOptions}
-							selected={typeFilters}
-							counts={typeCounts}
-							onToggle={(value) =>
-								setTypeFilters((current) => toggleValue(current, value))
-							}
-							onClear={() => setTypeFilters([])}
-						/>
-						<MultiFilter
-							label="Estados"
-							emptyLabel="Todos los estados"
-							options={statusOptions}
-							selected={statusFilters}
-							counts={statusCounts}
-							onToggle={(value) =>
-								setStatusFilters((current) => toggleValue(current, value))
-							}
-							onClear={() => setStatusFilters([])}
-						/>
-						{activeFiltersCount > 0 && (
-							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								className="h-10 justify-start rounded-none px-3 text-sm text-muted-foreground hover:text-foreground sm:justify-center"
-								onClick={() => {
-									setTypeFilters([]);
-									setStatusFilters([]);
-								}}
+					<div className="flex shrink-0 flex-wrap items-center gap-2">
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									type="button"
+									variant="outline"
+									className={cn(
+										"h-10 gap-1.5 rounded-none border-border bg-background px-3 text-sm font-normal shadow-none",
+										activeFiltersCount > 0 &&
+											"border-foreground text-foreground",
+									)}
+								>
+									<SlidersHorizontal className="size-4" />
+									Filtros
+									{activeFiltersCount > 0 && (
+										<Badge
+											variant="default"
+											className="h-5 min-w-5 rounded-full px-1.5 text-xs"
+										>
+											{activeFiltersCount}
+										</Badge>
+									)}
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								className="w-[260px] rounded-none"
+								align="end"
 							>
-								<X className="size-3.5" />
-								Limpiar filtros
-							</Button>
+								<DropdownMenuGroup>
+									<div className="flex items-center justify-between gap-2 px-2 py-1.5">
+										<DropdownMenuLabel className="px-0 py-0 text-sm font-medium">
+											Tipos
+										</DropdownMenuLabel>
+										{typeFilters.length > 0 && (
+											<DropdownMenuItem
+												onClick={() => setTypeFilters([])}
+												className="h-7 px-2 text-xs text-muted-foreground"
+											>
+												<X className="size-3.5" />
+												Limpiar
+											</DropdownMenuItem>
+										)}
+									</div>
+									<DropdownMenuSeparator />
+									{typeOptions.map((option) => (
+										<DropdownMenuCheckboxItem
+											key={option.value}
+											checked={typeFilters.includes(option.value)}
+											onCheckedChange={() =>
+												setTypeFilters((current) =>
+													toggleValue(current, option.value),
+												)
+											}
+											className="min-h-9 rounded-none"
+										>
+											<span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+												<span className="truncate">{option.label}</span>
+												<span className="text-xs tabular-nums text-muted-foreground">
+													{typeCounts[option.value] ?? 0}
+												</span>
+											</span>
+										</DropdownMenuCheckboxItem>
+									))}
+								</DropdownMenuGroup>
+								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
+									<div className="flex items-center justify-between gap-2 px-2 py-1.5">
+										<DropdownMenuLabel className="px-0 py-0 text-sm font-medium">
+											Estados
+										</DropdownMenuLabel>
+										{statusFilters.length > 0 && (
+											<DropdownMenuItem
+												onClick={() => setStatusFilters([])}
+												className="h-7 px-2 text-xs text-muted-foreground"
+											>
+												<X className="size-3.5" />
+												Limpiar
+											</DropdownMenuItem>
+										)}
+									</div>
+									<DropdownMenuSeparator />
+									{statusOptions.map((option) => (
+										<DropdownMenuCheckboxItem
+											key={option.value}
+											checked={statusFilters.includes(option.value)}
+											onCheckedChange={() =>
+												setStatusFilters((current) =>
+													toggleValue(current, option.value),
+												)
+											}
+											className="min-h-9 rounded-none"
+										>
+											<span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+												<span className="truncate">{option.label}</span>
+												<span className="text-xs tabular-nums text-muted-foreground">
+													{statusCounts[option.value] ?? 0}
+												</span>
+											</span>
+										</DropdownMenuCheckboxItem>
+									))}
+								</DropdownMenuGroup>
+								{activeFiltersCount > 0 && (
+									<>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											onClick={() => {
+												setTypeFilters([]);
+												setStatusFilters([]);
+											}}
+											className="h-9 rounded-none text-sm text-muted-foreground"
+										>
+											<X className="mr-1.5 size-3.5" />
+											Limpiar todos los filtros
+										</DropdownMenuItem>
+									</>
+								)}
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<Select
+							value={sortValue}
+							onValueChange={(value) => {
+								const [key, direction] = value.split(":") as [SortKey, SortDir];
+								setSortKey(key);
+								setSortDir(direction);
+							}}
+						>
+							<SelectTrigger
+								aria-label="Ordenar obras"
+								className="!h-10 w-auto min-w-[200px] rounded-none border-border bg-background px-3 text-sm font-normal shadow-none focus:ring-primary"
+							>
+								<span className="truncate">
+									{sortOptions.find((option) => option.value === sortValue)
+										?.label ?? "Ordenar"}
+								</span>
+							</SelectTrigger>
+							<SelectContent className="rounded-none" align="end">
+								{sortOptions.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						{view === "list" && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										type="button"
+										variant="outline"
+										className={cn(
+											"h-10 gap-1.5 rounded-none border-border bg-background px-3 text-sm font-normal shadow-none",
+										)}
+									>
+										<Table2 className="size-4" />
+										<span className="hidden sm:inline">Columnas</span>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent
+									className="w-[200px] rounded-none"
+									align="end"
+								>
+									<DropdownMenuGroup>
+										<DropdownMenuLabel className="px-2 py-1.5 text-sm font-medium">
+											Mostrar columnas
+										</DropdownMenuLabel>
+										<DropdownMenuSeparator />
+										<DropdownMenuCheckboxItem
+											checked={visibleColumns.type}
+											onCheckedChange={() =>
+												setVisibleColumns((prev) => ({
+													...prev,
+													type: !prev.type,
+												}))
+											}
+											className="min-h-9 rounded-none"
+										>
+											Tipo
+										</DropdownMenuCheckboxItem>
+										<DropdownMenuCheckboxItem
+											checked={visibleColumns.status}
+											onCheckedChange={() =>
+												setVisibleColumns((prev) => ({
+													...prev,
+													status: !prev.status,
+												}))
+											}
+											className="min-h-9 rounded-none"
+										>
+											Estado
+										</DropdownMenuCheckboxItem>
+										<DropdownMenuCheckboxItem
+											checked={visibleColumns.reading}
+											onCheckedChange={() =>
+												setVisibleColumns((prev) => ({
+													...prev,
+													reading: !prev.reading,
+												}))
+											}
+											className="min-h-9 rounded-none"
+										>
+											Leer
+										</DropdownMenuCheckboxItem>
+									</DropdownMenuGroup>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						)}
-						<div className="inline-flex w-full items-center overflow-hidden border border-border bg-card sm:w-auto lg:col-auto">
+						<div className="inline-flex items-center overflow-hidden border border-border bg-card">
 							<Button
 								size="sm"
 								variant="ghost"
@@ -346,7 +619,7 @@ export function BibliotecaTable({
 								onClick={() => setView("list")}
 							>
 								<List className="size-3.5" />
-								Lista
+								<span className="hidden sm:inline">Lista</span>
 							</Button>
 							<Button
 								size="sm"
@@ -360,7 +633,7 @@ export function BibliotecaTable({
 								onClick={() => setView("grid")}
 							>
 								<LayoutGrid className="size-3.5" />
-								Grid
+								<span className="hidden sm:inline">Grid</span>
 							</Button>
 						</div>
 					</div>
@@ -420,32 +693,36 @@ export function BibliotecaTable({
 											{sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
 										</button>
 									</TableHead>
-									<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-										<button
-											type="button"
-											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
-											onClick={() => handleSort("type")}
-										>
-											Tipo
-											{sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
-										</button>
-									</TableHead>
-									<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-										<button
-											type="button"
-											className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
-											onClick={() => handleSort("status")}
-										>
-											Estado
-											{sortKey === "status" && (sortDir === "asc" ? "↑" : "↓")}
-										</button>
-									</TableHead>
-									<TableHead className="hidden text-xs uppercase tracking-[0.12em] text-muted-foreground sm:table-cell">
-										Etiquetas
-									</TableHead>
-									<TableHead className="text-right text-xs uppercase tracking-[0.12em] text-muted-foreground">
-										Leer
-									</TableHead>
+									{visibleColumns.type && (
+										<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+											<button
+												type="button"
+												className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
+												onClick={() => handleSort("type")}
+											>
+												Tipo
+												{sortKey === "type" && (sortDir === "asc" ? "↑" : "↓")}
+											</button>
+										</TableHead>
+									)}
+									{visibleColumns.status && (
+										<TableHead className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+											<button
+												type="button"
+												className="inline-flex items-center gap-1 text-left transition-colors hover:text-foreground"
+												onClick={() => handleSort("status")}
+											>
+												Estado
+												{sortKey === "status" &&
+													(sortDir === "asc" ? "↑" : "↓")}
+											</button>
+										</TableHead>
+									)}
+									{visibleColumns.reading && (
+										<TableHead className="text-right text-xs uppercase tracking-[0.12em] text-muted-foreground">
+											Leer
+										</TableHead>
+									)}
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -461,29 +738,29 @@ export function BibliotecaTable({
 													</div>
 												</div>
 											</TableCell>
-											<TableCell>
-												<Skeleton className="h-5 w-20 rounded-none" />
-											</TableCell>
-											<TableCell>
-												<div className="space-y-2">
-													<Skeleton className="h-5 w-24 rounded-none" />
-													<Skeleton className="h-2 w-28" />
-												</div>
-											</TableCell>
-											<TableCell className="hidden sm:table-cell">
-												<div className="flex gap-1">
-													<Skeleton className="h-5 w-14 rounded-none" />
-													<Skeleton className="h-5 w-12 rounded-none" />
-												</div>
-											</TableCell>
-											<TableCell className="text-right">
-												<Skeleton className="ml-auto h-8 w-20 rounded-none" />
-											</TableCell>
+											{visibleColumns.type && (
+												<TableCell>
+													<Skeleton className="h-5 w-20 rounded-none" />
+												</TableCell>
+											)}
+											{visibleColumns.status && (
+												<TableCell>
+													<div className="space-y-2">
+														<Skeleton className="h-5 w-24 rounded-none" />
+														<Skeleton className="h-2 w-28" />
+													</div>
+												</TableCell>
+											)}
+											{visibleColumns.reading && (
+												<TableCell className="text-right">
+													<Skeleton className="ml-auto h-8 w-20 rounded-none" />
+												</TableCell>
+											)}
 										</TableRow>
 									))
 								) : filteredObras.length === 0 ? (
 									<TableRow>
-										<TableCell colSpan={5} className="h-24">
+										<TableCell colSpan={columnCount} className="h-24">
 											<div className="text-center">
 												<p className="text-sm font-medium text-card-foreground">
 													No se encontraron obras
@@ -547,50 +824,39 @@ export function BibliotecaTable({
 														</div>
 													</div>
 												</TableCell>
-												<TableCell>
-													<TypeBadge type={obra.type} showIcon={false} />
-												</TableCell>
-												<TableCell>
-													<ObraStatusCell
-														obra={obra}
-														showOngoingBadge={showOngoingBadge}
-														showUpToDateBadge={showUpToDateBadge}
-													/>
-												</TableCell>
-												<TableCell className="hidden sm:table-cell">
-													<div className="flex flex-wrap gap-2">
-														{obra.tags.slice(0, 2).map((tag: string) => (
-															<span
-																key={tag}
-																className="border-b border-border pb-0.5 text-sm text-muted-foreground"
+												{visibleColumns.type && (
+													<TableCell>
+														<TypeBadge type={obra.type} showIcon={false} />
+													</TableCell>
+												)}
+												{visibleColumns.status && (
+													<TableCell>
+														<ObraStatusCell
+															obra={obra}
+															showOngoingBadge={showOngoingBadge}
+															showUpToDateBadge={showUpToDateBadge}
+														/>
+													</TableCell>
+												)}
+												{visibleColumns.reading && (
+													<TableCell className="text-right">
+														{readingUrl ? (
+															<a
+																href={readingUrl}
+																target="_blank"
+																rel="noreferrer"
+																className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
 															>
-																{tag}
-															</span>
-														))}
-														{obra.tags.length > 2 && (
+																<ExternalLink className="size-3.5" />
+																Ir a leer
+															</a>
+														) : (
 															<span className="text-sm text-muted-foreground">
-																+{obra.tags.length - 2}
+																-
 															</span>
 														)}
-													</div>
-												</TableCell>
-												<TableCell className="text-right">
-													{readingUrl ? (
-														<a
-															href={readingUrl}
-															target="_blank"
-															rel="noreferrer"
-															className="inline-flex h-9 items-center gap-1.5 border border-border bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
-														>
-															<ExternalLink className="size-3.5" />
-															Ir a leer
-														</a>
-													) : (
-														<span className="text-sm text-muted-foreground">
-															-
-														</span>
-													)}
-												</TableCell>
+													</TableCell>
+												)}
 											</TableRow>
 										);
 									})
