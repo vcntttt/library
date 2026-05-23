@@ -53,7 +53,7 @@ export function ObraStatusCell({
 		hasProgress && obra.status !== "finished" && progressTotal > 0;
 
 	const releasedCount =
-		obra.type === "manga"
+		obra.type === "manga" || obra.type === "manhwa"
 			? obra.metadata?.latestChapter
 			: obra.metadata?.episodesAired;
 	const canMarkUpToDate =

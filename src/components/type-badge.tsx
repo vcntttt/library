@@ -9,6 +9,7 @@ const typeColors: Record<ObraType, string> = {
 	series: "border-amber-700/40 text-amber-700 dark:text-amber-200",
 	anime: "border-destructive/30 text-destructive",
 	manga: "border-primary/30 text-primary",
+	manhwa: "border-sky-500/30 text-sky-500",
 };
 
 const typeLabels: Record<ObraType, string> = {
@@ -17,6 +18,7 @@ const typeLabels: Record<ObraType, string> = {
 	series: "Serie",
 	anime: "Anime",
 	manga: "Manga",
+	manhwa: "Manhwa",
 };
 
 interface TypeBadgeProps {

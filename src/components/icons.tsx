@@ -27,6 +27,7 @@ export const TypeIcons: Record<
 	series: Tv,
 	anime: Sparkles,
 	manga: BookOpen,
+	manhwa: BookOpen,
 };
 
 export const StatusIcons: Record<
