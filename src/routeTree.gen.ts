@@ -13,6 +13,7 @@ import { Route as VariantCRouteImport } from './routes/variant-c'
 import { Route as VariantBRouteImport } from './routes/variant-b'
 import { Route as VariantARouteImport } from './routes/variant-a'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
@@ -40,6 +41,11 @@ const VariantARoute = VariantARouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorarRoute = ExplorarRouteImport.update({
+  id: '/explorar',
+  path: '/explorar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BibliotecaRoute = BibliotecaRouteImport.update({
@@ -89,6 +95,7 @@ const InternalAlfredNotificationsAckRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/biblioteca'
+    | '/explorar'
     | '/login'
     | '/variant-a'
     | '/variant-b'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/biblioteca'
+    | '/explorar'
     | '/login'
     | '/variant-a'
     | '/variant-b'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/biblioteca'
+    | '/explorar'
     | '/login'
     | '/variant-a'
     | '/variant-b'
@@ -177,6 +189,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BibliotecaRoute: typeof BibliotecaRoute
+  ExplorarRoute: typeof ExplorarRoute
   LoginRoute: typeof LoginRoute
   VariantARoute: typeof VariantARoute
   VariantBRoute: typeof VariantBRoute
@@ -217,6 +230,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorar': {
+      id: '/explorar'
+      path: '/explorar'
+      fullPath: '/explorar'
+      preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/biblioteca': {
@@ -281,6 +301,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
+  ExplorarRoute: ExplorarRoute,
   LoginRoute: LoginRoute,
   VariantARoute: VariantARoute,
   VariantBRoute: VariantBRoute,
