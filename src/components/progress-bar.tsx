@@ -15,6 +15,7 @@ const unitLabels: Record<ObraType, string> = {
 	series: "episodios",
 	anime: "episodios",
 	manga: "capítulos",
+	manhwa: "capítulos",
 };
 
 export function ProgressBar({
