@@ -112,13 +112,13 @@ export function ObraCard({
 				to="/obra/$obraId"
 				params={{ obraId: obra.id }}
 				className={cn(
-					"group flex items-center justify-between border-b border-border py-3 transition-colors hover:border-primary",
+					"group flex w-full items-center justify-between border-b border-border py-3 transition-colors hover:border-primary",
 					className,
 				)}
 			>
-				<div className="flex items-center gap-3 min-w-0">
+				<div className="flex flex-1 items-center gap-3 min-w-0">
 					{obra.coverUrl && (
-						<div className="h-10 w-7 overflow-hidden bg-background">
+						<div className="h-10 w-7 shrink-0 overflow-hidden bg-background">
 							<img
 								src={obra.coverUrl}
 								alt={`Portada de ${obra.title}`}
@@ -127,11 +127,17 @@ export function ObraCard({
 							/>
 						</div>
 					)}
-					<TypeBadge type={obra.type} showIcon={false} />
-					<div className="min-w-0">
-						<span className="block truncate font-medium text-card-foreground group-hover:text-primary transition-colors">
-							{obra.title}
-						</span>
+					<div className="min-w-0 flex-1">
+						<div className="flex items-start justify-between gap-2">
+							<span className="min-w-0 flex-1 truncate font-medium text-card-foreground transition-colors group-hover:text-primary">
+								{obra.title}
+							</span>
+							<TypeBadge
+								type={obra.type}
+								showIcon={false}
+								className="shrink-0"
+							/>
+						</div>
 						{(secondaryText ?? metaLine) && (
 							<span className="block text-sm text-muted-foreground">
 								{secondaryText ?? metaLine}

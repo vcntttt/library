@@ -6,6 +6,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Minus, Pencil, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { RecommendationBadge } from "@/components/recommendation-badge";
 import { StatusBadge } from "@/components/status-badge";
@@ -98,6 +99,7 @@ const progressUnitLabels: Record<ObraType, string> = {
 	series: "episodios",
 	anime: "episodios",
 	manga: "capítulos",
+	manhwa: "capítulos",
 };
 
 const metadataStatusLabels: Record<string, string> = {
@@ -377,11 +379,15 @@ const normalizeReadingUrl = (value: string) => {
 
 export const Route = createFileRoute("/obra/$obraId")({
 	ssr: false,
+	validateSearch: z.object({
+		edit: z.boolean().optional().catch(undefined),
+	}),
 	component: ObraPage,
 });
 
 function ObraPage() {
 	const { obraId } = Route.useParams();
+	const { edit } = Route.useSearch();
 	const id = obraId as ObraId;
 	const navigate = Route.useNavigate();
 	const { isAuthenticated, isLoading } = useConvexAuth();
@@ -408,7 +414,7 @@ function ObraPage() {
 		);
 	}
 
-	return <ObraAuthed id={id} navigate={navigate} />;
+	return <ObraAuthed id={id} navigate={navigate} openEditOnLoad={edit} />;
 }
 
 function ObraPageSkeleton() {
@@ -808,9 +814,11 @@ function PersonalNotesSection({ obra }: { obra: Obra }) {
 function ObraAuthed({
 	id,
 	navigate,
+	openEditOnLoad,
 }: {
 	id: ObraId;
-	navigate: (opts: { to: string }) => void;
+	navigate: ReturnType<typeof Route.useNavigate>;
+	openEditOnLoad?: boolean;
 }) {
 	const convexId = id as Id<"obras">;
 	const doc = useQuery(convexApi.obras.get, { id: convexId });
@@ -950,6 +958,16 @@ function ObraAuthed({
 	}, [doc, isEditOpen, resetEditFormFromDoc]);
 
 	useEffect(() => {
+		if (!doc || !openEditOnLoad || isEditOpen) {
+			return;
+		}
+		resetEditFormFromDoc(doc);
+		setAutoSaveStatus("idle");
+		setAutoSaveError(null);
+		setIsEditOpen(true);
+	}, [doc, isEditOpen, openEditOnLoad, resetEditFormFromDoc]);
+
+	useEffect(() => {
 		return () => {
 			for (const [key, timer] of saveTimers.current) {
 				clearTimeout(timer);
@@ -1086,25 +1104,31 @@ function ObraAuthed({
 				value: formatDateShort(metadata.nextEpisodeDate),
 			});
 		}
-		if (obra.type === "manga" && metadata.latestChapter) {
+		if (
+			(obra.type === "manga" || obra.type === "manhwa") &&
+			metadata.latestChapter
+		) {
 			metadataItems.push({
 				label: "Capítulos totales",
 				value: metadata.latestChapter.toLocaleString(),
 			});
 		}
-		if (obra.type === "manga" && metadata.latestChapterCheckedAt) {
+		if (
+			(obra.type === "manga" || obra.type === "manhwa") &&
+			metadata.latestChapterCheckedAt
+		) {
 			metadataItems.push({
 				label: "Última verificación",
 				value: formatDateShort(metadata.latestChapterCheckedAt),
 			});
 		}
-		if (obra.type === "manga" && metadata.volumes) {
+		if ((obra.type === "manga" || obra.type === "manhwa") && metadata.volumes) {
 			metadataItems.push({
 				label: "Volúmenes",
 				value: metadata.volumes.toLocaleString(),
 			});
 		}
-		if (obra.type === "manga" && statusLabel) {
+		if ((obra.type === "manga" || obra.type === "manhwa") && statusLabel) {
 			metadataItems.push({
 				label: "Estado de publicación",
 				value: statusLabel,
@@ -1440,7 +1464,7 @@ function ObraAuthed({
 				typeof mangaChapterPreview === "number"
 					? mangaChapterPreview.toLocaleString()
 					: undefined,
-			showLoading: obra.type === "manga",
+			showLoading: obra.type === "manga" || obra.type === "manhwa",
 		});
 		previewRows.push({
 			label: "Volúmenes",
@@ -1448,7 +1472,7 @@ function ObraAuthed({
 				typeof previewMetadata.volumes === "number"
 					? previewMetadata.volumes.toLocaleString()
 					: undefined,
-			showLoading: obra.type === "manga",
+			showLoading: obra.type === "manga" || obra.type === "manhwa",
 		});
 		previewRows.push({
 			label: "Temporada (raw)",
@@ -1500,6 +1524,11 @@ function ObraAuthed({
 			setAutoSaveError(null);
 		} else {
 			flushPendingSaves();
+			if (openEditOnLoad) {
+				void navigate({
+					search: (previous) => ({ ...previous, edit: undefined }),
+				});
+			}
 		}
 		setIsEditOpen(open);
 	};
@@ -1853,10 +1882,15 @@ function ObraAuthed({
 																		Define un total para usar el slider.
 																	</p>
 																)}
-																{obra.type === "manga" && (
+																{(obra.type === "manga" ||
+																	obra.type === "manhwa") && (
 																	<p className="text-xs text-muted-foreground">
-																		En manga, avanza por capítulos y marca
-																		terminada al llegar al total.
+																		En{" "}
+																		{obra.type === "manhwa"
+																			? "manhwa"
+																			: "manga"}
+																		, avanza por capítulos y marca terminada al
+																		llegar al total.
 																	</p>
 																)}
 																<div className="space-y-2">
@@ -2159,7 +2193,8 @@ function ObraAuthed({
 																				))}
 																		</div>
 																		{!isLoadingPreviewDetails &&
-																			obra.type === "manga" &&
+																			(obra.type === "manga" ||
+																				obra.type === "manhwa") &&
 																			mangaChapterPreview === undefined && (
 																				<p className="text-sm text-muted-foreground">
 																					Último capítulo: No disponible en el
