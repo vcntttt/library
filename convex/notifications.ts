@@ -34,11 +34,11 @@ export const checkForNewChapters = internalAction({
 			checked += 1;
 
 			try {
-				const details = await getMetadataDetails(
-					"anilist",
-					obra.externalId,
-					"manga",
-				);
+			const details = await getMetadataDetails(
+				"anilist",
+				obra.externalId,
+				obra.type,
+			);
 				const merged = mergeMangaMetadata(obra.metadata, details);
 				const progressTotal = syncMangaProgressTotal(
 					obra.progressTotal,
@@ -195,7 +195,7 @@ export const markRead = mutation({
 			};
 		}
 
-		if (obra.type !== "manga") {
+		if (obra.type !== "manga" && obra.type !== "manhwa") {
 			return {
 				ok: false,
 				reason: "not_manga" as const,
@@ -229,7 +229,7 @@ export const markRead = mutation({
 export const listTrackedManga = internalQuery({
 	args: {},
 	handler: async (ctx) => {
-		const rows = await ctx.db
+		const inProgressManga = await ctx.db
 			.query("obras")
 			.withIndex("by_manga_tracking", (q) =>
 				(q as any)
@@ -238,7 +238,7 @@ export const listTrackedManga = internalQuery({
 					.eq("externalSource", "anilist"),
 			)
 			.collect();
-		const backlogRows = await ctx.db
+		const backlogManga = await ctx.db
 			.query("obras")
 			.withIndex("by_manga_tracking", (q) =>
 				(q as any)
@@ -247,7 +247,7 @@ export const listTrackedManga = internalQuery({
 					.eq("externalSource", "anilist"),
 			)
 			.collect();
-		const finishedRows = await ctx.db
+		const finishedManga = await ctx.db
 			.query("obras")
 			.withIndex("by_manga_tracking", (q) =>
 				(q as any)
@@ -256,7 +256,41 @@ export const listTrackedManga = internalQuery({
 					.eq("externalSource", "anilist"),
 			)
 			.collect();
-		return [...rows, ...backlogRows, ...finishedRows];
+		const inProgressManhwa = await ctx.db
+			.query("obras")
+			.withIndex("by_manga_tracking", (q) =>
+				(q as any)
+					.eq("type", "manhwa")
+					.eq("status", "in-progress")
+					.eq("externalSource", "anilist"),
+			)
+			.collect();
+		const backlogManhwa = await ctx.db
+			.query("obras")
+			.withIndex("by_manga_tracking", (q) =>
+				(q as any)
+					.eq("type", "manhwa")
+					.eq("status", "backlog")
+					.eq("externalSource", "anilist"),
+			)
+			.collect();
+		const finishedManhwa = await ctx.db
+			.query("obras")
+			.withIndex("by_manga_tracking", (q) =>
+				(q as any)
+					.eq("type", "manhwa")
+					.eq("status", "finished")
+					.eq("externalSource", "anilist"),
+			)
+			.collect();
+		return [
+			...inProgressManga,
+			...backlogManga,
+			...finishedManga,
+			...inProgressManhwa,
+			...backlogManhwa,
+			...finishedManhwa,
+		];
 	},
 });
 

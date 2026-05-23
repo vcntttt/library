@@ -40,6 +40,7 @@ export const providerByType: Record<ObraType, MetadataSource> = {
 	series: "tmdb",
 	anime: "anilist",
 	manga: "anilist",
+	manhwa: "anilist",
 };
 
 export async function searchMetadata(
@@ -288,7 +289,8 @@ async function searchTmdb(query: string, obraType?: ObraType) {
 }
 
 async function searchAnilist(query: string, obraType?: ObraType) {
-	const mediaType = obraType === "manga" ? "MANGA" : "ANIME";
+	const mediaType =
+		obraType === "manga" || obraType === "manhwa" ? "MANGA" : "ANIME";
 	const response = await fetchJson<AnilistResponse>(
 		"https://graphql.anilist.co",
 		{
@@ -492,7 +494,9 @@ async function getAnilistDetails(
 	const media = response.data.Media;
 	const nextEpisode = media.nextAiringEpisode;
 	const latestChapterInfo =
-		obraType === "manga" ? await resolveLatestMangaChapter(media) : undefined;
+		obraType === "manga" || obraType === "manhwa"
+			? await resolveLatestMangaChapter(media)
+			: undefined;
 	const resolvedChapter =
 		latestChapterInfo?.latestChapter ??
 		(typeof media.chapters === "number" ? media.chapters : undefined);
@@ -745,7 +749,7 @@ export async function getMetadataDetails(
 	const cached = detailsCache.get(cacheKey);
 	const shouldBypassCachedManga =
 		source === "anilist" &&
-		obraType === "manga" &&
+		(obraType === "manga" || obraType === "manhwa") &&
 		cached?.value.status === "RELEASING" &&
 		cached.value.latestChapter === undefined;
 

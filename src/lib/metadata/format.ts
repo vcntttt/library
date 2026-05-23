@@ -58,7 +58,7 @@ export const getObraMetaLine = (obra: Obra, context?: "list" | "detail") => {
 		if (!parts.length && obra.year) parts.push(`Año ${obra.year}`);
 	}
 
-	if (obra.type === "manga") {
+	if (obra.type === "manga" || obra.type === "manhwa") {
 		const chapterCount = metadata?.latestChapter;
 		if (chapterCount) parts.push(`${chapterCount} capítulos`);
 		if (!parts.length && metadata?.volumes)
@@ -78,12 +78,17 @@ export const isMetadataOngoing = (status?: string) => {
 };
 
 export const isObraUpToDate = (obra: Obra) => {
-	if (obra.type !== "series" && obra.type !== "anime" && obra.type !== "manga")
+	if (
+		obra.type !== "series" &&
+		obra.type !== "anime" &&
+		obra.type !== "manga" &&
+		obra.type !== "manhwa"
+	)
 		return false;
 	const status = obra.metadata?.status;
 	if (!isMetadataOngoing(status)) return false;
 	const releasedCount =
-		obra.type === "manga"
+		obra.type === "manga" || obra.type === "manhwa"
 			? obra.metadata?.latestChapter
 			: obra.metadata?.episodesAired;
 	if (!releasedCount || releasedCount <= 0) return false;
@@ -94,7 +99,7 @@ export const isObraUpToDate = (obra: Obra) => {
 export const getMangaProgressUnitLabel = () => "capítulos";
 
 export const getMangaReleaseSummary = (obra: Obra) => {
-	if (obra.type !== "manga") return undefined;
+	if (obra.type !== "manga" && obra.type !== "manhwa") return undefined;
 
 	const metadata = obra.metadata;
 	const parts: string[] = [];
