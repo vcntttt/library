@@ -2,6 +2,7 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "../components/Header";
 import appCss from "../styles.css?url";
 
@@ -54,8 +55,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body suppressHydrationWarning>
 				<ConvexAuthProvider client={convex}>
 					<ThemeProvider>
-						<Header />
-						{children}
+						<TooltipProvider>
+							<Header />
+							{children}
+						</TooltipProvider>
 					</ThemeProvider>
 				</ConvexAuthProvider>
 				<Scripts />
