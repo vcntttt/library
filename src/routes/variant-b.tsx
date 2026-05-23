@@ -128,6 +128,7 @@ const typeLabel: Record<ObraType, string> = {
 	series: "SERIE",
 	anime: "ANIME",
 	manga: "MANGA",
+	manhwa: "MANHWA",
 };
 
 /* ─── Route ─── */
@@ -376,6 +377,7 @@ function Biblioteca({
 						<option value="series">SERIE</option>
 						<option value="anime">ANIME</option>
 						<option value="manga">MANGA</option>
+						<option value="manhwa">MANHWA</option>
 					</select>
 				</div>
 			</div>

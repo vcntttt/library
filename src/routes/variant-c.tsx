@@ -127,6 +127,7 @@ const typeLabel: Record<ObraType, string> = {
 	series: "Serie",
 	anime: "Anime",
 	manga: "Manga",
+	manhwa: "Manhwa",
 };
 
 /* ─── Route ─── */
