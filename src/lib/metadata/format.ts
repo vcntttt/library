@@ -25,15 +25,13 @@ export const formatMetadataStatus = (status?: string) => {
 	return statusLabels[status] ?? status;
 };
 
-export const getObraMetaLine = (obra: Obra, context?: "list" | "detail") => {
+export const getObraMetaLine = (obra: Obra) => {
 	const metadata = obra.metadata;
 	const parts: string[] = [];
 
 	if (obra.type === "book") {
 		if (metadata?.pages)
 			parts.push(`${metadata.pages.toLocaleString()} páginas`);
-		if (metadata?.publisher && context !== "list")
-			parts.push(metadata.publisher);
 		if (!parts.length && obra.year) parts.push(`Año ${obra.year}`);
 	}
 

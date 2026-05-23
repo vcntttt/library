@@ -91,11 +91,6 @@ function getMetadataRows(
 			showLoading: true,
 		});
 		rows.push({
-			label: "Editorial",
-			value: metadata.publisher,
-			showLoading: true,
-		});
-		rows.push({
 			label: "ISBN",
 			value: metadata.isbn13 ?? metadata.isbn10,
 			showLoading: true,

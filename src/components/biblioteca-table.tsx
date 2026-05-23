@@ -726,7 +726,7 @@ export function BibliotecaTable({
 							</TableRow>
 						) : (
 							filteredObras.map((obra) => {
-								const metaLine = getObraMetaLine(obra, "list");
+								const metaLine = getObraMetaLine(obra);
 								const showOngoingBadge =
 									(obra.type === "series" || obra.type === "anime") &&
 									isMetadataOngoing(obra.metadata?.status);
