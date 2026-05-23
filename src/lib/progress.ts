@@ -6,7 +6,7 @@ export function getProgressTotalFromMetadata(
 ) {
 	if (!metadata) return undefined;
 	if (type === "book") return metadata.pages;
-	if (type === "manga") return metadata.latestChapter;
+	if (type === "manga" || type === "manhwa") return metadata.latestChapter;
 	if (type === "series" || type === "anime") return metadata.episodes;
 	return undefined;
 }

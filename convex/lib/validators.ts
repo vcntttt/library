@@ -6,6 +6,7 @@ export const obraTypeValidator = v.union(
 	v.literal("series"),
 	v.literal("anime"),
 	v.literal("manga"),
+	v.literal("manhwa"),
 );
 
 export const obraStatusValidator = v.union(

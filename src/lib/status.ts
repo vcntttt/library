@@ -20,6 +20,7 @@ const genderByType: Record<ObraType, "masculine" | "feminine"> = {
 	series: "feminine",
 	anime: "masculine",
 	manga: "masculine",
+	manhwa: "masculine",
 };
 
 export function getStatusLabel(status: ObraStatus, type?: ObraType): string {

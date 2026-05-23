@@ -1,6 +1,12 @@
 import type { MetadataSource } from "@/lib/metadata/types";
 
-export type ObraType = "book" | "movie" | "series" | "anime" | "manga";
+export type ObraType =
+	| "book"
+	| "movie"
+	| "series"
+	| "anime"
+	| "manga"
+	| "manhwa";
 
 export type ObraStatus = "backlog" | "in-progress" | "finished" | "dropped";
 
