@@ -120,7 +120,7 @@ export function sanitizeMetadata(
 		mangaDexId: normalizeOptionalString(metadata.mangaDexId),
 	};
 
-	if (obraType !== "manga") {
+	if (obraType !== "manga" && obraType !== "manhwa") {
 		delete sanitized.latestChapter;
 		delete sanitized.latestChapterSource;
 		delete sanitized.latestChapterCheckedAt;
@@ -161,7 +161,7 @@ export function syncMangaProgressTotal(
 	metadata: ObraMetadata | undefined,
 	obraType: ObraType,
 ) {
-	if (obraType !== "manga") return currentTotal;
+	if (obraType !== "manga" && obraType !== "manhwa") return currentTotal;
 	if (typeof currentTotal !== "number") return undefined;
 	const latestChapter = metadata?.latestChapter;
 	if (typeof latestChapter !== "number") return currentTotal;

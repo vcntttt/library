@@ -8,7 +8,14 @@ import {
 import { json, jsonError } from "@/lib/server/http";
 import type { ObraType } from "@/lib/types";
 
-const obraTypes = ["book", "movie", "series", "anime", "manga"] as const;
+const obraTypes = [
+	"book",
+	"movie",
+	"series",
+	"anime",
+	"manga",
+	"manhwa",
+] as const;
 const metadataSources = [
 	"google-books",
 	"open-library",

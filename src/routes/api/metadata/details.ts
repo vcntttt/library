@@ -16,7 +16,14 @@ const metadataSources = [
 	"anilist",
 ] as const;
 
-const obraTypes = ["book", "movie", "series", "anime", "manga"] as const;
+const obraTypes = [
+	"book",
+	"movie",
+	"series",
+	"anime",
+	"manga",
+	"manhwa",
+] as const;
 
 const isMetadataSource = (value: string): value is MetadataSource =>
 	(metadataSources as readonly string[]).includes(value);
