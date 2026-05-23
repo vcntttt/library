@@ -13,6 +13,8 @@ This file is guidance for agentic coding tools working in this repo.
 - Lint/format: Biome
 - Package manager/runtime: Bun
 
+> **⚠️ Multi-usuario**: la app ya no es de uso individual — hay varias personas usándola. Tener mucho cuidado con cambios que puedan romper funcionalidad existente o perder datos. Privilegiar estabilidad, migraciones seguras y datos de prueba antes de tocar schema o eliminar columnas/tablas.
+
 ## External integrations
 
 - Discord bot repo: `~/dev/alfred`.
