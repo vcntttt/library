@@ -51,7 +51,10 @@ export function ObraStatusCell({
 	const progressTotal = obra.progress?.total ?? 0;
 	const progressCurrent = obra.progress?.current ?? 0;
 	const showProgress =
-		hasProgress && obra.status !== "finished" && progressTotal > 0;
+		hasProgress &&
+		obra.status !== "backlog" &&
+		obra.status !== "finished" &&
+		progressTotal > 0;
 
 	const releasedCount =
 		obra.type === "manga" || obra.type === "manhwa"

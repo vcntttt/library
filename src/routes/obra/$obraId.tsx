@@ -339,7 +339,8 @@ function ObraCoverPanel({
 	progressUnitLabel: string;
 	technicalItems?: DetailItem[];
 }) {
-	const showProgress = obra.type !== "movie" && obra.progress;
+	const showProgress =
+		obra.type !== "movie" && obra.status !== "backlog" && obra.progress;
 	const progressTotal = obra.progress?.total ?? 0;
 	const progressCurrent = obra.progress?.current ?? 0;
 	const progressPercent =

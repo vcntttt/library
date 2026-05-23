@@ -352,7 +352,9 @@ export function ObraEditSheet({
 	}, [autoSaveStatus]);
 
 	const progressUnitLabel = obra ? progressUnitLabels[obra.type] : "";
-	const hasProgress = obra ? obra.type !== "movie" : false;
+	const hasProgress = obra
+		? obra.type !== "movie" && obra.status !== "backlog"
+		: false;
 
 	return (
 		<Sheet open={open} onOpenChange={handleOpenChange}>
