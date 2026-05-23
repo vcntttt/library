@@ -1,7 +1,12 @@
 import { api as convexApi } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useConvexAuth } from "@convex-dev/auth/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	useCanGoBack,
+	useRouter,
+} from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Pencil } from "lucide-react";
 import { useState } from "react";
@@ -190,13 +195,7 @@ function ObraActionBar({
 }) {
 	return (
 		<div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
-			<Link
-				to="/biblioteca"
-				className="inline-flex h-10 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
-			>
-				<ArrowLeft className="h-4 w-4" />
-				Volver
-			</Link>
+			<ObraBackButton />
 
 			<div className="flex flex-wrap items-center gap-2">
 				{obra.readingUrl && (
@@ -261,6 +260,32 @@ function ObraActionBar({
 	);
 }
 
+function ObraBackButton() {
+	const router = useRouter();
+	const navigate = Route.useNavigate();
+	const canGoBack = useCanGoBack();
+
+	const handleBack = () => {
+		if (canGoBack) {
+			router.history.back();
+			return;
+		}
+
+		navigate({ to: "/biblioteca" });
+	};
+
+	return (
+		<button
+			type="button"
+			className="inline-flex h-10 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+			onClick={handleBack}
+		>
+			<ArrowLeft className="h-4 w-4" />
+			Volver
+		</button>
+	);
+}
+
 function ObraDetailView({
 	obra,
 	progressUnitLabel,
@@ -274,19 +299,31 @@ function ObraDetailView({
 	showUpToDateBadge: boolean;
 	technicalItems: DetailItem[];
 }) {
+	const shouldKeepTechnicalWithCover =
+		Boolean(obra.review) || obra.quotes.length > 0 || obra.tags.length > 0;
+
 	return (
 		<div className="grid gap-10 lg:grid-cols-[320px_1fr]">
-			<ObraCoverPanel obra={obra} progressUnitLabel={progressUnitLabel} />
+			<ObraCoverPanel
+				obra={obra}
+				progressUnitLabel={progressUnitLabel}
+				technicalItems={
+					shouldKeepTechnicalWithCover ? technicalItems : undefined
+				}
+			/>
 			<div className="space-y-10">
 				<ObraHeroInfo
 					obra={obra}
 					showOngoingBadge={showOngoingBadge}
 					showUpToDateBadge={showUpToDateBadge}
 				/>
-				<TechnicalInfoSection
-					items={technicalItems}
-					updatedAt={obra.updatedAt}
-				/>
+				{!shouldKeepTechnicalWithCover && (
+					<TechnicalInfoSection
+						items={technicalItems}
+						updatedAt={obra.updatedAt}
+						layout="wide"
+					/>
+				)}
 				<PersonalNotesSection obra={obra} />
 			</div>
 		</div>
@@ -296,9 +333,11 @@ function ObraDetailView({
 function ObraCoverPanel({
 	obra,
 	progressUnitLabel,
+	technicalItems,
 }: {
 	obra: Obra;
 	progressUnitLabel: string;
+	technicalItems?: DetailItem[];
 }) {
 	const showProgress = obra.type !== "movie" && obra.progress;
 	const progressTotal = obra.progress?.total ?? 0;
@@ -344,6 +383,13 @@ function ObraCoverPanel({
 						</p>
 					)}
 				</div>
+			)}
+			{technicalItems && (
+				<TechnicalInfoSection
+					items={technicalItems}
+					updatedAt={obra.updatedAt}
+					layout="compact"
+				/>
 			)}
 		</aside>
 	);
@@ -402,20 +448,32 @@ function ObraHeroInfo({
 function TechnicalInfoSection({
 	items,
 	updatedAt,
+	layout = "compact",
 }: {
 	items: DetailItem[];
 	updatedAt: number;
+	layout?: "compact" | "wide";
 }) {
 	return (
 		<section className="border border-border bg-card px-5 py-4">
-			<div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+			<div
+				className={
+					layout === "wide"
+						? "mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+						: "mb-3 flex flex-col gap-1"
+				}
+			>
 				<p className="text-sm font-medium">Ficha técnica</p>
 				<p className="text-xs text-muted-foreground">
 					Actualizado {formatDateShort(updatedAt)}
 				</p>
 			</div>
 			{items.length > 0 ? (
-				<div className="grid gap-2 sm:grid-cols-2">
+				<div
+					className={
+						layout === "wide" ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"
+					}
+				>
 					{items.map((item) => (
 						<div key={item.label} className="text-sm">
 							<span className="text-muted-foreground">{item.label}:</span>{" "}
