@@ -2,8 +2,6 @@ import { api as convexApi } from "@convex/_generated/api";
 import { useConvexAuth } from "@convex-dev/auth/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { LayoutGrid, List } from "lucide-react";
-import { useState } from "react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -94,8 +92,6 @@ function DashboardPageSkeleton() {
 function DashboardAuthed() {
 	const docs = useQuery(convexApi.obras.list, {});
 	const obras = (docs ?? []).map(obraFromDoc);
-	const [view, setView] = useState<"list" | "grid">("list");
-	const isGridView = view === "grid";
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
 	const backlog = obras
@@ -123,34 +119,6 @@ function DashboardAuthed() {
 							</h1>
 						</div>
 						<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-							<div className="inline-flex items-center overflow-hidden border border-border bg-card">
-								<button
-									type="button"
-									className={cn(
-										"inline-flex h-10 items-center gap-1.5 border-r border-border px-3 text-sm transition-colors",
-										view === "list"
-											? "bg-foreground text-background"
-											: "text-muted-foreground hover:bg-muted hover:text-foreground",
-									)}
-									onClick={() => setView("list")}
-								>
-									<List className="size-3.5" />
-									Lista
-								</button>
-								<button
-									type="button"
-									className={cn(
-										"inline-flex h-10 items-center gap-1.5 px-3 text-sm transition-colors",
-										view === "grid"
-											? "bg-foreground text-background"
-											: "text-muted-foreground hover:bg-muted hover:text-foreground",
-									)}
-									onClick={() => setView("grid")}
-								>
-									<LayoutGrid className="size-3.5" />
-									Grid
-								</button>
-							</div>
 							<AddObraDialog />
 						</div>
 					</div>
@@ -195,19 +163,19 @@ function DashboardAuthed() {
 				<DashboardSection
 					title="En progreso"
 					obras={inProgress}
-					variant={isGridView ? "grid" : "default"}
+					variant="default"
 					emptyMessage="Empieza algo nuevo agregando una obra."
 				/>
 				<DashboardSection
 					title="Pendiente"
 					obras={backlog}
-					variant={isGridView ? "grid" : "compact"}
+					variant="compact"
 					emptyMessage="No tienes nada pendiente."
 				/>
 				<DashboardSection
 					title="Terminadas"
 					obras={finished}
-					variant={isGridView ? "grid" : "compact"}
+					variant="compact"
 					emptyMessage="Aún no terminas nada."
 				/>
 			</div>
