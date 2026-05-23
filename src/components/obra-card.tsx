@@ -69,7 +69,12 @@ export function ObraCard({
 						<div className="flex flex-wrap items-center gap-1.5">
 							<TypeBadge type={obra.type} />
 							<StatusBadge status={obra.status} />
-							{obra.recommendedBy && <RecommendationBadge />}
+							{obra.recommendedBy && (
+								<RecommendationBadge
+									variant="icon"
+									recommendedBy={obra.recommendedBy}
+								/>
+							)}
 						</div>
 						<h3 className="truncate font-serif text-base font-semibold text-card-foreground transition-colors group-hover:text-primary">
 							{obra.title}
@@ -82,11 +87,6 @@ export function ObraCard({
 						{metaLine && (
 							<p className="truncate text-sm text-muted-foreground">
 								{metaLine}
-							</p>
-						)}
-						{obra.recommendedBy && (
-							<p className="truncate text-sm text-muted-foreground">
-								Por {obra.recommendedBy}
 							</p>
 						)}
 					</div>
@@ -132,20 +132,23 @@ export function ObraCard({
 							<span className="min-w-0 flex-1 truncate font-medium text-card-foreground transition-colors group-hover:text-primary">
 								{obra.title}
 							</span>
-							<TypeBadge
-								type={obra.type}
-								showIcon={false}
-								className="shrink-0"
-							/>
+							<div className="flex shrink-0 items-center gap-1.5">
+								{obra.recommendedBy && (
+									<RecommendationBadge
+										variant="icon"
+										recommendedBy={obra.recommendedBy}
+									/>
+								)}
+								<TypeBadge
+									type={obra.type}
+									showIcon={false}
+									className="shrink-0"
+								/>
+							</div>
 						</div>
 						{(secondaryText ?? metaLine) && (
 							<span className="block text-sm text-muted-foreground">
 								{secondaryText ?? metaLine}
-							</span>
-						)}
-						{!secondaryText && !metaLine && obra.recommendedBy && (
-							<span className="block text-sm text-muted-foreground">
-								Recomendada por {obra.recommendedBy}
 							</span>
 						)}
 					</div>
@@ -183,7 +186,12 @@ export function ObraCard({
 							<div className="mb-1 flex items-center gap-2">
 								<TypeBadge type={obra.type} />
 								<StatusBadge status={obra.status} />
-								{obra.recommendedBy && <RecommendationBadge />}
+								{obra.recommendedBy && (
+									<RecommendationBadge
+										variant="icon"
+										recommendedBy={obra.recommendedBy}
+									/>
+								)}
 							</div>
 							<h3 className="truncate font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
 								{obra.title}
@@ -196,11 +204,6 @@ export function ObraCard({
 							{metaLine && (
 								<p className="truncate text-sm text-muted-foreground">
 									{metaLine}
-								</p>
-							)}
-							{obra.recommendedBy && (
-								<p className="truncate text-sm text-muted-foreground">
-									Por {obra.recommendedBy}
 								</p>
 							)}
 						</div>

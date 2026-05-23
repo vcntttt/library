@@ -769,11 +769,6 @@ export function BibliotecaTable({
 															{metaLine}
 														</p>
 													)}
-													{obra.recommendedBy && (
-														<p className="truncate text-sm text-muted-foreground">
-															Recomendada por {obra.recommendedBy}
-														</p>
-													)}
 												</div>
 											</div>
 										</TableCell>

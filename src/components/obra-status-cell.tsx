@@ -5,6 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Check, Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { RecommendationBadge } from "@/components/recommendation-badge";
 import { StatusBadge, statusDots } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -139,12 +140,10 @@ export function ObraStatusCell({
 				<div className="flex flex-wrap items-center gap-2">
 					<StatusBadge status={obra.status} type={obra.type} />
 					{obra.recommendedBy && (
-						<Badge
-							variant="outline"
-							className="rounded-none border-[#B85C38]/40 bg-[#B85C38]/10 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] text-[#B85C38]"
-						>
-							Recomendada
-						</Badge>
+						<RecommendationBadge
+							variant="icon"
+							recommendedBy={obra.recommendedBy}
+						/>
 					)}
 					{showOngoingBadge && (
 						<Badge
