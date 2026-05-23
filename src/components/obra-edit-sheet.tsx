@@ -28,7 +28,7 @@ import { obraFromDoc } from "@/lib/obras";
 import { getInitialProgressTotal } from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
 import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, formatDateInput, parseDateInput } from "@/lib/utils";
 
 interface EditableQuote {
 	clientId: string;
@@ -60,17 +60,6 @@ const progressUnitLabels: Record<ObraType, string> = {
 	anime: "episodios",
 	manga: "capítulos",
 	manhwa: "capítulos",
-};
-
-const formatDateInput = (value?: number) => {
-	if (!value) return "";
-	return new Date(value).toISOString().slice(0, 10);
-};
-
-const parseDateInput = (value: string) => {
-	if (!value.trim()) return undefined;
-	const timestamp = new Date(value).getTime();
-	return Number.isNaN(timestamp) ? undefined : timestamp;
 };
 
 const normalizeReadingUrl = (value: string) => {

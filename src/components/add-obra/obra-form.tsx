@@ -18,7 +18,7 @@ import type {
 	MetadataSearchResult,
 } from "@/lib/metadata/types";
 import type { CreateObraInput, ObraStatus, ObraType } from "@/lib/types";
-import { formatDateShort } from "@/lib/utils";
+import { formatDateShort, parseDateInput } from "@/lib/utils";
 
 const obraStatusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
@@ -33,12 +33,6 @@ const obraStatuses: { value: ObraStatus; label: string }[] = [
 	{ value: "finished", label: "Terminada" },
 	{ value: "dropped", label: "Abandonada" },
 ];
-
-const parseDateInput = (value: string) => {
-	if (!value.trim()) return undefined;
-	const timestamp = new Date(value).getTime();
-	return Number.isNaN(timestamp) ? undefined : timestamp;
-};
 
 const getTotalFromMetadata = (
 	metadata: Pick<
