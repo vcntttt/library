@@ -42,10 +42,11 @@ import {
 	isMetadataOngoing,
 	isObraUpToDate,
 } from "@/lib/metadata/format";
-import type { Obra, ObraStatus, ObraType } from "@/lib/types";
+import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Search } from "./icons";
 import { ObraCard } from "./obra-card";
+import { ObraEditSheet } from "./obra-edit-sheet";
 import { ObraStatusCell } from "./obra-status-cell";
 import { TypeBadge } from "./type-badge";
 
@@ -233,6 +234,8 @@ export function BibliotecaTable({
 		if (typeof window === "undefined") return defaultVisibleColumns;
 		return readColumns();
 	});
+	const [editingObraId, setEditingObraId] = useState<ObraId | null>(null);
+	const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
 
 	useEffect(() => {
 		window.localStorage.setItem(
@@ -809,20 +812,17 @@ export function BibliotecaTable({
 										)}
 										<TableCell className="text-right">
 											<Button
-												asChild
 												type="button"
 												variant="ghost"
 												size="icon"
 												className="size-9 rounded-none text-muted-foreground hover:text-foreground"
+												aria-label={`Editar ${obra.title}`}
+												onClick={() => {
+													setEditingObraId(obra.id);
+													setIsEditSheetOpen(true);
+												}}
 											>
-												<Link
-													to="/obra/$obraId"
-													params={{ obraId: obra.id }}
-													search={{ edit: true }}
-													aria-label={`Editar ${obra.title}`}
-												>
-													<Pencil className="size-4" />
-												</Link>
+												<Pencil className="size-4" />
 											</Button>
 										</TableCell>
 									</TableRow>
@@ -838,6 +838,13 @@ export function BibliotecaTable({
 					? "Cargando obras..."
 					: `Mostrando ${filteredObras.length} de ${obras.length} obras`}
 			</p>
+			<ObraEditSheet
+				obraId={editingObraId}
+				open={isEditSheetOpen}
+				onOpenChange={(open) => {
+					setIsEditSheetOpen(open);
+				}}
+			/>
 		</div>
 	);
 }
