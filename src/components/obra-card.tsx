@@ -31,7 +31,10 @@ export function ObraCard({
 	className,
 }: ObraCardProps) {
 	const showProgress =
-		obra.progress && obra.type !== "movie" && obra.status === "in-progress";
+		obra.progress &&
+		obra.type !== "movie" &&
+		obra.status !== "backlog" &&
+		obra.status !== "finished";
 	const metaLine = getObraMetaLine(obra);
 	const readingUrl = normalizeReadingUrl(obra.readingUrl);
 

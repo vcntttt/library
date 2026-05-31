@@ -20,6 +20,14 @@ import { mangaChapterSourceValidator, notificationStatusValidator } from "./lib/
 
 const DEFAULT_POLL_LIMIT = 10;
 const MAX_POLL_LIMIT = 50;
+const TRACKED_MANGA_TYPES = ["manga", "manhwa"] as const;
+const TRACKED_MANGA_STATUSES = [
+	"in-progress",
+	"backlog",
+	"finished",
+	"paused",
+	"hiatus",
+] as const;
 
 export const checkForNewChapters = internalAction({
 	args: {},
@@ -55,6 +63,7 @@ export const checkForNewChapters = internalAction({
 				const latestChapter = merged.latestChapter;
 				const lastNotifiedChapter = obra.metadata?.lastNotifiedChapter ?? 0;
 				if (!latestChapter || latestChapter <= lastNotifiedChapter) continue;
+				if (obra.status === "paused") continue;
 
 				const result = await ctx.runMutation(
 					internal.notifications.enqueueReleaseNotification,
@@ -229,68 +238,22 @@ export const markRead = mutation({
 export const listTrackedManga = internalQuery({
 	args: {},
 	handler: async (ctx) => {
-		const inProgressManga = await ctx.db
-			.query("obras")
-			.withIndex("by_manga_tracking", (q) =>
-				(q as any)
-					.eq("type", "manga")
-					.eq("status", "in-progress")
-					.eq("externalSource", "anilist"),
-			)
-			.collect();
-		const backlogManga = await ctx.db
-			.query("obras")
-			.withIndex("by_manga_tracking", (q) =>
-				(q as any)
-					.eq("type", "manga")
-					.eq("status", "backlog")
-					.eq("externalSource", "anilist"),
-			)
-			.collect();
-		const finishedManga = await ctx.db
-			.query("obras")
-			.withIndex("by_manga_tracking", (q) =>
-				(q as any)
-					.eq("type", "manga")
-					.eq("status", "finished")
-					.eq("externalSource", "anilist"),
-			)
-			.collect();
-		const inProgressManhwa = await ctx.db
-			.query("obras")
-			.withIndex("by_manga_tracking", (q) =>
-				(q as any)
-					.eq("type", "manhwa")
-					.eq("status", "in-progress")
-					.eq("externalSource", "anilist"),
-			)
-			.collect();
-		const backlogManhwa = await ctx.db
-			.query("obras")
-			.withIndex("by_manga_tracking", (q) =>
-				(q as any)
-					.eq("type", "manhwa")
-					.eq("status", "backlog")
-					.eq("externalSource", "anilist"),
-			)
-			.collect();
-		const finishedManhwa = await ctx.db
-			.query("obras")
-			.withIndex("by_manga_tracking", (q) =>
-				(q as any)
-					.eq("type", "manhwa")
-					.eq("status", "finished")
-					.eq("externalSource", "anilist"),
-			)
-			.collect();
-		return [
-			...inProgressManga,
-			...backlogManga,
-			...finishedManga,
-			...inProgressManhwa,
-			...backlogManhwa,
-			...finishedManhwa,
-		];
+		const tracked = await Promise.all(
+			TRACKED_MANGA_TYPES.flatMap((type) =>
+				TRACKED_MANGA_STATUSES.map((status) =>
+					ctx.db
+						.query("obras")
+						.withIndex("by_manga_tracking", (q) =>
+							(q as any)
+								.eq("type", type)
+								.eq("status", status)
+								.eq("externalSource", "anilist"),
+						)
+						.collect(),
+				),
+			),
+		);
+		return tracked.flat();
 	},
 });
 

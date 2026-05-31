@@ -6,7 +6,7 @@ import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { obraFromDoc } from "@/lib/obras";
-import { cn } from "@/lib/utils";
+import { isPausedStatus } from "@/lib/status";
 
 export const Route = createFileRoute("/")({
 	ssr: false,
@@ -94,6 +94,7 @@ function DashboardAuthed() {
 	const obras = (docs ?? []).map(obraFromDoc);
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
+	const paused = obras.filter((w) => isPausedStatus(w.status));
 	const backlog = obras
 		.filter((w) => w.status === "backlog")
 		.sort((a, b) => {
@@ -102,7 +103,6 @@ function DashboardAuthed() {
 			);
 		});
 	const finished = obras.filter((w) => w.status === "finished");
-	const recommended = obras.filter((w) => w.recommendedBy);
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)]">
@@ -123,14 +123,7 @@ function DashboardAuthed() {
 						</div>
 					</div>
 
-					<div
-						className={cn(
-							"grid gap-8",
-							recommended.length > 0
-								? "grid-cols-2 sm:grid-cols-4"
-								: "grid-cols-3",
-						)}
-					>
+					<div className="grid grid-cols-3 gap-8">
 						<div className="border-l border-border pl-6">
 							<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 								Pendientes
@@ -145,18 +138,10 @@ function DashboardAuthed() {
 						</div>
 						<div className="border-l border-border pl-6">
 							<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-								Total
+								Pausadas
 							</p>
-							<p className="font-serif text-3xl mt-1">{obras.length}</p>
+							<p className="font-serif text-3xl mt-1">{paused.length}</p>
 						</div>
-						{recommended.length > 0 && (
-							<div className="border-l border-border pl-6">
-								<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-									Recomendadas
-								</p>
-								<p className="font-serif text-3xl mt-1">{recommended.length}</p>
-							</div>
-						)}
 					</div>
 				</section>
 
@@ -171,6 +156,12 @@ function DashboardAuthed() {
 					obras={backlog}
 					variant="compact"
 					emptyMessage="No tienes nada pendiente."
+				/>
+				<DashboardSection
+					title="Pausadas"
+					obras={paused}
+					variant="compact"
+					emptyMessage="No tienes obras pausadas."
 				/>
 				<DashboardSection
 					title="Terminadas"

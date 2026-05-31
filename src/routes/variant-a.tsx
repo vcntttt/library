@@ -117,6 +117,8 @@ const mockObras: Obra[] = [
 const statusLabel: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
 	"in-progress": "En progreso",
+	paused: "Pausada",
+	hiatus: "Hiatus",
 	finished: "Terminada",
 	dropped: "Abandonada",
 };

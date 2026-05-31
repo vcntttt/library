@@ -23,6 +23,8 @@ import { formatDateShort, parseDateInput } from "@/lib/utils";
 const obraStatusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
 	"in-progress": "En progreso",
+	paused: "Pausada",
+	hiatus: "Hiatus",
 	finished: "Terminada",
 	dropped: "Abandonada",
 };
@@ -30,6 +32,8 @@ const obraStatusLabels: Record<ObraStatus, string> = {
 const obraStatuses: { value: ObraStatus; label: string }[] = [
 	{ value: "backlog", label: "Pendiente" },
 	{ value: "in-progress", label: "En progreso" },
+	{ value: "paused", label: "Pausada" },
+	{ value: "hiatus", label: "Hiatus" },
 	{ value: "finished", label: "Terminada" },
 	{ value: "dropped", label: "Abandonada" },
 ];

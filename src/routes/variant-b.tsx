@@ -118,6 +118,8 @@ const mockObras: Obra[] = [
 const statusLabel: Record<ObraStatus, string> = {
 	backlog: "PENDIENTE",
 	"in-progress": "EN_PROGRESO",
+	paused: "PAUSADA",
+	hiatus: "HIATUS",
 	finished: "TERMINADA",
 	dropped: "ABANDONADA",
 };
@@ -363,6 +365,8 @@ function Biblioteca({
 						<option value="ALL">ESTADO:_ALL</option>
 						<option value="backlog">PENDIENTE</option>
 						<option value="in-progress">EN_PROGRESO</option>
+						<option value="paused">PAUSADA</option>
+						<option value="hiatus">HIATUS</option>
 						<option value="finished">TERMINADA</option>
 						<option value="dropped">ABANDONADA</option>
 					</select>

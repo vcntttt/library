@@ -83,6 +83,8 @@ const typeOptions: FilterOption<ObraType>[] = [
 const statusOptions: FilterOption<ObraStatus>[] = [
 	{ value: "backlog", label: "Pendiente" },
 	{ value: "in-progress", label: "En progreso" },
+	{ value: "paused", label: "Pausada" },
+	{ value: "hiatus", label: "Hiatus" },
 	{ value: "finished", label: "Terminada" },
 	{ value: "dropped", label: "Abandonada" },
 ];

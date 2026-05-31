@@ -12,6 +12,8 @@ export const obraTypeValidator = v.union(
 export const obraStatusValidator = v.union(
 	v.literal("backlog"),
 	v.literal("in-progress"),
+	v.literal("paused"),
+	v.literal("hiatus"),
 	v.literal("finished"),
 	v.literal("dropped"),
 );

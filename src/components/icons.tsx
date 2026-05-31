@@ -7,6 +7,7 @@ import {
 	Clock,
 	Film,
 	List,
+	PauseCircle,
 	Plus,
 	Search,
 	Sparkles,
@@ -36,6 +37,8 @@ export const StatusIcons: Record<
 > = {
 	backlog: List,
 	"in-progress": Clock,
+	paused: PauseCircle,
+	hiatus: PauseCircle,
 	finished: CheckCircle2,
 	dropped: XCircle,
 };

@@ -3,6 +3,8 @@ import type { ObraStatus, ObraType } from "./types";
 const masculineStatusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
 	"in-progress": "En progreso",
+	paused: "Pausado",
+	hiatus: "Hiatus",
 	finished: "Terminado",
 	dropped: "Abandonado",
 };
@@ -10,9 +12,17 @@ const masculineStatusLabels: Record<ObraStatus, string> = {
 const feminineStatusLabels: Record<ObraStatus, string> = {
 	backlog: "Pendiente",
 	"in-progress": "En progreso",
+	paused: "Pausada",
+	hiatus: "Hiatus",
 	finished: "Terminada",
 	dropped: "Abandonada",
 };
+
+export const pausedStatuses: ObraStatus[] = ["paused", "hiatus"];
+
+export function isPausedStatus(status: ObraStatus): boolean {
+	return pausedStatuses.includes(status);
+}
 
 const genderByType: Record<ObraType, "masculine" | "feminine"> = {
 	book: "masculine",

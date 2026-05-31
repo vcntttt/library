@@ -178,6 +178,7 @@ export function ObraEditSheet({
 	> | null>(null);
 	const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 	const pendingSavePatches = useRef(new Map<string, Record<string, unknown>>());
+	const syncedSessionKey = useRef<string | null>(null);
 
 	const resetFromObra = useCallback((nextObra: Obra) => {
 		setValues(getEditValues(nextObra));
@@ -192,11 +193,28 @@ export function ObraEditSheet({
 	}, []);
 
 	useEffect(() => {
-		if (!obra || !open) return;
+		if (!open) {
+			syncedSessionKey.current = null;
+			return;
+		}
+		if (!obra) return;
+		const sessionKey = obra.id;
+		if (syncedSessionKey.current === sessionKey) return;
+		syncedSessionKey.current = sessionKey;
 		resetFromObra(obra);
 		setAutoSaveStatus("idle");
 		setAutoSaveError(null);
 	}, [obra, open, resetFromObra]);
+
+	useEffect(() => {
+		return () => {
+			for (const timer of saveTimers.current.values()) {
+				clearTimeout(timer);
+			}
+			saveTimers.current.clear();
+			pendingSavePatches.current.clear();
+		};
+	}, []);
 
 	const commitPatch = useCallback(
 		async (patch: Record<string, unknown>) => {
@@ -643,6 +661,12 @@ export function ObraEditSheet({
 											</SelectItem>
 											<SelectItem value="in-progress">
 												{getStatusLabel("in-progress", obra.type)}
+											</SelectItem>
+											<SelectItem value="paused">
+												{getStatusLabel("paused", obra.type)}
+											</SelectItem>
+											<SelectItem value="hiatus">
+												{getStatusLabel("hiatus", obra.type)}
 											</SelectItem>
 											<SelectItem value="finished">
 												{getStatusLabel("finished", obra.type)}

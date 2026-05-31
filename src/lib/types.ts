@@ -8,7 +8,13 @@ export type ObraType =
 	| "manga"
 	| "manhwa";
 
-export type ObraStatus = "backlog" | "in-progress" | "finished" | "dropped";
+export type ObraStatus =
+	| "backlog"
+	| "in-progress"
+	| "paused"
+	| "hiatus"
+	| "finished"
+	| "dropped";
 
 export type MangaChapterSource = "manga-plus" | "mangadex" | "anilist";
 

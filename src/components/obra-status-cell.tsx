@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 const allStatuses: ObraStatus[] = [
 	"backlog",
 	"in-progress",
+	"paused",
+	"hiatus",
 	"finished",
 	"dropped",
 ];
