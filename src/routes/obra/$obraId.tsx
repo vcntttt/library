@@ -12,6 +12,7 @@ import { ExternalLink, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { ObraEditSheet } from "@/components/obra-edit-sheet";
+import { ObraStatusPicker } from "@/components/obra-status-picker";
 import { RecommendationBadge } from "@/components/recommendation-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { TypeBadge } from "@/components/type-badge";
@@ -409,7 +410,12 @@ function ObraHeroInfo({
 		<section className="space-y-4">
 			<div className="flex flex-wrap gap-2">
 				<TypeBadge type={obra.type} />
-				<StatusBadge status={obra.status} />
+				<ObraStatusPicker obra={obra}>
+					<StatusBadge
+						status={obra.status}
+						className="cursor-pointer hover:opacity-80 transition-opacity"
+					/>
+				</ObraStatusPicker>
 				{obra.recommendedBy && <RecommendationBadge />}
 				{showOngoingBadge && (
 					<Badge

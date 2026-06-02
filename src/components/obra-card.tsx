@@ -4,6 +4,7 @@ import { getObraMetaLine } from "@/lib/metadata/format";
 import type { Obra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "./icons";
+import { ObraStatusPicker } from "./obra-status-picker";
 import { ProgressBar } from "./progress-bar";
 import { RecommendationBadge } from "./recommendation-badge";
 import { StatusBadge } from "./status-badge";
@@ -69,7 +70,12 @@ export function ObraCard({
 					<div className="space-y-2 p-4 pt-3.5">
 						<div className="flex flex-wrap items-center gap-1.5">
 							<TypeBadge type={obra.type} />
-							<StatusBadge status={obra.status} />
+							<ObraStatusPicker obra={obra}>
+								<StatusBadge
+									status={obra.status}
+									className="cursor-pointer hover:opacity-80 transition-opacity"
+								/>
+							</ObraStatusPicker>
 							{obra.recommendedBy && (
 								<RecommendationBadge
 									variant="icon"
@@ -186,7 +192,12 @@ export function ObraCard({
 						<div className="min-w-0 flex-1">
 							<div className="mb-1 flex items-center gap-2">
 								<TypeBadge type={obra.type} />
-								<StatusBadge status={obra.status} />
+								<ObraStatusPicker obra={obra}>
+									<StatusBadge
+										status={obra.status}
+										className="cursor-pointer hover:opacity-80 transition-opacity"
+									/>
+								</ObraStatusPicker>
 								{obra.recommendedBy && (
 									<RecommendationBadge
 										variant="icon"
