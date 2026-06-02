@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isObraUpToDate } from "@/lib/metadata/format";
 import { obraFromDoc } from "@/lib/obras";
 import { isPausedStatus } from "@/lib/status";
 
@@ -94,6 +95,8 @@ function DashboardAuthed() {
 	const obras = (docs ?? []).map(obraFromDoc);
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
+	const followingOngoing = inProgress.filter(isObraUpToDate);
+	const activelyWatching = inProgress.filter((w) => !isObraUpToDate(w));
 	const paused = obras.filter((w) => isPausedStatus(w.status));
 	const backlog = obras
 		.filter((w) => w.status === "backlog")
@@ -115,7 +118,7 @@ function DashboardAuthed() {
 								Biblioteca privada
 							</p>
 							<h1 className="font-serif text-4xl font-medium leading-tight tracking-tight sm:text-5xl">
-								{inProgress.length} obras en progreso
+								{activelyWatching.length} obras viendo ahora
 							</h1>
 						</div>
 						<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -146,11 +149,18 @@ function DashboardAuthed() {
 				</section>
 
 				<DashboardSection
-					title="En progreso"
-					obras={inProgress}
+					title="Viendo ahora"
+					obras={activelyWatching}
 					variant="default"
 					emptyMessage="Empieza algo nuevo agregando una obra."
 				/>
+				{followingOngoing.length > 0 && (
+					<DashboardSection
+						title="Siguiendo en emisión"
+						obras={followingOngoing}
+						variant="compact"
+					/>
+				)}
 				<DashboardSection
 					title="Pendiente"
 					obras={backlog}
