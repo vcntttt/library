@@ -92,7 +92,11 @@ function DashboardPageSkeleton() {
 
 function DashboardAuthed() {
 	const docs = useQuery(convexApi.obras.list, {});
-	const obras = (docs ?? []).map(obraFromDoc);
+	if (docs === undefined) {
+		return <DashboardPageSkeleton />;
+	}
+
+	const obras = docs.map(obraFromDoc);
 
 	const inProgress = obras.filter((w) => w.status === "in-progress");
 	const followingOngoing = inProgress.filter(isObraUpToDate);
