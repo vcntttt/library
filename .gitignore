@@ -13,3 +13,5 @@ count.txt
 .vinxi
 todos.json
 data/
+playwright-report/
+test-results/
