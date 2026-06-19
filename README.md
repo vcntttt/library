@@ -126,6 +126,11 @@ bun run test
 bun run lint
 bun run format
 bun run check
+bun run test:e2e
+bun run test:e2e:headed
+bun run test:e2e:ui
+bun run test:e2e:debug
+bun run test:e2e:install
 bun run convex:dev
 bun run convex:push
 bun run convex:deploy
@@ -146,6 +151,44 @@ Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
+
+### Verificación E2E en navegador
+
+Playwright se usa para verificar flujos críticos en un navegador real. Las
+pruebas autenticadas requieren una cuenta dedicada de E2E; no uses una cuenta
+personal porque el entorno local puede apuntar al Convex self-hosted con datos
+reales.
+
+Variables locales:
+
+```bash
+E2E_TEST_EMAIL=
+E2E_TEST_PASSWORD=
+E2E_BASE_URL=http://localhost:3100
+```
+
+Instalar Chromium:
+
+```bash
+bun run test:e2e:install
+```
+
+Ejecutar la suite:
+
+```bash
+bun run test:e2e
+```
+
+Para inspección visual o debugging:
+
+```bash
+bun run test:e2e:headed
+bun run test:e2e:debug
+```
+
+Los datos creados por la suite usan prefijo `[E2E ...]` y se limpian desde la
+UI. Si falla una prueba, revisa `playwright-report/` y los artefactos de
+captura/traza retenidos por Playwright.
 
 Variables viejas para eliminar del deploy:
 
