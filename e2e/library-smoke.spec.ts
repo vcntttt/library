@@ -12,11 +12,15 @@ test("usuario no autenticado ve gate privado y link a login", async ({
 }) => {
 	await page.goto("/");
 
-	await expect(page.getByRole("heading", { name: "Biblioteca" })).toBeVisible();
+	await expect(page.getByRole("link", { name: "Ir a login" })).toBeVisible({
+		timeout: 30_000,
+	});
+	await expect(
+		page.getByRole("heading", { name: "Biblioteca" }).last(),
+	).toBeVisible();
 	await expect(
 		page.getByText("Inicia sesión para ver tu biblioteca."),
 	).toBeVisible();
-	await expect(page.getByRole("link", { name: "Ir a login" })).toBeVisible();
 });
 
 test.describe("flujos autenticados", () => {

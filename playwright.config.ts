@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3100";
+const shouldStartLocalServer = !process.env.E2E_BASE_URL;
 
 export default defineConfig({
 	testDir: "./e2e",
@@ -25,12 +26,14 @@ export default defineConfig({
 			use: { ...devices["Desktop Chrome"] },
 		},
 	],
-	webServer: {
-		command: "bun run dev:web -- --port 3100 --strictPort",
-		url: baseURL,
-		reuseExistingServer: !process.env.CI,
-		timeout: 120_000,
-		stdout: "pipe",
-		stderr: "pipe",
-	},
+	webServer: shouldStartLocalServer
+		? {
+				command: "bun run dev:web -- --port 3100 --strictPort",
+				url: baseURL,
+				reuseExistingServer: !process.env.CI,
+				timeout: 120_000,
+				stdout: "pipe",
+				stderr: "pipe",
+			}
+		: undefined,
 });
