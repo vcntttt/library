@@ -89,6 +89,12 @@ bun run test
 bun run test -- src/path/to/my.test.ts
 bun run test -- -t "my test name"
 bunx vitest
+
+# browser verification (Playwright)
+bun run test:e2e:install
+bun run test:e2e
+bun run test:e2e:headed
+bun run test:e2e:debug
 ```
 
 ## Repo layout
@@ -114,8 +120,12 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
   - `VITE_SITE_URL`
   - `OBSIDIAN_VAULT_PATH`
   - `TMDB_API_KEY`
-  - `ALFRED_NOTIFY_SECRET`
-  - `ALFRED_NOTIFY_URL`
+- `ALFRED_NOTIFY_SECRET`
+- `ALFRED_NOTIFY_URL`
+- E2E browser tests:
+  - `E2E_TEST_EMAIL`
+  - `E2E_TEST_PASSWORD`
+  - `E2E_BASE_URL` (defaults to `http://localhost:3100`)
 
 ## Code style and conventions
 
@@ -151,6 +161,52 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
   immediate saves for discrete controls, and always show save/error state.
 - Creation, destructive actions, external search, and explicit external apply
   flows remain user-confirmed actions.
+
+### Browser verification
+
+- Use Playwright for browser-level feature verification after UI/user-flow
+  changes.
+- Default E2E URL is `http://localhost:3100`, so verification does not
+  accidentally reuse an unrelated app on port 3000. Override with
+  `E2E_BASE_URL` only when intentionally targeting another running instance.
+- Authenticated E2E flows require a dedicated test account via
+  `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD`; never use a personal account.
+- E2E-created records must keep the `[E2E ...]` prefix and be cleaned up from
+  the UI flow when possible.
+
+### Autonomous feature loop
+
+When the user describes a feature and asks for autonomous execution:
+
+1. Clarify only product-impacting ambiguity. Do not ask questions that can be
+   answered from the repo.
+2. Create or use a feature branch. If on `main`, create `codex/{feature-slug}`.
+3. Implement with subagents when scopes can be separated cleanly.
+4. Verify with:
+   - `bun run check`
+   - `bun run test`
+   - `bun run test:e2e`
+5. Use Playwright/browser verification for user-facing flows.
+6. Commit atomically and avoid staging unrelated user changes.
+7. Push and open a draft PR automatically.
+8. Spawn an independent reviewer agent; it must not be the implementation
+   thread.
+9. Fix blocking and should-fix review findings automatically when the fix does
+   not change product intent or data semantics.
+10. Update the PR body with validation status, browser verification notes, and
+    known blockers.
+
+Loop safety rules:
+
+- Never use personal accounts for E2E.
+- Never mutate real user data outside an E2E-prefixed dedicated test account.
+- Never mark PRs ready-for-review without explicit user instruction.
+- Stop only for real blockers: missing credentials, risky data mutation,
+  non-trivial git conflicts, inaccessible CI logs, or product ambiguity that
+  changes visible behavior.
+- Default screenshots policy: rely on Playwright artifacts and summarize what
+  was verified in the PR. Do not commit `test-results/` or
+  `playwright-report/`.
 
 ### Naming
 
