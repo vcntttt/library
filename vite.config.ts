@@ -9,7 +9,11 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 const config = defineConfig({
 	plugins: [
-		devtools(),
+		devtools({
+			eventBusConfig: {
+				enabled: process.env.E2E !== "1",
+			},
+		}),
 		nitro(),
 		// this is the plugin that enables path aliases
 		viteTsConfigPaths({

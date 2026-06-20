@@ -44,7 +44,7 @@ test.describe("flujos autenticados", () => {
 
 			await openObraDetailByTitle(page, title);
 			await expect(page.getByText("Playwright")).toBeVisible();
-			await expect(page.getByText("Manga")).toBeVisible();
+			await expect(page.getByText("Manga", { exact: true })).toBeVisible();
 		} finally {
 			await deleteObraByTitle(page, title).catch(() => undefined);
 		}

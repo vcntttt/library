@@ -15,7 +15,7 @@ export async function createManualObra(
 	await page.goto("/biblioteca");
 	await expect(page.getByRole("heading", { name: "Biblioteca" })).toBeVisible();
 
-	await page.getByRole("button", { name: "Agregar obra" }).click();
+	await page.getByRole("button", { name: /Agregar (nueva )?obra/ }).click();
 	await page.getByRole("button", { name: "Manga" }).click();
 	await page
 		.getByRole("button", { name: "Saltar búsqueda y crear manualmente" })
