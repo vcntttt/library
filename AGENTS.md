@@ -178,8 +178,19 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
 
 When the user describes a feature and asks for autonomous execution:
 
-1. Clarify only product-impacting ambiguity. Do not ask questions that can be
-   answered from the repo.
+1. Do the intake carefully before automation:
+   - Explore the repo first; do not ask questions that can be answered from
+     code, docs, config, tests, or existing UI.
+   - For medium/large features, ambiguous product behavior, user-facing
+     workflow changes, data model changes, or anything that will be hard to
+     unwind after an automatic PR+merge, use `grill-me` to stress-test the
+     plan one decision at a time before implementation.
+   - For small bug fixes, copy tweaks, narrow test fixes, mechanical refactors,
+     or clearly specified changes, skip `grill-me` and clarify only
+     product-impacting ambiguity.
+   - When using `grill-me`, ask one question at a time, give a recommended
+     answer, and stop grilling once goal, scope, non-goals, acceptance criteria,
+     risks, and verification are clear enough to implement autonomously.
 2. Create or use a feature branch. If on `main`, create `codex/{feature-slug}`.
 3. Implement with subagents when scopes can be separated cleanly.
 4. Verify with:
