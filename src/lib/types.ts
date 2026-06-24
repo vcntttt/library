@@ -16,7 +16,11 @@ export type ObraStatus =
 	| "finished"
 	| "dropped";
 
-export type MangaChapterSource = "manga-plus" | "mangadex" | "anilist";
+export type MangaChapterSource =
+	| "manga-plus"
+	| "mangadex"
+	| "anilist"
+	| "manhwaweb";
 
 export type ObraId = string;
 

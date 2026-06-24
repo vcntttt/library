@@ -24,12 +24,14 @@ export const metadataSourceValidator = v.union(
 	v.literal("apple-books"),
 	v.literal("tmdb"),
 	v.literal("anilist"),
+	v.literal("manhwaweb"),
 );
 
 export const mangaChapterSourceValidator = v.union(
 	v.literal("manga-plus"),
 	v.literal("mangadex"),
 	v.literal("anilist"),
+	v.literal("manhwaweb"),
 );
 
 export const externalReferenceValidator = v.object({
