@@ -526,4 +526,85 @@ describe("metadata providers", () => {
 		expect(details.latestChapterSource).toBeUndefined();
 		expect(details.latestChapterCheckedAt).toEqual(expect.any(Number));
 	});
+
+	it("resolves ManhwaWeb details with the latest Spanish chapter", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				_id: "magoinfinito_1717625777860",
+				real_id: "magoinfinito_1717625777860",
+				_imagen: "https://img2mw.xyz/mago.webp",
+				_status: "publicandose",
+				_numero_cap: 172,
+				numero_cap_esp: 173,
+				_tipo: "manhwa",
+				the_real_name: "Mago Infinito",
+				_sinopsis: "Un nino aprende magia.",
+				_extras: { autores: ["Kim Chiwoo"] },
+				chapters: [{ chapter: 172 }, { chapter: 173 }],
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails } = await import("./providers");
+
+		const details = await getMetadataDetails(
+			"manhwaweb",
+			"magoinfinito_1717625777860",
+			"manhwa",
+		);
+
+		expect(details).toMatchObject({
+			source: "manhwaweb",
+			id: "magoinfinito_1717625777860",
+			title: "Mago Infinito",
+			creator: "Kim Chiwoo",
+			coverUrl: "https://img2mw.xyz/mago.webp",
+			description: "Un nino aprende magia.",
+			canonicalUrl:
+				"https://www.manhwaweb.com/manhwa/magoinfinito_1717625777860",
+			status: "RELEASING",
+			latestChapter: 173,
+			latestChapterSource: "manhwaweb",
+		});
+		expect(details.latestChapterCheckedAt).toEqual(expect.any(Number));
+		expect(fetchMock).toHaveBeenCalledWith(
+			"https://manhwawebbackend-production.up.railway.app/manhwa/see/magoinfinito_1717625777860",
+			undefined,
+		);
+	});
+
+	it("searches ManhwaWeb by pasted URL", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				_id: "la-vida-despues-de-la-muerte_1696084388227",
+				real_id: "la-vida-despues-de-la-muerte_1696084388227",
+				_imagen: "https://img1mw.xyz/tbate.webp",
+				_status: "publicandose",
+				_numero_cap: 251,
+				numero_cap_esp: 251,
+				_tipo: "manhwa",
+				the_real_name: "La Vida Despues de la Muerte",
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"manhwaweb",
+			"https://www.manhwaweb.com/manhwa/la-vida-despues-de-la-muerte_1696084388227",
+			"manhwa",
+		);
+
+		expect(outcome.provider).toBe("manhwaweb");
+		expect(outcome.results).toHaveLength(1);
+		expect(outcome.results[0]).toMatchObject({
+			source: "manhwaweb",
+			id: "la-vida-despues-de-la-muerte_1696084388227",
+			title: "La Vida Despues de la Muerte",
+			latestChapter: 251,
+			canonicalUrl:
+				"https://www.manhwaweb.com/manhwa/la-vida-despues-de-la-muerte_1696084388227",
+		});
+	});
 });
