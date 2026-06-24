@@ -66,6 +66,7 @@ const metadataSourceLabels: Record<MetadataSource, string> = {
 	"apple-books": "Apple Books",
 	tmdb: "TMDB",
 	anilist: "AniList",
+	manhwaweb: "ManhwaWeb",
 };
 
 const metadataSourceByType: Record<ObraType, MetadataSource> = {
@@ -74,7 +75,7 @@ const metadataSourceByType: Record<ObraType, MetadataSource> = {
 	series: "tmdb",
 	anime: "anilist",
 	manga: "anilist",
-	manhwa: "anilist",
+	manhwa: "manhwaweb",
 };
 
 const progressUnitLabels: Record<ObraType, string> = {

@@ -231,6 +231,7 @@ function buildMetadataPayload(
 		latestChapter: source.latestChapter ?? undefined,
 		latestChapterSource: source.latestChapterSource ?? undefined,
 		latestChapterCheckedAt: source.latestChapterCheckedAt ?? undefined,
+		lastNotifiedChapter: source.latestChapter ?? undefined,
 		mangaPlusTitleId: source.mangaPlusTitleId ?? undefined,
 		mangaDexId: source.mangaDexId ?? undefined,
 	};
@@ -279,7 +280,7 @@ export function ObraForm({
 			startedAt: "",
 			finishedAt: "",
 			recommendedBy: "",
-			readingUrl: "",
+			readingUrl: selectedMetadata?.canonicalUrl ?? "",
 			tags: "",
 			totalProgress: getTotalFromMetadata(selectedMetadata, type) ?? "",
 		},
@@ -344,6 +345,9 @@ export function ObraForm({
 		}
 		if (metadataDetails.year !== undefined) {
 			form.setFieldValue("year", String(metadataDetails.year));
+		}
+		if (metadataDetails.canonicalUrl && !form.state.values.readingUrl) {
+			form.setFieldValue("readingUrl", metadataDetails.canonicalUrl);
 		}
 		const total = getTotalFromMetadata(metadataDetails, type);
 		if (total) {

@@ -26,6 +26,7 @@ const metadataSourceLabels = {
 	"apple-books": "Apple Books",
 	tmdb: "TMDB",
 	anilist: "AniList",
+	manhwaweb: "ManhwaWeb",
 };
 
 const metadataSourceByType: Record<
@@ -37,7 +38,7 @@ const metadataSourceByType: Record<
 	series: "tmdb",
 	anime: "anilist",
 	manga: "anilist",
-	manhwa: "anilist",
+	manhwa: "manhwaweb",
 };
 
 interface AddObraDialogProps {
