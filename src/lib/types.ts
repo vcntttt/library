@@ -1,4 +1,4 @@
-import type { MetadataSource } from "@/lib/metadata/types";
+import type { MangaChapterSource, MetadataSource } from "@/lib/metadata/types";
 
 export type ObraType =
 	| "book"
@@ -15,12 +15,6 @@ export type ObraStatus =
 	| "hiatus"
 	| "finished"
 	| "dropped";
-
-export type MangaChapterSource =
-	| "manga-plus"
-	| "mangadex"
-	| "anilist"
-	| "manhwaweb";
 
 export type ObraId = string;
 

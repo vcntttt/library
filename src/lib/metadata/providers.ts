@@ -1,11 +1,14 @@
 import type { ObraType } from "@/lib/types";
 import type {
+	MangaChapterSource,
 	MetadataDetails,
 	MetadataSearchResult,
 	MetadataSource,
 } from "./types";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const MANHWA_WEB_IMAGE_HOSTS = new Set(["img1mw.xyz", "img2mw.xyz"]);
+const MANHWA_WEB_IMAGE_PROXY_PATH = "/api/metadata/image";
 
 const providerRateLimits: Record<MetadataSource, number> = {
 	"google-books": 250,
@@ -26,7 +29,7 @@ const detailsCache = new Map<
 	{ expiresAt: number; value: MetadataDetails }
 >();
 
-const DETAILS_CACHE_VERSION = "v2";
+const DETAILS_CACHE_VERSION = "v3";
 
 const providerLastRequest = new Map<MetadataSource, number>();
 
@@ -588,17 +591,15 @@ async function getManhwaWebDetails(
 		id: data.real_id ?? data._id,
 		title: data.the_real_name ?? data.name_esp ?? data._name,
 		creator: data._extras?.autores?.filter(Boolean).join(", ") || undefined,
-		coverUrl: data._imagen,
+		coverUrl: proxyManhwaWebImageUrl(data._imagen),
 		description: data._sinopsis?.trim() || undefined,
 		canonicalUrl,
 		status: mapManhwaWebStatus(data._status),
 		latestChapter,
-		latestChapterSource: "manhwaweb",
+		latestChapterSource: "scraping",
 		latestChapterCheckedAt: Date.now(),
 	};
 }
-
-type MangaChapterSource = "manga-plus" | "mangadex" | "anilist" | "manhwaweb";
 
 interface MangaLatestChapterInfo {
 	latestChapter?: number;
@@ -799,6 +800,69 @@ async function getMangaDexLatestFromChapterFeed(mangaId: string) {
 	}
 }
 
+export async function getMangaReadingUrlDetails(
+	readingUrl: string | undefined,
+	obraType?: ObraType,
+): Promise<MetadataDetails | undefined> {
+	if (!readingUrl || (obraType !== "manga" && obraType !== "manhwa")) {
+		return undefined;
+	}
+
+	const normalizedUrl = normalizeReadingUrl(readingUrl);
+	if (!normalizedUrl) return undefined;
+
+	const manhwaWebId = extractManhwaWebId(normalizedUrl);
+	if (manhwaWebId) {
+		return await getManhwaWebDetails(manhwaWebId, obraType);
+	}
+
+	const mangaDexId = extractMangaDexTitleId(normalizedUrl);
+	if (mangaDexId) {
+		const latestChapter = await getMangaDexLatestFromChapterFeed(mangaDexId);
+		if (latestChapter === undefined) return undefined;
+
+		return {
+			source: "anilist",
+			id: mangaDexId,
+			canonicalUrl: normalizedUrl,
+			latestChapter,
+			latestChapterSource: "scraping",
+			latestChapterCheckedAt: Date.now(),
+			mangaDexId,
+		};
+	}
+
+	return await getCubariReadingUrlDetails(normalizedUrl);
+}
+
+async function getCubariReadingUrlDetails(
+	readingUrl: string,
+): Promise<MetadataDetails | undefined> {
+	const manifestUrl = getCubariManifestUrl(readingUrl);
+	if (!manifestUrl) return undefined;
+
+	try {
+		const manifest = await fetchJson<CubariManifest>(manifestUrl);
+		const latestChapter = getLatestCubariChapter(manifest);
+		if (latestChapter === undefined) return undefined;
+
+		return {
+			source: "anilist",
+			id: manifestUrl,
+			title: manifest.title,
+			creator: manifest.author ?? manifest.artist,
+			coverUrl: manifest.cover,
+			canonicalUrl: readingUrl,
+			latestChapter,
+			latestChapterSource: "scraping",
+			latestChapterCheckedAt: Date.now(),
+		};
+	} catch (error) {
+		void error;
+		return undefined;
+	}
+}
+
 function parseChapterNumber(value?: string | null) {
 	if (!value) return undefined;
 	const match = value.match(/(\d+(?:\.\d+)?)/);
@@ -989,6 +1053,81 @@ function extractManhwaWebId(value: string) {
 	}
 }
 
+function extractMangaDexTitleId(value: string) {
+	try {
+		const url = new URL(value);
+		if (url.hostname.replace(/^www\./, "") !== "mangadex.org") {
+			return undefined;
+		}
+
+		const segments = url.pathname.split("/").filter(Boolean);
+		const titleIndex = segments.indexOf("title");
+		const id = titleIndex >= 0 ? segments[titleIndex + 1] : undefined;
+		if (!id || !isUuid(id)) return undefined;
+		return id;
+	} catch {
+		return undefined;
+	}
+}
+
+function isUuid(value: string) {
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+		value,
+	);
+}
+
+function getCubariManifestUrl(value: string) {
+	try {
+		const url = new URL(value);
+		if (url.hostname.replace(/^www\./, "") !== "cubari.moe") {
+			return undefined;
+		}
+
+		const segments = url.pathname.split("/").filter(Boolean);
+		const gistIndex = segments.indexOf("gist");
+		const encodedPath = gistIndex >= 0 ? segments[gistIndex + 1] : undefined;
+		if (!encodedPath) return undefined;
+
+		const decodedPath = decodeBase64Url(encodedPath);
+		if (!decodedPath?.startsWith("raw/")) return undefined;
+
+		const [, owner, repo, branch, ...pathParts] = decodedPath.split("/");
+		if (!owner || !repo || !branch || !pathParts.length) return undefined;
+
+		const path = pathParts
+			.map((part) => encodeURIComponent(part).replace(/%25/g, "%"))
+			.join("/");
+		return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(branch)}/${path}`;
+	} catch {
+		return undefined;
+	}
+}
+
+function decodeBase64Url(value: string) {
+	try {
+		const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+		const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+		return globalThis.atob(padded);
+	} catch {
+		return undefined;
+	}
+}
+
+function getLatestCubariChapter(manifest: CubariManifest) {
+	const chapterNumbers = Object.keys(manifest.chapters ?? {})
+		.map((chapter) => parseChapterNumber(chapter))
+		.filter((value): value is number => value !== undefined);
+	if (!chapterNumbers.length) return undefined;
+	return Math.max(...chapterNumbers);
+}
+
+function normalizeReadingUrl(value: string) {
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	if (/^https?:\/\//i.test(trimmed)) return trimmed;
+	return `https://${trimmed}`;
+}
+
 function manhwaWebItemToSearchResult(
 	item: ManhwaWebSearchItem,
 ): MetadataSearchResult {
@@ -996,13 +1135,38 @@ function manhwaWebItemToSearchResult(
 		source: "manhwaweb",
 		id: item.real_id ?? item._id,
 		title: item.the_real_name ?? item.name_esp ?? item._name ?? "Sin titulo",
-		coverUrl: item._imagen,
+		coverUrl: proxyManhwaWebImageUrl(item._imagen),
 		status: mapManhwaWebStatus(item._status),
 		latestChapter: nullableChapter(item._numero_cap),
-		latestChapterSource: "manhwaweb",
+		latestChapterSource: "scraping",
 		latestChapterCheckedAt: Date.now(),
 		canonicalUrl: `https://www.manhwaweb.com/manhwa/${item.real_id ?? item._id}`,
 	};
+}
+
+export function proxyManhwaWebImageUrl(value?: string) {
+	if (!value) return undefined;
+	if (value.startsWith(MANHWA_WEB_IMAGE_PROXY_PATH)) return value;
+
+	try {
+		const url = new URL(value);
+		if (!MANHWA_WEB_IMAGE_HOSTS.has(url.hostname)) return value;
+		return `${MANHWA_WEB_IMAGE_PROXY_PATH}?url=${encodeURIComponent(url.toString())}`;
+	} catch {
+		return value;
+	}
+}
+
+export function isAllowedManhwaWebImageUrl(value: string) {
+	try {
+		const url = new URL(value);
+		return (
+			(url.protocol === "https:" || url.protocol === "http:") &&
+			MANHWA_WEB_IMAGE_HOSTS.has(url.hostname)
+		);
+	} catch {
+		return false;
+	}
 }
 
 function metadataDetailsToSearchResult(
@@ -1601,6 +1765,14 @@ interface ManhwaWebDetails extends ManhwaWebSearchItem {
 
 interface ManhwaWebChapter {
 	chapter?: number;
+}
+
+interface CubariManifest {
+	title?: string;
+	author?: string;
+	artist?: string;
+	cover?: string;
+	chapters?: Record<string, unknown>;
 }
 
 interface AnilistResponse {

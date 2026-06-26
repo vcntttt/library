@@ -8,7 +8,10 @@ import {
 	mutation,
 	type MutationCtx,
 } from "./_generated/server";
-import { getMetadataDetails } from "../src/lib/metadata/providers";
+import {
+	getMangaReadingUrlDetails,
+	getMetadataDetails,
+} from "../src/lib/metadata/providers";
 import {
 	mergeAcknowledgedMangaMetadata,
 	mergeMangaMetadata,
@@ -45,11 +48,9 @@ export const checkForNewChapters = internalAction({
 
 			try {
 				const source = getTrackedMetadataSource(obra.externalSource);
-				const details = await getMetadataDetails(
-					source,
-					obra.externalId,
-					obra.type,
-				);
+				const details =
+					(await getMangaReadingUrlDetails(obra.readingUrl, obra.type)) ??
+					(await getMetadataDetails(source, obra.externalId, obra.type));
 				const merged = mergeMangaMetadata(obra.metadata, details);
 				const progressTotal = syncMangaProgressTotal(
 					obra.progressTotal,

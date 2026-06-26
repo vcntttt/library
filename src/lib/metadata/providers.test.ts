@@ -558,13 +558,13 @@ describe("metadata providers", () => {
 			id: "magoinfinito_1717625777860",
 			title: "Mago Infinito",
 			creator: "Kim Chiwoo",
-			coverUrl: "https://img2mw.xyz/mago.webp",
+			coverUrl: "/api/metadata/image?url=https%3A%2F%2Fimg2mw.xyz%2Fmago.webp",
 			description: "Un nino aprende magia.",
 			canonicalUrl:
 				"https://www.manhwaweb.com/manhwa/magoinfinito_1717625777860",
 			status: "RELEASING",
 			latestChapter: 173,
-			latestChapterSource: "manhwaweb",
+			latestChapterSource: "scraping",
 		});
 		expect(details.latestChapterCheckedAt).toEqual(expect.any(Number));
 		expect(fetchMock).toHaveBeenCalledWith(
@@ -602,9 +602,83 @@ describe("metadata providers", () => {
 			source: "manhwaweb",
 			id: "la-vida-despues-de-la-muerte_1696084388227",
 			title: "La Vida Despues de la Muerte",
+			coverUrl: "/api/metadata/image?url=https%3A%2F%2Fimg1mw.xyz%2Ftbate.webp",
 			latestChapter: 251,
+			latestChapterSource: "scraping",
 			canonicalUrl:
 				"https://www.manhwaweb.com/manhwa/la-vida-despues-de-la-muerte_1696084388227",
 		});
+	});
+
+	it("reads latest chapters from a MangaDex reading URL", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				data: [
+					{ attributes: { chapter: "879" } },
+					{ attributes: { chapter: "878.5" } },
+				],
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMangaReadingUrlDetails } = await import("./providers");
+
+		const details = await getMangaReadingUrlDetails(
+			"https://mangadex.org/title/077a3fed-1634-424f-be7a-9a96b7f07b78/kingdom",
+			"manga",
+		);
+
+		expect(details).toMatchObject({
+			source: "anilist",
+			id: "077a3fed-1634-424f-be7a-9a96b7f07b78",
+			mangaDexId: "077a3fed-1634-424f-be7a-9a96b7f07b78",
+			latestChapter: 879,
+			latestChapterSource: "scraping",
+			canonicalUrl:
+				"https://mangadex.org/title/077a3fed-1634-424f-be7a-9a96b7f07b78/kingdom",
+		});
+		expect(details?.latestChapterCheckedAt).toEqual(expect.any(Number));
+		expect(fetchMock).toHaveBeenCalledWith(
+			expect.stringContaining("https://api.mangadex.org/chapter?"),
+			undefined,
+		);
+	});
+
+	it("reads latest chapters from a Cubari reading URL", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				title: "One Piece (ES)",
+				author: "Eiichiro Oda",
+				cover: "https://example.com/one-piece.jpg",
+				chapters: {
+					"1184": {},
+					"1185": {},
+				},
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMangaReadingUrlDetails } = await import("./providers");
+
+		const details = await getMangaReadingUrlDetails(
+			"https://cubari.moe/read/gist/cmF3L21pZ3VlbEdsejM0NS9Mb3NNdWdpd2FyYVNjYW5zL21haW4vT25lJTIwUGllY2UuanNvbg/",
+			"manga",
+		);
+
+		expect(details).toMatchObject({
+			source: "anilist",
+			title: "One Piece (ES)",
+			creator: "Eiichiro Oda",
+			coverUrl: "https://example.com/one-piece.jpg",
+			latestChapter: 1185,
+			latestChapterSource: "scraping",
+		});
+		expect(details?.canonicalUrl).toBe(
+			"https://cubari.moe/read/gist/cmF3L21pZ3VlbEdsejM0NS9Mb3NNdWdpd2FyYVNjYW5zL21haW4vT25lJTIwUGllY2UuanNvbg/",
+		);
+		expect(fetchMock).toHaveBeenCalledWith(
+			"https://raw.githubusercontent.com/miguelGlz345/LosMugiwaraScans/main/One%20Piece.json",
+			undefined,
+		);
 	});
 });

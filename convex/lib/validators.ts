@@ -32,6 +32,7 @@ export const mangaChapterSourceValidator = v.union(
 	v.literal("mangadex"),
 	v.literal("anilist"),
 	v.literal("manhwaweb"),
+	v.literal("scraping"),
 );
 
 export const externalReferenceValidator = v.object({

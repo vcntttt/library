@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
-import type { MetadataSource } from "@/lib/metadata/types";
+import type { MangaChapterSource, MetadataSource } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import type { Obra, ObraId, ObraType } from "@/lib/types";
 import { formatDateShort } from "@/lib/utils";
@@ -67,6 +67,14 @@ const metadataSourceLabels: Record<MetadataSource, string> = {
 	tmdb: "TMDB",
 	anilist: "AniList",
 	manhwaweb: "ManhwaWeb",
+};
+
+const mangaChapterSourceLabels: Record<MangaChapterSource, string> = {
+	"manga-plus": "MANGA Plus",
+	mangadex: "MangaDex",
+	anilist: "AniList",
+	manhwaweb: "ManhwaWeb",
+	scraping: "Scraping",
 };
 
 const metadataSourceByType: Record<ObraType, MetadataSource> = {
@@ -727,6 +735,17 @@ function ObraAuthed({
 			metadataItems.push({
 				label: "Capítulos totales",
 				value: metadata.latestChapter.toLocaleString(),
+			});
+		}
+		if (
+			(obra.type === "manga" || obra.type === "manhwa") &&
+			metadata.latestChapterSource
+		) {
+			metadataItems.push({
+				label: "Fuente de capítulos",
+				value:
+					mangaChapterSourceLabels[metadata.latestChapterSource] ??
+					metadata.latestChapterSource,
 			});
 		}
 		if (

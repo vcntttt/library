@@ -6,6 +6,13 @@ export type MetadataSource =
 	| "anilist"
 	| "manhwaweb";
 
+export type MangaChapterSource =
+	| "manga-plus"
+	| "mangadex"
+	| "anilist"
+	| "manhwaweb"
+	| "scraping";
+
 export interface MetadataSearchResult {
 	source: MetadataSource;
 	id: string;
@@ -34,7 +41,7 @@ export interface MetadataSearchResult {
 	runtime?: number;
 	watchProviders?: string[];
 	latestChapter?: number;
-	latestChapterSource?: "manga-plus" | "mangadex" | "anilist" | "manhwaweb";
+	latestChapterSource?: MangaChapterSource;
 	latestChapterCheckedAt?: number;
 	mangaPlusTitleId?: string;
 	mangaDexId?: string;
@@ -68,7 +75,7 @@ export interface MetadataDetails {
 	runtime?: number;
 	watchProviders?: string[];
 	latestChapter?: number;
-	latestChapterSource?: "manga-plus" | "mangadex" | "anilist" | "manhwaweb";
+	latestChapterSource?: MangaChapterSource;
 	latestChapterCheckedAt?: number;
 	mangaPlusTitleId?: string;
 	mangaDexId?: string;
