@@ -1104,13 +1104,25 @@ function getCubariManifestUrl(value: string) {
 }
 
 function decodeBase64Url(value: string) {
-	try {
-		const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-		const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-		return globalThis.atob(padded);
-	} catch {
-		return undefined;
+	const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+	const alphabet =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	const bytes: number[] = [];
+	let buffer = 0;
+	let bits = 0;
+
+	for (const char of normalized.replace(/=+$/, "")) {
+		const index = alphabet.indexOf(char);
+		if (index < 0) return undefined;
+		buffer = (buffer << 6) | index;
+		bits += 6;
+		if (bits >= 8) {
+			bits -= 8;
+			bytes.push((buffer >> bits) & 0xff);
+		}
 	}
+
+	return String.fromCharCode(...bytes);
 }
 
 function getLatestCubariChapter(manifest: CubariManifest) {
