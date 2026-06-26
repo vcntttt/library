@@ -8,7 +8,10 @@ import {
 	mutation,
 	type MutationCtx,
 } from "./_generated/server";
-import { getMetadataDetails } from "../src/lib/metadata/providers";
+import {
+	getMangaReadingUrlDetails,
+	getMetadataDetails,
+} from "../src/lib/metadata/providers";
 import {
 	mergeAcknowledgedMangaMetadata,
 	mergeMangaMetadata,
@@ -28,6 +31,8 @@ const TRACKED_MANGA_STATUSES = [
 	"paused",
 	"hiatus",
 ] as const;
+const TRACKED_METADATA_SOURCES = ["anilist", "manhwaweb"] as const;
+type TrackedMetadataSource = (typeof TRACKED_METADATA_SOURCES)[number];
 
 export const checkForNewChapters = internalAction({
 	args: {},
@@ -42,11 +47,10 @@ export const checkForNewChapters = internalAction({
 			checked += 1;
 
 			try {
-			const details = await getMetadataDetails(
-				"anilist",
-				obra.externalId,
-				obra.type,
-			);
+				const source = getTrackedMetadataSource(obra.externalSource);
+				const details =
+					(await getMangaReadingUrlDetails(obra.readingUrl, obra.type)) ??
+					(await getMetadataDetails(source, obra.externalId, obra.type));
 				const merged = mergeMangaMetadata(obra.metadata, details);
 				const progressTotal = syncMangaProgressTotal(
 					obra.progressTotal,
@@ -75,8 +79,8 @@ export const checkForNewChapters = internalAction({
 							anilistId: obra.externalId,
 							title: obra.title,
 							chapter: latestChapter,
-							source: merged.latestChapterSource ?? "anilist",
-							url: obra.readingUrl,
+							source: merged.latestChapterSource ?? source,
+							url: obra.readingUrl ?? merged.canonicalUrl,
 							detectedAt: Date.now(),
 						},
 					},
@@ -240,16 +244,18 @@ export const listTrackedManga = internalQuery({
 	handler: async (ctx) => {
 		const tracked = await Promise.all(
 			TRACKED_MANGA_TYPES.flatMap((type) =>
-				TRACKED_MANGA_STATUSES.map((status) =>
-					ctx.db
-						.query("obras")
-						.withIndex("by_manga_tracking", (q) =>
-							(q as any)
-								.eq("type", type)
-								.eq("status", status)
-								.eq("externalSource", "anilist"),
+				TRACKED_MANGA_STATUSES.flatMap((status) =>
+					TRACKED_METADATA_SOURCES.map((source) =>
+						ctx.db
+							.query("obras")
+							.withIndex("by_manga_tracking", (q) =>
+								(q as any)
+									.eq("type", type)
+									.eq("status", status)
+									.eq("externalSource", source),
+							)
+							.collect(),
 						)
-						.collect(),
 				),
 			),
 		);
@@ -335,4 +341,10 @@ function assertAlfredSecret(secret: string) {
 	const expected = process.env.ALFRED_NOTIFY_SECRET;
 	if (!expected) throw new Error("Falta ALFRED_NOTIFY_SECRET.");
 	if (secret !== expected) throw new Error("No autorizado.");
+}
+
+function getTrackedMetadataSource(
+	source: Doc<"obras">["externalSource"],
+): TrackedMetadataSource {
+	return source === "manhwaweb" ? "manhwaweb" : "anilist";
 }

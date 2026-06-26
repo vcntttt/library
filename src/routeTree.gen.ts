@@ -18,6 +18,7 @@ import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
+import { Route as ApiMetadataImageRouteImport } from './routes/api/metadata/image'
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
 import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
 import { Route as InternalAlfredNotificationsMarkReadRouteImport } from './routes/internal/alfred/notifications/mark-read'
@@ -68,6 +69,11 @@ const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
   path: '/api/metadata/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMetadataImageRoute = ApiMetadataImageRouteImport.update({
+  id: '/api/metadata/image',
+  path: '/api/metadata/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMetadataDetailsRoute = ApiMetadataDetailsRouteImport.update({
   id: '/api/metadata/details',
   path: '/api/metadata/details',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/variant-c': typeof VariantCRoute
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
+  '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/variant-c': typeof VariantCRoute
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
+  '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/variant-c': typeof VariantCRoute
   '/obra/$obraId': typeof ObraObraIdRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
+  '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/variant-c'
     | '/obra/$obraId'
     | '/api/metadata/details'
+    | '/api/metadata/image'
     | '/api/metadata/search'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/variant-c'
     | '/obra/$obraId'
     | '/api/metadata/details'
+    | '/api/metadata/image'
     | '/api/metadata/search'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/variant-c'
     | '/obra/$obraId'
     | '/api/metadata/details'
+    | '/api/metadata/image'
     | '/api/metadata/search'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   VariantCRoute: typeof VariantCRoute
   ObraObraIdRoute: typeof ObraObraIdRoute
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
+  ApiMetadataImageRoute: typeof ApiMetadataImageRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
   InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
   InternalAlfredNotificationsMarkReadRoute: typeof InternalAlfredNotificationsMarkReadRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMetadataSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/metadata/image': {
+      id: '/api/metadata/image'
+      path: '/api/metadata/image'
+      fullPath: '/api/metadata/image'
+      preLoaderRoute: typeof ApiMetadataImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/metadata/details': {
       id: '/api/metadata/details'
       path: '/api/metadata/details'
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   VariantCRoute: VariantCRoute,
   ObraObraIdRoute: ObraObraIdRoute,
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
+  ApiMetadataImageRoute: ApiMetadataImageRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
   InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,
   InternalAlfredNotificationsMarkReadRoute:

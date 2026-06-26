@@ -22,6 +22,7 @@ const metadataSources = [
 	"apple-books",
 	"tmdb",
 	"anilist",
+	"manhwaweb",
 ] as const;
 
 const isObraType = (value: string): value is ObraType =>

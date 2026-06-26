@@ -14,6 +14,7 @@ const metadataSources = [
 	"apple-books",
 	"tmdb",
 	"anilist",
+	"manhwaweb",
 ] as const;
 
 const obraTypes = [

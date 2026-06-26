@@ -3,7 +3,15 @@ export type MetadataSource =
 	| "open-library"
 	| "apple-books"
 	| "tmdb"
-	| "anilist";
+	| "anilist"
+	| "manhwaweb";
+
+export type MangaChapterSource =
+	| "manga-plus"
+	| "mangadex"
+	| "anilist"
+	| "manhwaweb"
+	| "scraping";
 
 export interface MetadataSearchResult {
 	source: MetadataSource;
@@ -33,7 +41,7 @@ export interface MetadataSearchResult {
 	runtime?: number;
 	watchProviders?: string[];
 	latestChapter?: number;
-	latestChapterSource?: "manga-plus" | "mangadex" | "anilist";
+	latestChapterSource?: MangaChapterSource;
 	latestChapterCheckedAt?: number;
 	mangaPlusTitleId?: string;
 	mangaDexId?: string;
@@ -67,7 +75,7 @@ export interface MetadataDetails {
 	runtime?: number;
 	watchProviders?: string[];
 	latestChapter?: number;
-	latestChapterSource?: "manga-plus" | "mangadex" | "anilist";
+	latestChapterSource?: MangaChapterSource;
 	latestChapterCheckedAt?: number;
 	mangaPlusTitleId?: string;
 	mangaDexId?: string;

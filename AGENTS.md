@@ -60,7 +60,10 @@ Notes:
 
 ## Commands
 
-- Do not run `bun run dev` unless explicitly asked; server is usually running in another terminal.
+- You may run `bun run dev` when useful for verification. First check whether a
+  server is already running and choose a non-conflicting port if needed. Dev uses
+  the same Convex deployment/data as production, so never mutate real user data
+  outside explicit user requests or E2E-prefixed test flows.
 
 ```bash
 # install
