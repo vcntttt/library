@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
 import type { MangaChapterSource, MetadataSource } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
+import { formatProgressValue, getProgressUnitLabel } from "@/lib/progress";
 import type { Obra, ObraId, ObraType } from "@/lib/types";
 import { formatDateShort } from "@/lib/utils";
 
@@ -85,15 +86,6 @@ const metadataSourceByType: Record<ObraType, MetadataSource> = {
 	anime: "anilist",
 	manga: "anilist",
 	manhwa: "manhwaweb",
-};
-
-const progressUnitLabels: Record<ObraType, string> = {
-	book: "páginas",
-	movie: "",
-	series: "episodios",
-	anime: "episodios",
-	manga: "capítulos",
-	manhwa: "capítulos",
 };
 
 interface DetailItem {
@@ -380,7 +372,8 @@ function ObraCoverPanel({
 					<div className="flex justify-between text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
 						<span>Progreso</span>
 						<span>
-							{progressCurrent} / {progressTotal || "—"}
+							{formatProgressValue(progressCurrent, obra)} /{" "}
+							{progressTotal ? formatProgressValue(progressTotal, obra) : "—"}
 						</span>
 					</div>
 					<div className="h-1 w-full bg-border">
@@ -419,7 +412,7 @@ function ObraHeroInfo({
 	return (
 		<section className="space-y-4">
 			<div className="flex flex-wrap gap-2">
-				<TypeBadge type={obra.type} />
+				<TypeBadge type={obra.type} format={obra.format} />
 				<ObraStatusPicker obra={obra}>
 					<StatusBadge
 						status={obra.status}
@@ -630,7 +623,7 @@ function ObraAuthed({
 	}
 
 	const obra = obraFromDoc(doc);
-	const progressUnitLabel = progressUnitLabels[obra.type];
+	const progressUnitLabel = getProgressUnitLabel(obra);
 	const metadataSource =
 		obra.external?.source ?? metadataSourceByType[obra.type];
 	const metadataSourceLabel = metadataSourceLabels[metadataSource];
@@ -656,6 +649,17 @@ function ObraAuthed({
 			metadataItems.push({
 				label: "Páginas",
 				value: metadata.pages.toLocaleString(),
+			});
+		}
+		if (obra.type === "book" && obra.format) {
+			metadataItems.push({
+				label: "Formato",
+				value:
+					obra.format === "audiobook"
+						? "Audiolibro"
+						: obra.format === "ebook"
+							? "Ebook"
+							: "Libro físico",
 			});
 		}
 		if (obra.type === "book" && metadata.publisher) {

@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import {
 	mangaChapterSourceValidator,
 	metadataSourceValidator,
+	obraFormatValidator,
 	obraMetadataValidator,
 	obraStatusValidator,
 	obraTypeValidator,
@@ -24,6 +25,7 @@ export default defineSchema({
 		userId: v.id("users"),
 		title: v.string(),
 		type: obraTypeValidator,
+		format: v.optional(obraFormatValidator),
 		status: obraStatusValidator,
 		review: v.optional(v.string()),
 		tags: v.array(v.string()),

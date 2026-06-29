@@ -17,7 +17,12 @@ import type {
 	MetadataDetails,
 	MetadataSearchResult,
 } from "@/lib/metadata/types";
-import type { CreateObraInput, ObraStatus, ObraType } from "@/lib/types";
+import type {
+	CreateObraInput,
+	ObraFormat,
+	ObraStatus,
+	ObraType,
+} from "@/lib/types";
 import { formatDateShort, parseDateInput } from "@/lib/utils";
 
 const obraStatusLabels: Record<ObraStatus, string> = {
@@ -37,6 +42,18 @@ const obraStatuses: { value: ObraStatus; label: string }[] = [
 	{ value: "finished", label: "Terminada" },
 	{ value: "dropped", label: "Abandonada" },
 ];
+
+const bookFormats: { value: ObraFormat; label: string }[] = [
+	{ value: "physical", label: "Libro físico" },
+	{ value: "ebook", label: "Ebook" },
+	{ value: "audiobook", label: "Audiolibro" },
+];
+
+const getProgressTotalLabel = (type: ObraType, format?: ObraFormat) => {
+	if (type === "book") return format === "audiobook" ? "minutos" : "páginas";
+	if (type === "manga" || type === "manhwa") return "capítulos";
+	return "episodios";
+};
 
 const getTotalFromMetadata = (
 	metadata: Pick<
@@ -263,6 +280,7 @@ export function ObraForm({
 }: ObraFormProps) {
 	const titleId = useId();
 	const statusId = useId();
+	const formatId = useId();
 	const creatorId = useId();
 	const yearId = useId();
 	const startedAtId = useId();
@@ -276,6 +294,7 @@ export function ObraForm({
 		defaultValues: {
 			title: selectedMetadata?.title ?? "",
 			type,
+			format: "physical" as ObraFormat,
 			status: "backlog" as ObraStatus,
 			creator: selectedMetadata?.creator ?? "",
 			year: selectedMetadata?.year ? String(selectedMetadata.year) : "",
@@ -291,7 +310,7 @@ export function ObraForm({
 
 			const parsedTotalProgress = Math.max(
 				0,
-				Number.parseInt(value.totalProgress, 10) || 0,
+				Number.parseInt(String(value.totalProgress), 10) || 0,
 			);
 			const parsedYear = Number.parseInt(value.year, 10);
 			const year = Number.isFinite(parsedYear) ? parsedYear : undefined;
@@ -307,6 +326,7 @@ export function ObraForm({
 			const input: CreateObraInput = {
 				title: value.title.trim(),
 				type: value.type as ObraType,
+				format: value.type === "book" ? value.format : undefined,
 				status: value.status,
 				creator: value.creator.trim() || undefined,
 				year,
@@ -482,6 +502,43 @@ export function ObraForm({
 								</div>
 							)}
 						</form.Field>
+						<form.Subscribe selector={(state) => state.values.type}>
+							{(formType) =>
+								formType === "book" && (
+									<form.Field name="format">
+										{(field) => (
+											<div className="space-y-2">
+												<Label htmlFor={formatId}>Formato</Label>
+												<Select
+													value={field.state.value}
+													onValueChange={(v) =>
+														field.handleChange(v as ObraFormat)
+													}
+												>
+													<SelectTrigger id={formatId}>
+														<span className="truncate">
+															{bookFormats.find(
+																(format) => format.value === field.state.value,
+															)?.label ?? "Libro físico"}
+														</span>
+													</SelectTrigger>
+													<SelectContent>
+														{bookFormats.map((format) => (
+															<SelectItem
+																key={format.value}
+																value={format.value}
+															>
+																{format.label}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</div>
+										)}
+									</form.Field>
+								)
+							}
+						</form.Subscribe>
 					</div>
 				</div>
 
@@ -602,21 +659,28 @@ export function ObraForm({
 								<form.Field name="totalProgress">
 									{(field) => (
 										<div className="space-y-2">
-											<Label htmlFor={totalId}>
-												Total{" "}
-												{formType === "book"
-													? "páginas"
-													: formType === "manga" || formType === "manhwa"
-														? "capítulos"
-														: "episodios"}
-											</Label>
-											<Input
-												id={totalId}
-												type="number"
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="Ej: 320"
-											/>
+											<form.Subscribe selector={(state) => state.values.format}>
+												{(format) => (
+													<>
+														<Label htmlFor={totalId}>
+															Total {getProgressTotalLabel(formType, format)}
+														</Label>
+														<Input
+															id={totalId}
+															type="number"
+															value={field.state.value}
+															onChange={(e) =>
+																field.handleChange(e.target.value)
+															}
+															placeholder={
+																formType === "book" && format === "audiobook"
+																	? "Ej: 750"
+																	: "Ej: 320"
+															}
+														/>
+													</>
+												)}
+											</form.Subscribe>
 										</div>
 									)}
 								</form.Field>

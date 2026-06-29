@@ -115,6 +115,7 @@ export const create = mutation({
 			userId,
 			title: input.title.trim(),
 			type: input.type,
+			format: input.type === "book" ? input.format : undefined,
 			status: input.status,
 			review: normalizeOptionalString(input.review),
 			tags: normalizeTags(input.tags),
@@ -162,6 +163,11 @@ export const update = mutation({
 		}
 		if (hasOwn(patch, "type") && patch.type != null) {
 			nextPatch.type = patch.type;
+		}
+		if (hasOwn(patch, "format")) {
+			const nextType = nextPatch.type ?? existing.type;
+			nextPatch.format =
+				nextType === "book" && patch.format != null ? patch.format : undefined;
 		}
 		if (hasOwn(patch, "status") && patch.status != null) {
 			nextPatch.status = patch.status;
@@ -240,6 +246,9 @@ export const update = mutation({
 
 		const nextStatus = nextPatch.status ?? existing.status;
 		const nextType = nextPatch.type ?? existing.type;
+		if (nextType !== "book") {
+			nextPatch.format = undefined;
+		}
 		if (
 			nextStatus === "in-progress" &&
 			existing.startedAt == null &&
@@ -319,6 +328,7 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		originalTitle: row.title,
 		customTitle: row.customTitle,
 		type: row.type,
+		format: row.format,
 		status: row.status,
 		review: row.review,
 		tags: row.tags,

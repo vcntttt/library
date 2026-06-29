@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { formatProgressValue, getProgressUnitLabel } from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
 import type { Obra, ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	const hasProgress = obra.type !== "movie";
 	const progressTotal = obra.progress?.total ?? 0;
 	const progressCurrent = obra.progress?.current ?? 0;
+	const progressUnitLabel = getProgressUnitLabel(obra);
 	const showProgress =
 		hasProgress &&
 		obra.status !== "backlog" &&
@@ -199,6 +201,13 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 								<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
 									Progreso
 								</p>
+								{progressUnitLabel && (
+									<p className="text-xs text-muted-foreground">
+										{formatProgressValue(progressCurrent, obra)} /{" "}
+										{formatProgressValue(progressTotal, obra)}{" "}
+										{progressUnitLabel}
+									</p>
+								)}
 								<div className="flex items-center gap-2">
 									<Button
 										variant="outline"
@@ -252,9 +261,14 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 										max={progressTotal}
 										step={1}
 										value={[Math.min(progressCurrent, progressTotal)]}
-										onValueChange={([v]) =>
-											handleProgressChange(v, progressTotal)
-										}
+										onValueChange={(nextValue) => {
+											const value = Array.isArray(nextValue)
+												? nextValue[0]
+												: nextValue;
+											if (value !== undefined) {
+												handleProgressChange(value, progressTotal);
+											}
+										}}
 									/>
 								)}
 							</div>

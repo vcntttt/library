@@ -776,7 +776,11 @@ export function BibliotecaTable({
 										</TableCell>
 										{visibleColumns.type && (
 											<TableCell>
-												<TypeBadge type={obra.type} showIcon={false} />
+												<TypeBadge
+													type={obra.type}
+													format={obra.format}
+													showIcon={false}
+												/>
 											</TableCell>
 										)}
 										{visibleColumns.status && (

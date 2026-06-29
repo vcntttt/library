@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+	formatProgressValue,
 	getInitialProgressTotal,
 	getProgressTotalFromMetadata,
+	getProgressUnitLabel,
+	isAudiobook,
 } from "./progress";
 import type { Obra } from "./types";
 
@@ -49,5 +52,34 @@ describe("progress helpers", () => {
 		expect(
 			getProgressTotalFromMetadata("movie", { runtime: 120 }),
 		).toBeUndefined();
+	});
+
+	it("treats Elon Musk and Steve Jobs biographies as book audiobooks", () => {
+		const audiobooks: Obra[] = [
+			{
+				...baseObra,
+				id: "elon-musk",
+				title: "Elon Musk",
+				format: "audiobook",
+				progress: { current: 180, total: 801 },
+			},
+			{
+				...baseObra,
+				id: "steve-jobs",
+				title: "Steve Jobs",
+				format: "audiobook",
+				progress: { current: 240, total: 915 },
+			},
+		];
+
+		for (const audiobook of audiobooks) {
+			expect(isAudiobook(audiobook)).toBe(true);
+			expect(getProgressUnitLabel(audiobook)).toBe("minutos");
+			expect(getInitialProgressTotal(audiobook)).toBe(
+				audiobook.progress?.total,
+			);
+		}
+		expect(formatProgressValue(801, audiobooks[0])).toBe("13 h 21 min");
+		expect(formatProgressValue(915, audiobooks[1])).toBe("15 h 15 min");
 	});
 });

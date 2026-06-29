@@ -18,6 +18,12 @@ export const obraStatusValidator = v.union(
 	v.literal("dropped"),
 );
 
+export const obraFormatValidator = v.union(
+	v.literal("physical"),
+	v.literal("ebook"),
+	v.literal("audiobook"),
+);
+
 export const metadataSourceValidator = v.union(
 	v.literal("google-books"),
 	v.literal("open-library"),
@@ -84,6 +90,7 @@ export const quotePatchValidator = v.object({
 export const createObraFields = {
 	title: v.string(),
 	type: obraTypeValidator,
+	format: v.optional(obraFormatValidator),
 	status: obraStatusValidator,
 	review: v.optional(v.string()),
 	tags: v.optional(v.array(v.string())),
@@ -108,6 +115,7 @@ export const createObraValidator = v.object(createObraFields);
 export const updateObraPatchFields = {
 	title: v.optional(v.string()),
 	type: v.optional(obraTypeValidator),
+	format: v.optional(v.union(obraFormatValidator, v.null())),
 	status: v.optional(obraStatusValidator),
 	review: v.optional(v.string()),
 	tags: v.optional(v.array(v.string())),

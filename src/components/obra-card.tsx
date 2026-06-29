@@ -69,7 +69,7 @@ export function ObraCard({
 					</div>
 					<div className="space-y-2 p-4 pt-3.5">
 						<div className="flex flex-wrap items-center gap-1.5">
-							<TypeBadge type={obra.type} />
+							<TypeBadge type={obra.type} format={obra.format} />
 							<ObraStatusPicker obra={obra}>
 								<StatusBadge
 									status={obra.status}
@@ -148,6 +148,7 @@ export function ObraCard({
 								)}
 								<TypeBadge
 									type={obra.type}
+									format={obra.format}
 									showIcon={false}
 									className="shrink-0"
 								/>
@@ -191,7 +192,7 @@ export function ObraCard({
 						)}
 						<div className="min-w-0 flex-1">
 							<div className="mb-1 flex items-center gap-2">
-								<TypeBadge type={obra.type} />
+								<TypeBadge type={obra.type} format={obra.format} />
 								<ObraStatusPicker obra={obra}>
 									<StatusBadge
 										status={obra.status}
@@ -228,6 +229,7 @@ export function ObraCard({
 							current={obra.progress.current}
 							total={obra.progress.total}
 							type={obra.type}
+							format={obra.format}
 						/>
 					</div>
 				)}

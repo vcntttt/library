@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import type { ObraType } from "@/lib/types";
+import { getBookFormatLabel } from "@/lib/progress";
+import type { ObraFormat, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { TypeIcons } from "./icons";
 
@@ -23,16 +24,19 @@ const typeLabels: Record<ObraType, string> = {
 
 interface TypeBadgeProps {
 	type: ObraType;
+	format?: ObraFormat;
 	showIcon?: boolean;
 	className?: string;
 }
 
 export function TypeBadge({
 	type,
+	format,
 	showIcon = true,
 	className,
 }: TypeBadgeProps) {
 	const Icon = TypeIcons[type];
+	const label = type === "book" ? getBookFormatLabel(format) : typeLabels[type];
 
 	return (
 		<Badge
@@ -43,7 +47,7 @@ export function TypeBadge({
 			)}
 		>
 			{showIcon && <Icon className="size-3" />}
-			{typeLabels[type]}
+			{label}
 		</Badge>
 	);
 }

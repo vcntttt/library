@@ -20,6 +20,40 @@ function makeManga(overrides: Partial<Obra> = {}): Obra {
 }
 
 describe("manga formatting", () => {
+	it("shows audiobook format and duration for consumed biographies", () => {
+		const biographies: Obra[] = [
+			{
+				id: "elon-musk",
+				title: "Elon Musk",
+				type: "book",
+				format: "audiobook",
+				status: "finished",
+				tags: [],
+				quotes: [],
+				progress: { current: 801, total: 801 },
+				metadata: { pages: 688 },
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+			},
+			{
+				id: "steve-jobs",
+				title: "Steve Jobs",
+				type: "book",
+				format: "audiobook",
+				status: "finished",
+				tags: [],
+				quotes: [],
+				progress: { current: 915, total: 915 },
+				metadata: { pages: 656 },
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+			},
+		];
+
+		expect(getObraMetaLine(biographies[0])).toBe("Audiolibro • 13 h 21 min");
+		expect(getObraMetaLine(biographies[1])).toBe("Audiolibro • 15 h 15 min");
+	});
+
 	it("prefers latest chapter and volumes in the meta line", () => {
 		const obra = makeManga({
 			metadata: {

@@ -1,3 +1,8 @@
+import {
+	formatDurationMinutes,
+	getBookFormatLabel,
+	isAudiobook,
+} from "@/lib/progress";
 import type { Obra } from "@/lib/types";
 import { formatDateShort } from "@/lib/utils";
 
@@ -30,8 +35,13 @@ export const getObraMetaLine = (obra: Obra) => {
 	const parts: string[] = [];
 
 	if (obra.type === "book") {
-		if (metadata?.pages)
+		if (isAudiobook(obra)) {
+			parts.push(getBookFormatLabel(obra.format));
+			if (obra.progress?.total)
+				parts.push(formatDurationMinutes(obra.progress.total));
+		} else if (metadata?.pages) {
 			parts.push(`${metadata.pages.toLocaleString()} páginas`);
+		}
 		if (!parts.length && obra.year) parts.push(`Año ${obra.year}`);
 	}
 

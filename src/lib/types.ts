@@ -16,6 +16,8 @@ export type ObraStatus =
 	| "finished"
 	| "dropped";
 
+export type ObraFormat = "physical" | "ebook" | "audiobook";
+
 export type ObraId = string;
 
 export interface ObraMetadata {
@@ -78,6 +80,7 @@ export interface Obra {
 	originalTitle?: string;
 	customTitle?: string;
 	type: ObraType;
+	format?: ObraFormat;
 	status: ObraStatus;
 	review?: string;
 	tags: string[];
@@ -105,6 +108,7 @@ export interface Obra {
 export interface CreateObraInput {
 	title: string;
 	type: ObraType;
+	format?: ObraFormat;
 	status: ObraStatus;
 	review?: string;
 	tags?: string[];
@@ -127,6 +131,7 @@ export interface CreateObraInput {
 export interface UpdateObraPatch {
 	title?: string;
 	type?: ObraType;
+	format?: ObraFormat;
 	status?: ObraStatus;
 	review?: string;
 	tags?: string[];

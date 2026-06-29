@@ -25,9 +25,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { obraFromDoc } from "@/lib/obras";
-import { getInitialProgressTotal } from "@/lib/progress";
+import {
+	formatProgressValue,
+	getBookFormatLabel,
+	getInitialProgressTotal,
+	getProgressUnitLabel,
+} from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
-import type { Obra, ObraId, ObraStatus, ObraType } from "@/lib/types";
+import type { Obra, ObraFormat, ObraId, ObraStatus } from "@/lib/types";
 import { cn, formatDateInput, parseDateInput } from "@/lib/utils";
 
 interface EditableQuote {
@@ -42,6 +47,7 @@ interface EditValues {
 	customCreator: string;
 	customYear: string;
 	customCoverUrl: string;
+	format: ObraFormat | "";
 	readingUrl: string;
 	recommendedBy: string;
 	startedAt: string;
@@ -53,14 +59,7 @@ interface EditValues {
 
 type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 
-const progressUnitLabels: Record<ObraType, string> = {
-	book: "páginas",
-	movie: "",
-	series: "episodios",
-	anime: "episodios",
-	manga: "capítulos",
-	manhwa: "capítulos",
-};
+const bookFormats: ObraFormat[] = ["physical", "ebook", "audiobook"];
 
 const normalizeReadingUrl = (value: string) => {
 	const trimmed = value.trim();
@@ -75,6 +74,7 @@ function getEditValues(obra: Obra): EditValues {
 		customCreator: obra.creator ?? "",
 		customYear: obra.year ? String(obra.year) : "",
 		customCoverUrl: obra.coverUrl ?? "",
+		format: obra.format ?? "",
 		readingUrl: obra.readingUrl ?? "",
 		recommendedBy: obra.recommendedBy ?? "",
 		startedAt: formatDateInput(
@@ -101,6 +101,12 @@ function buildCustomPatch(values: EditValues) {
 		customYear:
 			values.customYear.trim() && Number.isFinite(year) ? year : undefined,
 		customCoverUrl: values.customCoverUrl.trim() || undefined,
+	};
+}
+
+function buildFormatPatch(values: Pick<EditValues, "format">) {
+	return {
+		format: values.format || undefined,
 	};
 }
 
@@ -369,7 +375,10 @@ export function ObraEditSheet({
 		return "Sin cambios";
 	}, [autoSaveStatus]);
 
-	const progressUnitLabel = obra ? progressUnitLabels[obra.type] : "";
+	const progressFormat = values?.format || undefined;
+	const progressUnitLabel = obra
+		? getProgressUnitLabel({ type: obra.type, format: progressFormat })
+		: "";
 	const hasProgress = obra
 		? obra.type !== "movie" && obra.status !== "backlog"
 		: false;
@@ -490,6 +499,39 @@ export function ObraEditSheet({
 											className="rounded-none border-border bg-background focus-visible:ring-primary"
 										/>
 									</div>
+									{obra.type === "book" && (
+										<div className="flex flex-col gap-2">
+											<Label>Formato</Label>
+											<Select
+												value={values.format}
+												onValueChange={(value) => {
+													const nextValues = {
+														...values,
+														format: value as ObraFormat,
+													};
+													updateValues(
+														nextValues,
+														buildFormatPatch(nextValues),
+														"format",
+														200,
+													);
+												}}
+											>
+												<SelectTrigger className="rounded-none border-border bg-background focus:ring-primary">
+													<span className="truncate">
+														{getBookFormatLabel(values.format || undefined)}
+													</span>
+												</SelectTrigger>
+												<SelectContent>
+													{bookFormats.map((format) => (
+														<SelectItem key={format} value={format}>
+															{getBookFormatLabel(format)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									)}
 									<div className="flex flex-col gap-2">
 										<Label>Portada (URL)</Label>
 										<Input
@@ -521,7 +563,17 @@ export function ObraEditSheet({
 										</Label>
 										<div className="flex items-center justify-between">
 											<span className="text-sm text-muted-foreground">
-												{values.progressCurrent} / {values.progressTotal || "-"}
+												{formatProgressValue(values.progressCurrent, {
+													type: obra.type,
+													format: progressFormat,
+												})}{" "}
+												/{" "}
+												{values.progressTotal
+													? formatProgressValue(values.progressTotal, {
+															type: obra.type,
+															format: progressFormat,
+														})
+													: "-"}
 											</span>
 										</div>
 										<div className="flex items-center gap-3">

@@ -1,31 +1,27 @@
-import type { ObraType } from "@/lib/types";
+import { formatProgressValue, getProgressUnitLabel } from "@/lib/progress";
+import type { ObraFormat, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ProgressBarProps {
 	current: number;
 	total: number;
 	type: ObraType;
+	format?: ObraFormat;
 	showLabel?: boolean;
 	className?: string;
 }
-
-const unitLabels: Record<ObraType, string> = {
-	book: "páginas",
-	movie: "",
-	series: "episodios",
-	anime: "episodios",
-	manga: "capítulos",
-	manhwa: "capítulos",
-};
 
 export function ProgressBar({
 	current,
 	total,
 	type,
+	format,
 	showLabel = true,
 	className,
 }: ProgressBarProps) {
 	const percentage = total > 0 ? Math.min((current / total) * 100, 100) : 0;
+	const obra = { type, format };
+	const unitLabel = getProgressUnitLabel(obra);
 
 	return (
 		<div className={cn("space-y-1", className)}>
@@ -37,7 +33,8 @@ export function ProgressBar({
 			</div>
 			{showLabel && (
 				<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-					{current} / {total} {unitLabels[type]}
+					{formatProgressValue(current, obra)} /{" "}
+					{formatProgressValue(total, obra)} {unitLabel}
 				</p>
 			)}
 		</div>
