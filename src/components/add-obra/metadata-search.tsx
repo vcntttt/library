@@ -89,12 +89,13 @@ export function MetadataSearch({
 
 			{error && <p className="text-sm text-destructive">{error}</p>}
 
-			{!isSearching && !error && directUrlFallback && results.length === 0 && (
+			{!isSearching && !error && directUrlFallback && (
 				<div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
 					<div className="space-y-1">
 						<p className="text-sm font-medium">
-							No encontré metadatos para este link, pero puedo crear la obra con
-							el enlace cargado.
+							{results.length > 0
+								? "Si estos resultados no son lo que buscas, puedo crear la obra con el enlace cargado."
+								: "No encontré metadatos para este link, pero puedo crear la obra con el enlace cargado."}
 						</p>
 						<p className="text-xs text-muted-foreground break-all">
 							{directUrlFallback.label}

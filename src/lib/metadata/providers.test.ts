@@ -17,6 +17,57 @@ function jsonResponse(body: unknown, status = 200) {
 	});
 }
 
+function htmlResponse(body: string, status = 200) {
+	return new Response(body, {
+		status,
+		headers: {
+			"content-type": "text/html",
+		},
+	});
+}
+
+const amazonBookHtml = `
+	<html>
+		<head>
+			<link rel="canonical" href="https://www.amazon.com/-/es/Miyamoto-Musashi-ebook/dp/B0DGMDXCCM" />
+			<meta property="og:image" content="https://m.media-amazon.com/images/I/fallback.jpg" />
+			<meta name="title" content="Amazon.com: Dokk&#333;d&#333; eBook : Musashi, Miyamoto, Galindo, Dani: Tienda Kindle" />
+		</head>
+		<body>
+			<div id="title_feature_div">
+				<span id="productTitle">Dokk&#333;d&#333;</span>
+			</div>
+			<div id="bylineInfo">
+				<span class="author notFaded"><a href="/Miyamoto-Musashi/e/B001">Miyamoto Musashi</a></span>
+				<span class="author notFaded"><a href="/Dani-Galindo/e/B002">Dani Galindo</a></span>
+			</div>
+			<img id="landingImage" src="https://m.media-amazon.com/images/I/41mWeisPdDL.jpg" data-old-hires="https://m.media-amazon.com/images/I/71LjzFcWlFL._SL1500_.jpg" />
+			<div id="bookDescription_feature_div">
+				<div class="a-expander-content">
+					<p>Los 21 preceptos de Miyamoto Musashi para vivir con disciplina.</p>
+				</div>
+				<div class="a-expander-header"></div>
+			</div>
+			<li data-rpi-attribute-name="book_details-ebook_pages">
+				<div class="rpi-attribute-value"><span>132 p&aacute;ginas</span></div>
+			</li>
+			<li data-rpi-attribute-name="language">
+				<div class="rpi-attribute-value"><span>Espa&ntilde;ol</span></div>
+			</li>
+			<li data-rpi-attribute-name="book_details-publication_date">
+				<div class="rpi-attribute-value"><span>19 Septiembre 2024</span></div>
+			</li>
+		</body>
+	</html>
+`;
+
+const amazonBlockedHtml = `
+	<html>
+		<head><title>Robot Check</title></head>
+		<body>Enter the characters you see below</body>
+	</html>
+`;
+
 describe("metadata providers", () => {
 	it("uses google books as the default provider for books", async () => {
 		const { providerByType } = await import("./providers");
@@ -645,9 +696,77 @@ describe("metadata providers", () => {
 		});
 	});
 
+	it("scrapes Amazon book metadata from a pasted product URL", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(htmlResponse(amazonBookHtml));
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"google-books",
+			"https://www.amazon.com/-/es/dp/B0DGMDXCCM/?coliid=I1XX1466N4AN5H&colid=1BSTY6XI81LPN",
+			"book",
+		);
+
+		expect(outcome.provider).toBe("amazon");
+		expect(outcome.results).toHaveLength(1);
+		expect(outcome.results[0]).toMatchObject({
+			source: "amazon",
+			id: "B0DGMDXCCM",
+			title: "Dokkōdō",
+			creator: "Miyamoto Musashi, Dani Galindo",
+			year: 2024,
+			coverUrl: "https://m.media-amazon.com/images/I/71LjzFcWlFL._SL1500_.jpg",
+			pages: 132,
+			publishedDate: "19 Septiembre 2024",
+			language: "Español",
+			description:
+				"Los 21 preceptos de Miyamoto Musashi para vivir con disciplina.",
+			canonicalUrl:
+				"https://www.amazon.com/-/es/Miyamoto-Musashi-ebook/dp/B0DGMDXCCM",
+		});
+		expect(outcome.directUrlFallback).toMatchObject({
+			url: "https://www.amazon.com/-/es/Miyamoto-Musashi-ebook/dp/B0DGMDXCCM",
+			label: "Amazon",
+			identifier: "B0DGMDXCCM",
+		});
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("loads Amazon book details by ASIN", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(htmlResponse(amazonBookHtml));
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails } = await import("./providers");
+
+		const details = await getMetadataDetails("amazon", "B0DGMDXCCM", "book");
+
+		expect(details).toMatchObject({
+			source: "amazon",
+			id: "B0DGMDXCCM",
+			title: "Dokkōdō",
+			creator: "Miyamoto Musashi, Dani Galindo",
+			pages: 132,
+			language: "Español",
+		});
+		expect(fetchMock).toHaveBeenCalledWith(
+			"https://www.amazon.com/dp/B0DGMDXCCM",
+			expect.objectContaining({
+				headers: expect.objectContaining({
+					"Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+				}),
+			}),
+		);
+	});
+
 	it("falls back to creating with the Amazon URL when the ASIN has no catalog match", async () => {
 		const fetchMock = vi
 			.fn()
+			.mockResolvedValueOnce(htmlResponse(amazonBlockedHtml))
 			.mockResolvedValueOnce(jsonResponse({ docs: [] }))
 			.mockResolvedValueOnce(jsonResponse({ items: [] }))
 			.mockResolvedValueOnce(jsonResponse({ results: [] }));
@@ -669,7 +788,46 @@ describe("metadata providers", () => {
 			identifier: "B0DGMDXCCM",
 			reason: "No encontré metadatos confiables para este enlace de Amazon.",
 		});
-		expect(fetchMock).toHaveBeenCalledTimes(3);
+		expect(fetchMock).toHaveBeenCalledTimes(4);
+	});
+
+	it("keeps the create-with-link fallback for Amazon URLs even when catalog results exist", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(htmlResponse(amazonBlockedHtml))
+			.mockResolvedValueOnce(jsonResponse({ docs: [] }))
+			.mockResolvedValueOnce(
+				jsonResponse({
+					items: [
+						{
+							id: "google-related",
+							volumeInfo: {
+								title: "Related Book",
+								authors: ["Someone"],
+								publishedDate: "2024",
+							},
+						},
+					],
+				}),
+			)
+			.mockResolvedValueOnce(jsonResponse({ results: [] }));
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"google-books",
+			"https://www.amazon.com/dp/B0DGMDXCCM",
+			"book",
+		);
+
+		expect(outcome.results).toHaveLength(1);
+		expect(outcome.directUrlFallback).toMatchObject({
+			url: "https://www.amazon.com/dp/B0DGMDXCCM",
+			label: "Amazon",
+			identifier: "B0DGMDXCCM",
+		});
+		expect(fetchMock).toHaveBeenCalledTimes(4);
 	});
 
 	it("keeps non-quota google books errors visible", async () => {

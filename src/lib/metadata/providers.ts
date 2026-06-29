@@ -15,6 +15,7 @@ const providerRateLimits: Record<MetadataSource, number> = {
 	"google-books": 250,
 	"open-library": 250,
 	"apple-books": 250,
+	amazon: 1000,
 	tmdb: 300,
 	anilist: 300,
 	manhwaweb: 500,
@@ -122,6 +123,11 @@ async function searchMetadataForProvider(
 				provider: "apple-books",
 				results: await searchAppleBooks(query),
 			};
+		case "amazon":
+			return {
+				provider: "amazon",
+				results: await searchAmazonBooks(query, obraType),
+			};
 		case "tmdb":
 			return {
 				provider: "tmdb",
@@ -219,6 +225,32 @@ async function searchAppleBooks(query: string) {
 
 	const data = await fetchJson<AppleBooksSearchResponse>(url.toString());
 	return data.results?.map(mapAppleBookItem) ?? [];
+}
+
+async function searchAmazonBooks(query: string, obraType?: ObraType) {
+	if (obraType && obraType !== "book") return [];
+
+	const directAsin = query.trim();
+	const normalizedUrl = normalizeUrlCandidate(query);
+	const asin = isAmazonAsin(directAsin)
+		? directAsin
+		: normalizedUrl
+			? extractAmazonAsin(normalizedUrl)
+			: undefined;
+	if (!asin || !isAmazonAsin(asin)) return [];
+
+	try {
+		const normalizedAsin = asin.toUpperCase();
+		const details = await getAmazonBookDetailsFromUrl(
+			normalizedAsin,
+			isAmazonAsin(directAsin)
+				? `https://www.amazon.com/dp/${normalizedAsin}`
+				: (normalizedUrl ?? `https://www.amazon.com/dp/${normalizedAsin}`),
+		);
+		return [metadataDetailsToSearchResult(details)];
+	} catch {
+		return [];
+	}
 }
 
 async function enrichAppleBookResult(result: MetadataSearchResult) {
@@ -380,6 +412,11 @@ async function resolveDirectUrlSearch(
 			return {
 				provider: "manhwaweb",
 				results: [metadataDetailsToSearchResult(details)],
+				directUrlFallback: buildDirectUrlFallback({
+					url: details.canonicalUrl ?? normalizedUrl,
+					label: "ManhwaWeb",
+					identifier: manhwaWebId,
+				}),
 			};
 		} catch {
 			return undefined;
@@ -397,6 +434,11 @@ async function resolveDirectUrlSearch(
 			return {
 				provider: "google-books",
 				results: [metadataDetailsToSearchResult(details)],
+				directUrlFallback: buildDirectUrlFallback({
+					url: details.canonicalUrl ?? normalizedUrl,
+					label: "Google Books",
+					identifier: googleBookId,
+				}),
 			};
 		}
 
@@ -410,6 +452,11 @@ async function resolveDirectUrlSearch(
 			return {
 				provider: "open-library",
 				results: [metadataDetailsToSearchResult(details)],
+				directUrlFallback: buildDirectUrlFallback({
+					url: details.canonicalUrl ?? normalizedUrl,
+					label: "Open Library",
+					identifier: openLibraryId,
+				}),
 			};
 		}
 
@@ -423,18 +470,45 @@ async function resolveDirectUrlSearch(
 			return {
 				provider: "apple-books",
 				results: [metadataDetailsToSearchResult(details)],
+				directUrlFallback: buildDirectUrlFallback({
+					url: details.canonicalUrl ?? normalizedUrl,
+					label: "Apple Books",
+					identifier: appleBookId,
+				}),
 			};
 		}
 
 		const amazonAsin = extractAmazonAsin(normalizedUrl);
 		if (amazonAsin) {
 			const canonicalUrl = `https://www.amazon.com/dp/${amazonAsin}`;
+			await enforceRateLimit("amazon");
+			const amazonDetails = await getAmazonBookDetailsFromUrl(
+				amazonAsin,
+				normalizedUrl,
+			).catch(() => undefined);
+			if (amazonDetails) {
+				return {
+					provider: "amazon",
+					results: [metadataDetailsToSearchResult(amazonDetails)],
+					directUrlFallback: buildDirectUrlFallback({
+						url: amazonDetails.canonicalUrl ?? canonicalUrl,
+						label: "Amazon",
+						identifier: amazonAsin,
+					}),
+				};
+			}
+
 			const query = isIsbn10(amazonAsin) ? `isbn:${amazonAsin}` : amazonAsin;
 			const results = await searchBookCatalog(query).catch(() => []);
 			if (results.length) {
 				return {
 					provider: "google-books",
 					results,
+					directUrlFallback: buildDirectUrlFallback({
+						url: canonicalUrl,
+						label: "Amazon",
+						identifier: amazonAsin,
+					}),
 				};
 			}
 
@@ -468,6 +542,11 @@ async function resolveDirectUrlSearch(
 		return {
 			provider: "tmdb",
 			results: [metadataDetailsToSearchResult(details)],
+			directUrlFallback: buildDirectUrlFallback({
+				url: normalizedUrl,
+				label: "TMDB",
+				identifier: tmdbMatch.id,
+			}),
 		};
 	}
 
@@ -489,10 +568,26 @@ async function resolveDirectUrlSearch(
 		return {
 			provider: "anilist",
 			results: [metadataDetailsToSearchResult(details)],
+			directUrlFallback: buildDirectUrlFallback({
+				url: normalizedUrl,
+				label: "AniList",
+				identifier: anilistMatch.id,
+			}),
 		};
 	}
 
 	return undefined;
+}
+
+function buildDirectUrlFallback(input: {
+	url: string;
+	label: string;
+	identifier?: string;
+}): MetadataDirectUrlFallback {
+	return {
+		...input,
+		reason: "Puedes crear la obra manualmente con este enlace cargado.",
+	};
 }
 
 async function getGoogleBookDetails(id: string): Promise<MetadataDetails> {
@@ -1033,6 +1128,9 @@ export async function getMetadataDetails(
 			break;
 		case "apple-books":
 			details = await getAppleBookDetails(id);
+			break;
+		case "amazon":
+			details = await getAmazonBookDetails(id);
 			break;
 		case "tmdb":
 			details = await getTmdbDetails(id, obraType);
@@ -1593,6 +1691,90 @@ async function getAppleBookDetails(id: string): Promise<MetadataDetails> {
 	return enrichAppleBookResult(details);
 }
 
+async function getAmazonBookDetails(id: string): Promise<MetadataDetails> {
+	const directAsin = id.trim();
+	const normalizedUrl = normalizeUrlCandidate(id);
+	const asin = isAmazonAsin(directAsin)
+		? directAsin
+		: normalizedUrl
+			? extractAmazonAsin(normalizedUrl)
+			: undefined;
+	if (!asin || !isAmazonAsin(asin)) {
+		throw new Error("ASIN de Amazon invalido.");
+	}
+
+	const normalizedAsin = asin.toUpperCase();
+	return getAmazonBookDetailsFromUrl(
+		normalizedAsin,
+		isAmazonAsin(directAsin)
+			? `https://www.amazon.com/dp/${normalizedAsin}`
+			: (normalizedUrl ?? `https://www.amazon.com/dp/${normalizedAsin}`),
+	);
+}
+
+async function getAmazonBookDetailsFromUrl(
+	asin: string,
+	url: string,
+): Promise<MetadataDetails> {
+	const html = await fetchAmazonBookHtml(url);
+	if (isAmazonBlockedHtml(html)) {
+		throw new Error("Amazon bloqueo la consulta publica del producto.");
+	}
+
+	const canonicalUrl =
+		extractAmazonCanonicalUrl(html) ?? `https://www.amazon.com/dp/${asin}`;
+	const publishedDate = extractAmazonRpiAttribute(
+		html,
+		"book_details-publication_date",
+	);
+	const title = extractAmazonTitle(html);
+	if (!title) {
+		throw new Error("No se encontraron metadatos de libro en Amazon.");
+	}
+
+	return {
+		source: "amazon",
+		id: asin,
+		title,
+		creator: extractAmazonAuthors(html),
+		year: parseYear(publishedDate),
+		coverUrl: extractAmazonCoverUrl(html),
+		pages: parseIntegerFromText(
+			extractAmazonRpiAttribute(html, "book_details-ebook_pages") ??
+				extractAmazonRpiAttribute(html, "book_details-print_length"),
+		),
+		publisher: extractAmazonRpiAttribute(html, "book_details-publisher"),
+		publishedDate,
+		language: extractAmazonRpiAttribute(html, "language"),
+		isbn10: normalizeOptionalIsbn(
+			extractAmazonRpiAttribute(html, "book_details-isbn_10"),
+			10,
+		),
+		isbn13: normalizeOptionalIsbn(
+			extractAmazonRpiAttribute(html, "book_details-isbn_13"),
+			13,
+		),
+		description: extractAmazonDescription(html),
+		canonicalUrl,
+	};
+}
+
+async function fetchAmazonBookHtml(url: string) {
+	const response = await fetch(url, {
+		headers: {
+			Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+			"Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+			"User-Agent":
+				"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+		},
+	});
+	if (!response.ok) {
+		throw new Error(`No se pudo consultar Amazon. (HTTP ${response.status})`);
+	}
+
+	return response.text();
+}
+
 function upgradeAppleArtwork(url?: string) {
 	return url?.replace(/\/\d+x\d+bb\.jpg$/i, "/600x900bb.jpg");
 }
@@ -1761,16 +1943,267 @@ function normalizeBookSubjects(subjects?: string[]) {
 		.slice(0, 8);
 }
 
-function stripHtml(value?: string) {
+function extractAmazonTitle(html: string) {
+	return (
+		extractElementTextById(html, "productTitle") ??
+		cleanAmazonMetaTitle(
+			extractMetaContent(html, "og:title") ??
+				extractMetaContent(html, "title") ??
+				extractDocumentTitle(html),
+		)
+	);
+}
+
+function extractAmazonAuthors(html: string) {
+	const byline = extractHtmlSliceById(html, "bylineInfo", 8000);
+	const authorMatches = byline
+		? [
+				...byline.matchAll(
+					/class=["'][^"']*\bauthor\b[^"']*["'][\s\S]*?<a\b[^>]*>([\s\S]*?)<\/a>/gi,
+				),
+			]
+		: [];
+	const authors = authorMatches
+		.map((match) => stripHtml(match[1]))
+		.filter((value): value is string => Boolean(value));
+	if (authors.length) return Array.from(new Set(authors)).join(", ");
+
+	return extractAmazonAuthorsFromMetaTitle(
+		extractMetaContent(html, "title") ?? extractDocumentTitle(html),
+	);
+}
+
+function extractAmazonAuthorsFromMetaTitle(value?: string) {
 	if (!value) return undefined;
+	const match = value.match(/\beBook\s+:\s+(.+?)(?:\s*:\s*[^:]+)?$/i);
+	const rawAuthors = match?.[1]
+		?.replace(/\bAmazon\.[^:]+:\s*/i, "")
+		.replace(/\bTienda Kindle\b.*$/i, "")
+		.trim();
+	if (!rawAuthors) return undefined;
+
+	const parts = rawAuthors
+		.split(/\s*,\s*/)
+		.map((part) => part.trim())
+		.filter(Boolean);
+	if (parts.length >= 2 && parts.length % 2 === 0) {
+		const names: string[] = [];
+		for (let index = 0; index < parts.length; index += 2) {
+			names.push(`${parts[index + 1]} ${parts[index]}`.trim());
+		}
+		return names.join(", ");
+	}
+
+	return rawAuthors;
+}
+
+function extractAmazonCoverUrl(html: string) {
+	const imageTag =
+		html.match(/<img\b[^>]*\bid=["']landingImage["'][^>]*>/i)?.[0] ??
+		html.match(
+			/<img\b[^>]*\bdata-a-image-name=["']landingImage["'][^>]*>/i,
+		)?.[0];
+	if (imageTag) {
+		const oldHires = getHtmlAttribute(imageTag, "data-old-hires");
+		if (oldHires) return oldHires;
+
+		const src = getHtmlAttribute(imageTag, "src");
+		if (src) return src;
+
+		const dynamicImage = parseAmazonDynamicImage(
+			getHtmlAttribute(imageTag, "data-a-dynamic-image"),
+		);
+		if (dynamicImage) return dynamicImage;
+	}
+
+	return extractMetaContent(html, "og:image");
+}
+
+function parseAmazonDynamicImage(value?: string) {
+	if (!value) return undefined;
+	try {
+		const parsed = JSON.parse(decodeHtmlEntities(value)) as Record<
+			string,
+			unknown
+		>;
+		return Object.keys(parsed).find(Boolean);
+	} catch {
+		return undefined;
+	}
+}
+
+function extractAmazonDescription(html: string) {
+	const slice = extractHtmlSliceById(
+		html,
+		"bookDescription_feature_div",
+		30000,
+	);
+	if (!slice) return undefined;
+
+	const expanderContent = slice.match(
+		/<div\b[^>]*class=["'][^"']*\ba-expander-content\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<div\b[^>]*class=["'][^"']*\ba-expander-header\b/i,
+	)?.[1];
+	const noscriptContent = slice.match(/<noscript>([\s\S]*?)<\/noscript>/i)?.[1];
+	const description = stripHtml(expanderContent ?? noscriptContent);
+	if (!description) return undefined;
+
+	return description.length > 5000
+		? `${description.slice(0, 5000).trim()}...`
+		: description;
+}
+
+function extractAmazonRpiAttribute(html: string, attributeName: string) {
+	const markers = [
+		`data-rpi-attribute-name="${attributeName}"`,
+		`data-rpi-attribute-name='${attributeName}'`,
+	];
+	const index = markers
+		.map((marker) => html.indexOf(marker))
+		.filter((value) => value >= 0)
+		.sort((a, b) => a - b)[0];
+	if (index === undefined) return undefined;
+
+	const slice = html.slice(index, index + 3000);
+	const valueHtml = slice.match(
+		/<div\b[^>]*class=["'][^"']*\brpi-attribute-value\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+	)?.[1];
+	return stripHtml(valueHtml);
+}
+
+function extractAmazonCanonicalUrl(html: string) {
+	const linkTags = html.match(/<link\b[^>]*>/gi) ?? [];
+	for (const tag of linkTags) {
+		const rel = getHtmlAttribute(tag, "rel");
+		if (
+			rel?.split(/\s+/).some((value) => value.toLowerCase() === "canonical")
+		) {
+			const href = getHtmlAttribute(tag, "href");
+			if (href) return href;
+		}
+	}
+
+	return undefined;
+}
+
+function extractMetaContent(html: string, key: string) {
+	const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
+	for (const tag of metaTags) {
+		const name = getHtmlAttribute(tag, "name");
+		const property = getHtmlAttribute(tag, "property");
+		if (name === key || property === key) {
+			return cleanText(getHtmlAttribute(tag, "content"));
+		}
+	}
+
+	return undefined;
+}
+
+function extractDocumentTitle(html: string) {
+	return cleanText(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1]);
+}
+
+function extractElementTextById(html: string, id: string) {
+	const match = html.match(
+		new RegExp(
+			`<([a-z0-9]+)\\b[^>]*\\bid=["']${escapeRegExp(id)}["'][^>]*>([\\s\\S]*?)<\\/\\1>`,
+			"i",
+		),
+	);
+	return stripHtml(match?.[2]);
+}
+
+function extractHtmlSliceById(html: string, id: string, length: number) {
+	const doubleQuoteIndex = html.indexOf(`id="${id}"`);
+	const singleQuoteIndex = html.indexOf(`id='${id}'`);
+	const indices = [doubleQuoteIndex, singleQuoteIndex]
+		.filter((value) => value >= 0)
+		.sort((a, b) => a - b);
+	const index = indices[0];
+	if (index === undefined) return undefined;
+	return html.slice(Math.max(0, index - 500), index + length);
+}
+
+function getHtmlAttribute(tag: string, attribute: string) {
+	const match = tag.match(
+		new RegExp(`\\b${escapeRegExp(attribute)}=["']([^"']*)["']`, "i"),
+	);
+	return cleanText(match?.[1]);
+}
+
+function cleanAmazonMetaTitle(value?: string) {
+	const title = cleanText(value)
+		?.replace(/^Amazon\.[^:]+:\s*/i, "")
+		.replace(/\s+:\s*(?:Tienda Kindle|Kindle Store).*$/i, "");
+	if (!title) return undefined;
+	return cleanText(title.split(/\s+eBook\s+:\s+/i)[0]);
+}
+
+function isAmazonBlockedHtml(html: string) {
+	const normalized = html.toLowerCase();
+	return (
+		normalized.includes("robot check") ||
+		normalized.includes("/errors/validatecaptcha") ||
+		normalized.includes("enter the characters you see below") ||
+		normalized.includes("automated access to amazon")
+	);
+}
+
+function parseIntegerFromText(value?: string) {
+	if (!value) return undefined;
+	const match = value.match(/\d[\d.,]*/);
+	if (!match?.[0]) return undefined;
+	const parsed = Number(match[0].replace(/\D/g, ""));
+	return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function normalizeOptionalIsbn(value: string | undefined, length: 10 | 13) {
+	if (!value) return undefined;
+	const normalized = normalizeIsbn(value);
+	return normalized.length === length ? normalized : undefined;
+}
+
+function cleanText(value?: string) {
+	if (!value) return undefined;
+	const normalized = decodeHtmlEntities(value).replace(/\s+/g, " ").trim();
+	return normalized || undefined;
+}
+
+function decodeHtmlEntities(value: string) {
 	return value
-		.replace(/<br\s*\/?>/gi, "\n")
-		.replace(/<[^>]+>/g, "")
 		.replace(/&nbsp;/g, " ")
 		.replace(/&amp;/g, "&")
 		.replace(/&quot;/g, '"')
 		.replace(/&#39;/g, "'")
-		.trim();
+		.replace(/&apos;/g, "'")
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&ntilde;/g, "ñ")
+		.replace(/&Ntilde;/g, "Ñ")
+		.replace(/&aacute;/g, "á")
+		.replace(/&eacute;/g, "é")
+		.replace(/&iacute;/g, "í")
+		.replace(/&oacute;/g, "ó")
+		.replace(/&uacute;/g, "ú")
+		.replace(/&Aacute;/g, "Á")
+		.replace(/&Eacute;/g, "É")
+		.replace(/&Iacute;/g, "Í")
+		.replace(/&Oacute;/g, "Ó")
+		.replace(/&Uacute;/g, "Ú")
+		.replace(/&#(\d+);/g, (_, codepoint: string) =>
+			String.fromCodePoint(Number(codepoint)),
+		)
+		.replace(/&#x([0-9a-f]+);/gi, (_, codepoint: string) =>
+			String.fromCodePoint(Number.parseInt(codepoint, 16)),
+		);
+}
+
+function escapeRegExp(value: string) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function stripHtml(value?: string) {
+	if (!value) return undefined;
+	return cleanText(value.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, ""));
 }
 
 function getOpenLibrarySearchResultId(

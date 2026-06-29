@@ -25,6 +25,7 @@ const metadataSourceLabels = {
 	"google-books": "Google Books",
 	"open-library": "Open Library",
 	"apple-books": "Apple Books",
+	amazon: "Amazon",
 	tmdb: "TMDB",
 	anilist: "AniList",
 	manhwaweb: "ManhwaWeb",

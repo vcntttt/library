@@ -12,6 +12,7 @@ const metadataSources = [
 	"google-books",
 	"open-library",
 	"apple-books",
+	"amazon",
 	"tmdb",
 	"anilist",
 	"manhwaweb",

@@ -22,6 +22,7 @@ export const metadataSourceValidator = v.union(
 	v.literal("google-books"),
 	v.literal("open-library"),
 	v.literal("apple-books"),
+	v.literal("amazon"),
 	v.literal("tmdb"),
 	v.literal("anilist"),
 	v.literal("manhwaweb"),

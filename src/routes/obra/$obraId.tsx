@@ -64,6 +64,7 @@ const metadataSourceLabels: Record<MetadataSource, string> = {
 	"google-books": "Google Books",
 	"open-library": "Open Library",
 	"apple-books": "Apple Books",
+	amazon: "Amazon",
 	tmdb: "TMDB",
 	anilist: "AniList",
 	manhwaweb: "ManhwaWeb",

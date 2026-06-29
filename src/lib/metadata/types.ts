@@ -2,6 +2,7 @@ export type MetadataSource =
 	| "google-books"
 	| "open-library"
 	| "apple-books"
+	| "amazon"
 	| "tmdb"
 	| "anilist"
 	| "manhwaweb";
