@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import type {
 	MetadataDetails,
+	MetadataDirectUrlFallback,
 	MetadataSearchResult,
 } from "@/lib/metadata/types";
 import type { CreateObraInput, ObraType } from "@/lib/types";
@@ -41,6 +42,21 @@ const metadataSourceByType: Record<
 	manhwa: "manhwaweb",
 };
 
+function isMetadataDirectUrlFallback(
+	value: unknown,
+): value is MetadataDirectUrlFallback {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"url" in value &&
+		typeof value.url === "string" &&
+		"label" in value &&
+		typeof value.label === "string" &&
+		"reason" in value &&
+		typeof value.reason === "string"
+	);
+}
+
 interface AddObraDialogProps {
 	triggerMode?: "default" | "fab";
 	className?: string;
@@ -61,6 +77,9 @@ export function AddObraDialog({
 		useState<MetadataSearchResult | null>(null);
 	const [metadataDetails, setMetadataDetails] =
 		useState<MetadataDetails | null>(null);
+	const [directUrlFallback, setDirectUrlFallback] =
+		useState<MetadataDirectUrlFallback | null>(null);
+	const [initialReadingUrl, setInitialReadingUrl] = useState("");
 	const [metadataError, setMetadataError] = useState<string | null>(null);
 	const [isSearchingMetadata, setIsSearchingMetadata] = useState(false);
 	const [isLoadingMetadataDetails, setIsLoadingMetadataDetails] =
@@ -80,6 +99,7 @@ export function AddObraDialog({
 		const query = metadataQuery.trim();
 		if (query.length < 3) {
 			setMetadataResults([]);
+			setDirectUrlFallback(null);
 			setMetadataError(null);
 			setIsSearchingMetadata(false);
 			return;
@@ -96,6 +116,7 @@ export function AddObraDialog({
 		metadataDebounceRef.current = window.setTimeout(async () => {
 			setIsSearchingMetadata(true);
 			setMetadataError(null);
+			setDirectUrlFallback(null);
 			try {
 				const response = await fetch(
 					`/api/metadata/search?type=${encodeURIComponent(activeType)}&q=${encodeURIComponent(query)}`,
@@ -125,14 +146,19 @@ export function AddObraDialog({
 				const results = Array.isArray(payload?.results)
 					? (payload.results as MetadataSearchResult[])
 					: [];
+				const fallback = isMetadataDirectUrlFallback(payload?.directUrlFallback)
+					? payload.directUrlFallback
+					: null;
 				setMetadataResults(results);
-				if (results.length === 0) {
+				setDirectUrlFallback(fallback);
+				if (results.length === 0 && !fallback) {
 					setMetadataError("No hay resultados.");
 				}
 			} catch (error) {
 				if (error instanceof Error && error.name === "AbortError") {
 					return;
 				}
+				setDirectUrlFallback(null);
 				setMetadataError(
 					error instanceof Error
 						? error.message
@@ -164,6 +190,8 @@ export function AddObraDialog({
 			setMetadataResults([]);
 			setSelectedMetadata(null);
 			setMetadataDetails(null);
+			setDirectUrlFallback(null);
+			setInitialReadingUrl("");
 			setMetadataError(null);
 			setIsSearchingMetadata(false);
 			setIsLoadingMetadataDetails(false);
@@ -172,7 +200,17 @@ export function AddObraDialog({
 
 	const handleSelectType = (type: ObraType) => {
 		setActiveType(type);
+		setDirectUrlFallback(null);
+		setInitialReadingUrl("");
 		setStep(2);
+	};
+
+	const handleSkipMetadataSearch = () => {
+		setSelectedMetadata(null);
+		setMetadataDetails(null);
+		setMetadataError(null);
+		setInitialReadingUrl(directUrlFallback?.url ?? "");
+		setStep(3);
 	};
 
 	const handleSelectResult = async (result: MetadataSearchResult) => {
@@ -272,11 +310,14 @@ export function AddObraDialog({
 						results={metadataResults}
 						isSearching={isSearchingMetadata}
 						error={metadataError}
+						directUrlFallback={directUrlFallback}
 						onSelectResult={handleSelectResult}
-						onSkip={() => setStep(3)}
+						onSkip={handleSkipMetadataSearch}
 						onBack={() => {
 							setStep(1);
 							setActiveType("");
+							setDirectUrlFallback(null);
+							setInitialReadingUrl("");
 						}}
 						sourceLabel={metadataSourceLabel}
 					/>
@@ -288,11 +329,13 @@ export function AddObraDialog({
 						selectedMetadata={selectedMetadata}
 						metadataDetails={metadataDetails}
 						isLoadingDetails={isLoadingMetadataDetails}
+						initialReadingUrl={initialReadingUrl}
 						onBack={() => {
 							setStep(2);
 							setSelectedMetadata(null);
 							setMetadataDetails(null);
 							setMetadataError(null);
+							setInitialReadingUrl("");
 						}}
 						onCancel={() => handleOpenChange(false)}
 						onSubmit={handleFormSubmit}

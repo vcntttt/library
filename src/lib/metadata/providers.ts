@@ -2,6 +2,7 @@ import type { ObraType } from "@/lib/types";
 import type {
 	MangaChapterSource,
 	MetadataDetails,
+	MetadataDirectUrlFallback,
 	MetadataSearchResult,
 	MetadataSource,
 } from "./types";
@@ -21,7 +22,7 @@ const providerRateLimits: Record<MetadataSource, number> = {
 
 const providerCache = new Map<
 	string,
-	{ expiresAt: number; value: MetadataSearchResult[] }
+	{ expiresAt: number; value: MetadataSearchOutcome }
 >();
 
 const detailsCache = new Map<
@@ -36,6 +37,7 @@ const providerLastRequest = new Map<MetadataSource, number>();
 export interface MetadataSearchOutcome {
 	provider: MetadataSource;
 	results: MetadataSearchResult[];
+	directUrlFallback?: MetadataDirectUrlFallback;
 }
 
 export const providerByType: Record<ObraType, MetadataSource> = {
@@ -60,19 +62,21 @@ export async function searchMetadata(
 	const cacheKey = `${provider}:${trimmedQuery.toLowerCase()}:${obraType ?? ""}`;
 	const cached = providerCache.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) {
-		return { provider, results: cached.value };
+		return cached.value;
 	}
 
-	const outcome = await searchMetadataForProvider(
-		provider,
-		trimmedQuery,
-		obraType,
-	);
+	const outcome =
+		(await resolveDirectUrlSearch(trimmedQuery, obraType)) ??
+		(await searchMetadataForProvider(provider, trimmedQuery, obraType));
 
 	const outcomeCacheKey = `${outcome.provider}:${trimmedQuery.toLowerCase()}:${obraType ?? ""}`;
+	providerCache.set(cacheKey, {
+		expiresAt: Date.now() + CACHE_TTL_MS,
+		value: outcome,
+	});
 	providerCache.set(outcomeCacheKey, {
 		expiresAt: Date.now() + CACHE_TTL_MS,
-		value: outcome.results,
+		value: outcome,
 	});
 
 	return outcome;
@@ -360,6 +364,135 @@ async function searchManhwaWeb(query: string, obraType?: ObraType) {
 		.map((item) => manhwaWebItemToSearchResult(item));
 
 	return results;
+}
+
+async function resolveDirectUrlSearch(
+	query: string,
+	obraType?: ObraType,
+): Promise<MetadataSearchOutcome | undefined> {
+	const normalizedUrl = normalizeUrlCandidate(query);
+	if (!normalizedUrl) return undefined;
+
+	const manhwaWebId = extractManhwaWebId(normalizedUrl);
+	if (manhwaWebId && (!obraType || obraType === "manhwa")) {
+		try {
+			const details = await getManhwaWebDetails(manhwaWebId, obraType);
+			return {
+				provider: "manhwaweb",
+				results: [metadataDetailsToSearchResult(details)],
+			};
+		} catch {
+			return undefined;
+		}
+	}
+
+	if (!obraType || obraType === "book") {
+		const googleBookId = extractGoogleBookId(normalizedUrl);
+		if (googleBookId) {
+			const details = await getMetadataDetails(
+				"google-books",
+				googleBookId,
+				"book",
+			);
+			return {
+				provider: "google-books",
+				results: [metadataDetailsToSearchResult(details)],
+			};
+		}
+
+		const openLibraryId = extractOpenLibraryBookId(normalizedUrl);
+		if (openLibraryId) {
+			const details = await getMetadataDetails(
+				"open-library",
+				openLibraryId,
+				"book",
+			);
+			return {
+				provider: "open-library",
+				results: [metadataDetailsToSearchResult(details)],
+			};
+		}
+
+		const appleBookId = extractAppleBookId(normalizedUrl);
+		if (appleBookId) {
+			const details = await getMetadataDetails(
+				"apple-books",
+				appleBookId,
+				"book",
+			);
+			return {
+				provider: "apple-books",
+				results: [metadataDetailsToSearchResult(details)],
+			};
+		}
+
+		const amazonAsin = extractAmazonAsin(normalizedUrl);
+		if (amazonAsin) {
+			const canonicalUrl = `https://www.amazon.com/dp/${amazonAsin}`;
+			const query = isIsbn10(amazonAsin) ? `isbn:${amazonAsin}` : amazonAsin;
+			const results = await searchBookCatalog(query).catch(() => []);
+			if (results.length) {
+				return {
+					provider: "google-books",
+					results,
+				};
+			}
+
+			return {
+				provider: "google-books",
+				results: [],
+				directUrlFallback: {
+					url: canonicalUrl,
+					label: "Amazon",
+					identifier: amazonAsin,
+					reason:
+						"No encontré metadatos confiables para este enlace de Amazon.",
+				},
+			};
+		}
+	}
+
+	const tmdbMatch = extractTmdbId(normalizedUrl);
+	if (
+		tmdbMatch &&
+		((tmdbMatch.type === "movie" && obraType === "movie") ||
+			(tmdbMatch.type === "tv" && obraType === "series") ||
+			!obraType)
+	) {
+		const resolvedType = tmdbMatch.type === "movie" ? "movie" : "series";
+		const details = await getMetadataDetails(
+			"tmdb",
+			tmdbMatch.id,
+			resolvedType,
+		);
+		return {
+			provider: "tmdb",
+			results: [metadataDetailsToSearchResult(details)],
+		};
+	}
+
+	const anilistMatch = extractAnilistId(normalizedUrl);
+	if (
+		anilistMatch &&
+		((anilistMatch.type === "anime" && obraType === "anime") ||
+			(anilistMatch.type === "manga" &&
+				(obraType === "manga" || obraType === "manhwa")) ||
+			!obraType)
+	) {
+		const resolvedType =
+			obraType ?? (anilistMatch.type === "anime" ? "anime" : "manga");
+		const details = await getMetadataDetails(
+			"anilist",
+			anilistMatch.id,
+			resolvedType,
+		);
+		return {
+			provider: "anilist",
+			results: [metadataDetailsToSearchResult(details)],
+		};
+	}
+
+	return undefined;
 }
 
 async function getGoogleBookDetails(id: string): Promise<MetadataDetails> {
@@ -1032,6 +1165,155 @@ function isGoogleBooksQuotaMessage(message?: string) {
 	);
 }
 
+function normalizeUrlCandidate(value: string) {
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	try {
+		return new URL(trimmed).toString();
+	} catch {
+		try {
+			return new URL(`https://${trimmed}`).toString();
+		} catch {
+			return undefined;
+		}
+	}
+}
+
+function extractGoogleBookId(value: string) {
+	try {
+		const url = new URL(value);
+		const hostname = url.hostname.replace(/^www\./, "");
+		if (
+			hostname === "books.google.com" ||
+			hostname.endsWith(".books.google.com") ||
+			hostname === "play.google.com"
+		) {
+			const id = url.searchParams.get("id");
+			return id?.trim() || undefined;
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function extractOpenLibraryBookId(value: string) {
+	try {
+		const url = new URL(value);
+		if (url.hostname.replace(/^www\./, "") !== "openlibrary.org") {
+			return undefined;
+		}
+		const segments = url.pathname.split("/").filter(Boolean);
+		if (segments.length < 2) return undefined;
+		const [kind, id] = segments;
+		if (
+			(kind === "books" && /^OL\d+M$/i.test(id)) ||
+			(kind === "works" && /^OL\d+W$/i.test(id))
+		) {
+			return `/${kind}/${id}`;
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function extractAppleBookId(value: string) {
+	try {
+		const url = new URL(value);
+		if (url.hostname.replace(/^www\./, "") !== "books.apple.com") {
+			return undefined;
+		}
+		for (const segment of url.pathname.split("/").filter(Boolean)) {
+			const match = segment.match(/^id(\d+)$/i);
+			if (match?.[1]) return match[1];
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function extractAmazonAsin(value: string) {
+	try {
+		const url = new URL(value);
+		const hostname = url.hostname.replace(/^www\./, "");
+		if (!hostname.endsWith("amazon.com")) return undefined;
+
+		const segments = url.pathname.split("/").filter(Boolean);
+		const asinSegmentKeys = ["dp", "product", "d", "asin"] as const;
+		for (const key of asinSegmentKeys) {
+			const index = segments.indexOf(key);
+			const asin = index >= 0 ? segments[index + 1] : undefined;
+			if (asin && isAmazonAsin(asin)) return asin.toUpperCase();
+		}
+
+		const kindleIndex = segments.indexOf("kindle-dbs");
+		if (kindleIndex >= 0) {
+			const productIndex = segments.indexOf("product");
+			const asin = productIndex >= 0 ? segments[productIndex + 1] : undefined;
+			if (asin && isAmazonAsin(asin)) return asin.toUpperCase();
+		}
+
+		return undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function isAmazonAsin(value: string) {
+	return /^[A-Z0-9]{10}$/i.test(value);
+}
+
+function isIsbn10(value: string) {
+	const normalized = normalizeIsbn(value);
+	if (!/^\d{9}[\dX]$/.test(normalized)) return false;
+
+	let sum = 0;
+	for (let index = 0; index < normalized.length; index += 1) {
+		const char = normalized[index];
+		const digit = char === "X" ? 10 : Number(char);
+		sum += digit * (10 - index);
+	}
+	return sum % 11 === 0;
+}
+
+function extractTmdbId(value: string) {
+	try {
+		const url = new URL(value);
+		const hostname = url.hostname.replace(/^www\./, "");
+		if (hostname !== "themoviedb.org") return undefined;
+
+		const segments = url.pathname.split("/").filter(Boolean);
+		const kind = segments[0];
+		const id = segments[1]?.match(/^\d+/)?.[0];
+		if ((kind === "movie" || kind === "tv") && id) {
+			return { type: kind, id };
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function extractAnilistId(value: string) {
+	try {
+		const url = new URL(value);
+		const hostname = url.hostname.replace(/^www\./, "");
+		if (hostname !== "anilist.co") return undefined;
+
+		const segments = url.pathname.split("/").filter(Boolean);
+		const kind = segments[0];
+		const id = segments[1];
+		if ((kind === "anime" || kind === "manga") && /^\d+$/.test(id)) {
+			return { type: kind, id };
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 function extractManhwaWebId(value: string) {
 	const trimmed = value.trim();
 	if (!trimmed) return undefined;
@@ -1188,13 +1470,33 @@ function metadataDetailsToSearchResult(
 		source: details.source,
 		id: details.id,
 		title: details.title ?? "Sin titulo",
+		subtitle: details.subtitle,
 		creator: details.creator,
 		year: details.year,
 		coverUrl: details.coverUrl,
+		pages: details.pages,
+		publisher: details.publisher,
+		publishedDate: details.publishedDate,
+		language: details.language,
+		isbn10: details.isbn10,
+		isbn13: details.isbn13,
+		categories: details.categories,
+		description: details.description,
 		status: details.status,
+		seasons: details.seasons,
+		episodes: details.episodes,
+		episodesAired: details.episodesAired,
+		nextEpisodeDate: details.nextEpisodeDate,
+		runtime: details.runtime,
+		watchProviders: details.watchProviders,
+		volumes: details.volumes,
+		season: details.season,
+		seasonYear: details.seasonYear,
 		latestChapter: details.latestChapter,
 		latestChapterSource: details.latestChapterSource,
 		latestChapterCheckedAt: details.latestChapterCheckedAt,
+		mangaPlusTitleId: details.mangaPlusTitleId,
+		mangaDexId: details.mangaDexId,
 		canonicalUrl: details.canonicalUrl,
 	};
 }

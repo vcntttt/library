@@ -13,6 +13,13 @@ export type MangaChapterSource =
 	| "manhwaweb"
 	| "scraping";
 
+export interface MetadataDirectUrlFallback {
+	url: string;
+	label: string;
+	identifier?: string;
+	reason: string;
+}
+
 export interface MetadataSearchResult {
 	source: MetadataSource;
 	id: string;

@@ -2,7 +2,10 @@ import { ArrowLeft, Loader2, Search } from "lucide-react";
 import { TypeIcons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { MetadataSearchResult } from "@/lib/metadata/types";
+import type {
+	MetadataDirectUrlFallback,
+	MetadataSearchResult,
+} from "@/lib/metadata/types";
 import type { ObraType } from "@/lib/types";
 
 const obraTypeLabels: Record<ObraType, string> = {
@@ -21,6 +24,7 @@ interface MetadataSearchProps {
 	results: MetadataSearchResult[];
 	isSearching: boolean;
 	error: string | null;
+	directUrlFallback: MetadataDirectUrlFallback | null;
 	onSelectResult: (result: MetadataSearchResult) => void;
 	onSkip: () => void;
 	onBack: () => void;
@@ -34,6 +38,7 @@ export function MetadataSearch({
 	results,
 	isSearching,
 	error,
+	directUrlFallback,
 	onSelectResult,
 	onSkip,
 	onBack,
@@ -84,6 +89,26 @@ export function MetadataSearch({
 
 			{error && <p className="text-sm text-destructive">{error}</p>}
 
+			{!isSearching && !error && directUrlFallback && results.length === 0 && (
+				<div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
+					<div className="space-y-1">
+						<p className="text-sm font-medium">
+							No encontré metadatos para este link, pero puedo crear la obra con
+							el enlace cargado.
+						</p>
+						<p className="text-xs text-muted-foreground break-all">
+							{directUrlFallback.label}
+							{directUrlFallback.identifier
+								? ` · ${directUrlFallback.identifier}`
+								: ""}
+						</p>
+					</div>
+					<Button type="button" variant="outline" size="sm" onClick={onSkip}>
+						Crear con este enlace
+					</Button>
+				</div>
+			)}
+
 			{results.length > 0 && (
 				<div className="space-y-2 max-h-64 overflow-y-auto pr-1">
 					{results.map((result) => (
@@ -124,7 +149,8 @@ export function MetadataSearch({
 			{!isSearching &&
 				query.trim().length >= 3 &&
 				results.length === 0 &&
-				!error && (
+				!error &&
+				!directUrlFallback && (
 					<div className="text-center py-6 space-y-3">
 						<p className="text-sm text-muted-foreground">
 							No se encontraron resultados.
@@ -137,6 +163,7 @@ export function MetadataSearch({
 
 			{!isSearching &&
 				!error &&
+				!directUrlFallback &&
 				(query.trim().length < 3 || results.length === 0) && (
 					<div className="flex justify-center pt-2">
 						<Button

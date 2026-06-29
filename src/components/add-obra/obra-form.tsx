@@ -245,6 +245,7 @@ interface ObraFormProps {
 	selectedMetadata: MetadataSearchResult | null;
 	metadataDetails: MetadataDetails | null;
 	isLoadingDetails: boolean;
+	initialReadingUrl?: string;
 	onBack: () => void;
 	onCancel: () => void;
 	onSubmit: (input: CreateObraInput) => Promise<void>;
@@ -255,6 +256,7 @@ export function ObraForm({
 	selectedMetadata,
 	metadataDetails,
 	isLoadingDetails,
+	initialReadingUrl,
 	onBack,
 	onCancel,
 	onSubmit,
@@ -280,7 +282,7 @@ export function ObraForm({
 			startedAt: "",
 			finishedAt: "",
 			recommendedBy: "",
-			readingUrl: selectedMetadata?.canonicalUrl ?? "",
+			readingUrl: selectedMetadata?.canonicalUrl ?? initialReadingUrl ?? "",
 			tags: "",
 			totalProgress: getTotalFromMetadata(selectedMetadata, type) ?? "",
 		},

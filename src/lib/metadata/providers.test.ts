@@ -423,6 +423,255 @@ describe("metadata providers", () => {
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 	});
 
+	it("searches Google Books by pasted URL", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				id: "google-dokkodo",
+				volumeInfo: {
+					title: "Dokkodo",
+					authors: ["Miyamoto Musashi"],
+					publishedDate: "2008",
+					pageCount: 96,
+					publisher: "Editorial",
+					language: "es",
+					industryIdentifiers: [
+						{ type: "ISBN_13", identifier: "9781234567897" },
+					],
+					imageLinks: { thumbnail: "https://example.com/dokkodo.jpg" },
+				},
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"google-books",
+			"https://books.google.com/books?id=google-dokkodo&hl=es",
+			"book",
+		);
+
+		expect(outcome.provider).toBe("google-books");
+		expect(outcome.results).toHaveLength(1);
+		expect(outcome.results[0]).toMatchObject({
+			source: "google-books",
+			id: "google-dokkodo",
+			title: "Dokkodo",
+			creator: "Miyamoto Musashi",
+			pages: 96,
+			publisher: "Editorial",
+			isbn13: "9781234567897",
+		});
+		expect(fetchMock).toHaveBeenCalledWith(
+			expect.stringContaining(
+				"https://www.googleapis.com/books/v1/volumes/google-dokkodo",
+			),
+			undefined,
+		);
+	});
+
+	it("searches Open Library by pasted URL", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				title: "Dokkodo",
+				publish_date: "2008",
+				number_of_pages: 96,
+				covers: [12345],
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"google-books",
+			"https://openlibrary.org/books/OL123M/Dokkodo",
+			"book",
+		);
+
+		expect(outcome.provider).toBe("open-library");
+		expect(outcome.results[0]).toMatchObject({
+			source: "open-library",
+			id: "/books/OL123M",
+			title: "Dokkodo",
+			year: 2008,
+			pages: 96,
+			coverUrl: "https://covers.openlibrary.org/b/id/12345-L.jpg",
+		});
+		expect(fetchMock).toHaveBeenCalledWith(
+			"https://openlibrary.org/books/OL123M.json",
+			undefined,
+		);
+	});
+
+	it("searches Apple Books by pasted URL", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonResponse({
+					results: [
+						{
+							trackId: 6451271038,
+							trackName: "Hay filosofía en tu nevera",
+							artistName: "Enric F. Gel",
+							releaseDate: "2023-09-14T07:00:00Z",
+							trackViewUrl:
+								"https://books.apple.com/es/book/hay-filosofia/id6451271038?uo=4",
+							artworkUrl100:
+								"https://is1-ssl.mzstatic.com/image/thumb/example.jpg/100x100bb.jpg",
+						},
+					],
+				}),
+			)
+			.mockResolvedValueOnce(jsonResponse({ items: [] }));
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"google-books",
+			"https://books.apple.com/es/book/hay-filosofia/id6451271038",
+			"book",
+		);
+
+		expect(outcome.provider).toBe("apple-books");
+		expect(outcome.results[0]).toMatchObject({
+			source: "apple-books",
+			id: "6451271038",
+			title: "Hay filosofía en tu nevera",
+			creator: "Enric F. Gel",
+			year: 2023,
+		});
+		expect(fetchMock).toHaveBeenCalledWith(
+			expect.stringContaining("https://itunes.apple.com/lookup?"),
+			undefined,
+		);
+	});
+
+	it("searches TMDB movie and tv URLs for the matching obra type", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonResponse({
+					id: 603,
+					title: "The Matrix",
+					release_date: "1999-03-31",
+					runtime: 136,
+					poster_path: "/matrix.jpg",
+				}),
+			)
+			.mockResolvedValueOnce(jsonResponse({ results: { CL: {} } }))
+			.mockResolvedValueOnce(
+				jsonResponse({
+					id: 1399,
+					name: "Game of Thrones",
+					first_air_date: "2011-04-17",
+					number_of_seasons: 8,
+					number_of_episodes: 73,
+					poster_path: "/got.jpg",
+				}),
+			);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const movieOutcome = await searchMetadata(
+			"tmdb",
+			"https://www.themoviedb.org/movie/603-the-matrix",
+			"movie",
+		);
+		const seriesOutcome = await searchMetadata(
+			"tmdb",
+			"https://www.themoviedb.org/tv/1399-game-of-thrones",
+			"series",
+		);
+
+		expect(movieOutcome.results[0]).toMatchObject({
+			source: "tmdb",
+			id: "603",
+			title: "The Matrix",
+			runtime: 136,
+		});
+		expect(seriesOutcome.results[0]).toMatchObject({
+			source: "tmdb",
+			id: "1399",
+			title: "Game of Thrones",
+			seasons: 8,
+			episodes: 73,
+		});
+	});
+
+	it("searches AniList manga URLs for manga and manhwa", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				data: {
+					Media: {
+						id: 169355,
+						title: {
+							romaji: "Kagurabachi",
+							english: null,
+							native: "カグラバチ",
+						},
+						coverImage: {
+							extraLarge: "https://example.com/kagurabachi.png",
+						},
+						startDate: { year: 2023 },
+						studios: { nodes: [] },
+						staff: { edges: [] },
+						status: "RELEASING",
+						chapters: 60,
+						externalLinks: [],
+					},
+				},
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"anilist",
+			"https://anilist.co/manga/169355/Kagurabachi/",
+			"manhwa",
+		);
+
+		expect(outcome.provider).toBe("anilist");
+		expect(outcome.results[0]).toMatchObject({
+			source: "anilist",
+			id: "169355",
+			title: "Kagurabachi",
+			status: "RELEASING",
+			latestChapter: 60,
+		});
+	});
+
+	it("falls back to creating with the Amazon URL when the ASIN has no catalog match", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse({ docs: [] }))
+			.mockResolvedValueOnce(jsonResponse({ items: [] }))
+			.mockResolvedValueOnce(jsonResponse({ results: [] }));
+
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"google-books",
+			"https://www.amazon.com/-/es/dp/B0DGMDXCCM/?coliid=I1XX1466N4AN5H&colid=1BSTY6XI81LPN",
+			"book",
+		);
+
+		expect(outcome.provider).toBe("google-books");
+		expect(outcome.results).toEqual([]);
+		expect(outcome.directUrlFallback).toEqual({
+			url: "https://www.amazon.com/dp/B0DGMDXCCM",
+			label: "Amazon",
+			identifier: "B0DGMDXCCM",
+			reason: "No encontré metadatos confiables para este enlace de Amazon.",
+		});
+		expect(fetchMock).toHaveBeenCalledTimes(3);
+	});
+
 	it("keeps non-quota google books errors visible", async () => {
 		const fetchMock = vi.fn().mockResolvedValueOnce(
 			jsonResponse(
