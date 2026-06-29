@@ -22,6 +22,7 @@ export type ObraId = string;
 
 export interface ObraMetadata {
 	pages?: number;
+	durationMinutes?: number;
 	subtitle?: string;
 	publisher?: string;
 	publishedDate?: string;

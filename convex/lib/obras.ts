@@ -86,6 +86,7 @@ export function sanitizeMetadata(
 
 	const sanitized: ObraMetadata = {
 		pages: nullableNumber(metadata.pages),
+		durationMinutes: nullableNumber(metadata.durationMinutes),
 		subtitle: normalizeOptionalString(metadata.subtitle),
 		publisher: normalizeOptionalString(metadata.publisher),
 		publishedDate: normalizeOptionalString(metadata.publishedDate),

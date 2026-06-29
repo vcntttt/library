@@ -1573,6 +1573,7 @@ function metadataDetailsToSearchResult(
 		year: details.year,
 		coverUrl: details.coverUrl,
 		pages: details.pages,
+		durationMinutes: details.durationMinutes,
 		publisher: details.publisher,
 		publishedDate: details.publishedDate,
 		language: details.language,

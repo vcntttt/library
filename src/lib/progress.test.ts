@@ -29,6 +29,29 @@ describe("progress helpers", () => {
 		).toBe(224);
 	});
 
+	it("uses audiobook duration instead of book pages from metadata", () => {
+		expect(
+			getInitialProgressTotal({
+				...baseObra,
+				format: "audiobook",
+				metadata: { pages: 736, durationMinutes: 1473 },
+			}),
+		).toBe(1473);
+		expect(
+			getInitialProgressTotal({
+				...baseObra,
+				format: "audiobook",
+				metadata: { pages: 736 },
+			}),
+		).toBe(0);
+	});
+
+	it("does not map book pages as audiobook progress total", () => {
+		expect(
+			getProgressTotalFromMetadata("book", { pages: 736 }, "audiobook"),
+		).toBeUndefined();
+	});
+
 	it("keeps the saved progress total over metadata", () => {
 		expect(
 			getInitialProgressTotal({

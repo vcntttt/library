@@ -49,6 +49,7 @@ export const externalReferenceValidator = v.object({
 
 export const obraMetadataValidator = v.object({
 	pages: v.optional(v.number()),
+	durationMinutes: v.optional(v.number()),
 	subtitle: v.optional(v.string()),
 	publisher: v.optional(v.string()),
 	publishedDate: v.optional(v.string()),

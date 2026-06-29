@@ -58,11 +58,15 @@ const getProgressTotalLabel = (type: ObraType, format?: ObraFormat) => {
 const getTotalFromMetadata = (
 	metadata: Pick<
 		MetadataSearchResult,
-		"pages" | "episodes" | "latestChapter"
+		"pages" | "durationMinutes" | "episodes" | "latestChapter"
 	> | null,
 	type: ObraType,
+	format?: ObraFormat,
 ) => {
 	if (!metadata) return undefined;
+	if (type === "book" && format === "audiobook") {
+		return metadata.durationMinutes;
+	}
 	if (type === "book") return metadata.pages;
 	if (type === "manga" || type === "manhwa") return metadata.latestChapter;
 	if (type === "series" || type === "anime") return metadata.episodes;
@@ -102,6 +106,14 @@ function getMetadataRows(
 			value:
 				typeof metadata.pages === "number"
 					? metadata.pages.toLocaleString()
+					: undefined,
+			showLoading: true,
+		});
+		rows.push({
+			label: "Duración audio",
+			value:
+				typeof metadata.durationMinutes === "number"
+					? `${metadata.durationMinutes.toLocaleString()} min`
 					: undefined,
 			showLoading: true,
 		});
@@ -226,6 +238,7 @@ function buildMetadataPayload(
 
 	const payload = {
 		pages: source.pages ?? undefined,
+		durationMinutes: source.durationMinutes ?? undefined,
 		subtitle: source.subtitle ?? undefined,
 		publisher: source.publisher ?? undefined,
 		publishedDate: source.publishedDate ?? undefined,
@@ -305,7 +318,8 @@ export function ObraForm({
 			recommendedBy: "",
 			readingUrl: initialReadingUrl ?? "",
 			tags: "",
-			totalProgress: getTotalFromMetadata(selectedMetadata, type) ?? "",
+			totalProgress:
+				getTotalFromMetadata(selectedMetadata, type, "ebook") ?? "",
 		},
 		onSubmit: async ({ value }) => {
 			if (!value.title.trim()) return;
@@ -377,7 +391,7 @@ export function ObraForm({
 			form.setFieldValue("year", String(metadataDetails.year));
 		}
 		const total = getTotalFromMetadata(metadataDetails, type);
-		if (total) {
+		if (total && form.state.values.format !== "audiobook") {
 			form.setFieldValue("totalProgress", String(total));
 		}
 	}, [metadataDetails, form, type]);
@@ -516,9 +530,19 @@ export function ObraForm({
 												<Label htmlFor={formatId}>Formato</Label>
 												<Select
 													value={field.state.value}
-													onValueChange={(v) =>
-														field.handleChange(v as ObraFormat)
-													}
+													onValueChange={(v) => {
+														const nextFormat = v as ObraFormat;
+														field.handleChange(nextFormat);
+														const total = getTotalFromMetadata(
+															metadataDetails ?? selectedMetadata,
+															type,
+															nextFormat,
+														);
+														form.setFieldValue(
+															"totalProgress",
+															total ? String(total) : "",
+														);
+													}}
 												>
 													<SelectTrigger id={formatId}>
 														<span className="truncate">

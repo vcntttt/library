@@ -31,7 +31,7 @@ export function formatProgressValue(
 
 export function getBookFormatLabel(format?: ObraFormat) {
 	if (format === "audiobook") return "Audiolibro";
-	if (format === "ebook") return "Ebook";
+	if (format === "ebook") return "Libro";
 	if (format === "physical") return "Libro físico";
 	return "Libro";
 }
@@ -39,8 +39,12 @@ export function getBookFormatLabel(format?: ObraFormat) {
 export function getProgressTotalFromMetadata(
 	type: ObraType,
 	metadata: ObraMetadata | undefined,
+	format?: ObraFormat,
 ) {
 	if (!metadata) return undefined;
+	if (type === "book" && format === "audiobook") {
+		return metadata.durationMinutes;
+	}
 	if (type === "book") return metadata.pages;
 	if (type === "manga" || type === "manhwa") return metadata.latestChapter;
 	if (type === "series" || type === "anime") return metadata.episodes;
@@ -50,7 +54,7 @@ export function getProgressTotalFromMetadata(
 export function getInitialProgressTotal(obra: Obra) {
 	return (
 		obra.progress?.total ??
-		getProgressTotalFromMetadata(obra.type, obra.metadata) ??
+		getProgressTotalFromMetadata(obra.type, obra.metadata, obra.format) ??
 		0
 	);
 }

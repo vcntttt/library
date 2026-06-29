@@ -651,15 +651,10 @@ function ObraAuthed({
 				value: metadata.pages.toLocaleString(),
 			});
 		}
-		if (obra.type === "book" && obra.format) {
+		if (obra.type === "book" && obra.format === "audiobook") {
 			metadataItems.push({
 				label: "Formato",
-				value:
-					obra.format === "audiobook"
-						? "Audiolibro"
-						: obra.format === "ebook"
-							? "Ebook"
-							: "Libro físico",
+				value: "Audiolibro",
 			});
 		}
 		if (obra.type === "book" && metadata.publisher) {

@@ -30,6 +30,7 @@ export interface MetadataSearchResult {
 	year?: number;
 	coverUrl?: string;
 	pages?: number;
+	durationMinutes?: number;
 	publisher?: string;
 	publishedDate?: string;
 	language?: string;
@@ -64,6 +65,7 @@ export interface MetadataDetails {
 	year?: number;
 	coverUrl?: string;
 	pages?: number;
+	durationMinutes?: number;
 	publisher?: string;
 	publishedDate?: string;
 	language?: string;
