@@ -87,6 +87,7 @@ export interface Obra {
 	quotes: ObraQuote[];
 	recommendedBy?: string;
 	readingUrl?: string;
+	sourceUrl?: string;
 	coverUrl?: string;
 	originalCoverUrl?: string;
 	customCoverUrl?: string;
@@ -114,6 +115,7 @@ export interface CreateObraInput {
 	tags?: string[];
 	recommendedBy?: string;
 	readingUrl?: string;
+	sourceUrl?: string;
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
 	coverUrl?: string;
@@ -138,6 +140,7 @@ export interface UpdateObraPatch {
 	quotes?: ObraQuotePatch[];
 	recommendedBy?: string;
 	readingUrl?: string;
+	sourceUrl?: string;
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
 	coverUrl?: string;

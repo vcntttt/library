@@ -49,6 +49,7 @@ interface EditValues {
 	customCoverUrl: string;
 	format: ObraFormat | "";
 	readingUrl: string;
+	sourceUrl: string;
 	recommendedBy: string;
 	startedAt: string;
 	finishedAt: string;
@@ -76,6 +77,7 @@ function getEditValues(obra: Obra): EditValues {
 		customCoverUrl: obra.coverUrl ?? "",
 		format: obra.format ?? "",
 		readingUrl: obra.readingUrl ?? "",
+		sourceUrl: obra.sourceUrl ?? "",
 		recommendedBy: obra.recommendedBy ?? "",
 		startedAt: formatDateInput(
 			obra.type === "movie"
@@ -118,6 +120,7 @@ function buildPersonalPatch(values: EditValues, obra: Obra) {
 
 	return {
 		readingUrl: values.readingUrl.trim() || undefined,
+		sourceUrl: values.sourceUrl.trim() || undefined,
 		recommendedBy: values.recommendedBy.trim(),
 		startedAt:
 			obra.type === "movie" ? movieWatchedAt : parseDateInput(values.startedAt),
@@ -689,6 +692,25 @@ export function ObraEditSheet({
 											Ir a leer
 										</Button>
 									</div>
+								</div>
+								<div className="flex flex-col gap-2">
+									<Label>Fuente</Label>
+									<Input
+										value={values.sourceUrl}
+										onChange={(event) => {
+											const nextValues = {
+												...values,
+												sourceUrl: event.target.value,
+											};
+											updateValues(
+												nextValues,
+												buildPersonalPatch(nextValues, obra),
+												"sourceUrl",
+											);
+										}}
+										placeholder="URL del proveedor o ficha externa"
+										className="rounded-none border-border bg-background focus-visible:ring-primary"
+									/>
 								</div>
 							</section>
 

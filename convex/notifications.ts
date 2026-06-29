@@ -49,8 +49,10 @@ export const checkForNewChapters = internalAction({
 			try {
 				const source = getTrackedMetadataSource(obra.externalSource);
 				const details =
-					(await getMangaReadingUrlDetails(obra.readingUrl, obra.type)) ??
-					(await getMetadataDetails(source, obra.externalId, obra.type));
+					(await getMangaReadingUrlDetails(
+						obra.sourceUrl ?? obra.readingUrl,
+						obra.type,
+					)) ?? (await getMetadataDetails(source, obra.externalId, obra.type));
 				const merged = mergeMangaMetadata(obra.metadata, details);
 				const progressTotal = syncMangaProgressTotal(
 					obra.progressTotal,
@@ -80,7 +82,7 @@ export const checkForNewChapters = internalAction({
 							title: obra.title,
 							chapter: latestChapter,
 							source: merged.latestChapterSource ?? source,
-							url: obra.readingUrl ?? merged.canonicalUrl,
+							url: obra.readingUrl ?? obra.sourceUrl ?? merged.canonicalUrl,
 							detectedAt: Date.now(),
 						},
 					},

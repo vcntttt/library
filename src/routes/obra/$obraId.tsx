@@ -795,6 +795,9 @@ function ObraAuthed({
 	if (obra.external) {
 		technicalItems.push({ label: "Fuente", value: metadataSourceLabel });
 	}
+	if (obra.sourceUrl) {
+		technicalItems.push({ label: "URL fuente", value: obra.sourceUrl });
+	}
 
 	const handleDelete = async () => {
 		await removeObra({ id: convexId });

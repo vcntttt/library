@@ -31,6 +31,7 @@ export default defineSchema({
 		tags: v.array(v.string()),
 		recommendedBy: v.optional(v.string()),
 		readingUrl: v.optional(v.string()),
+		sourceUrl: v.optional(v.string()),
 		externalSource: v.optional(metadataSourceValidator),
 		externalId: v.optional(v.string()),
 		metadata: v.optional(obraMetadataValidator),

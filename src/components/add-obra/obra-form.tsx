@@ -263,6 +263,7 @@ interface ObraFormProps {
 	metadataDetails: MetadataDetails | null;
 	isLoadingDetails: boolean;
 	initialReadingUrl?: string;
+	initialSourceUrl?: string;
 	onBack: () => void;
 	onCancel: () => void;
 	onSubmit: (input: CreateObraInput) => Promise<void>;
@@ -274,6 +275,7 @@ export function ObraForm({
 	metadataDetails,
 	isLoadingDetails,
 	initialReadingUrl,
+	initialSourceUrl,
 	onBack,
 	onCancel,
 	onSubmit,
@@ -294,14 +296,14 @@ export function ObraForm({
 		defaultValues: {
 			title: selectedMetadata?.title ?? "",
 			type,
-			format: "physical" as ObraFormat,
+			format: "ebook" as ObraFormat,
 			status: "backlog" as ObraStatus,
 			creator: selectedMetadata?.creator ?? "",
 			year: selectedMetadata?.year ? String(selectedMetadata.year) : "",
 			startedAt: "",
 			finishedAt: "",
 			recommendedBy: "",
-			readingUrl: selectedMetadata?.canonicalUrl ?? initialReadingUrl ?? "",
+			readingUrl: initialReadingUrl ?? "",
 			tags: "",
 			totalProgress: getTotalFromMetadata(selectedMetadata, type) ?? "",
 		},
@@ -334,6 +336,12 @@ export function ObraForm({
 				finishedAt: value.type === "movie" ? movieWatchedAt : finishedAt,
 				recommendedBy: value.recommendedBy.trim() || undefined,
 				readingUrl: value.readingUrl.trim() || undefined,
+				sourceUrl:
+					(metadataDetails?.canonicalUrl ??
+						selectedMetadata?.canonicalUrl ??
+						initialSourceUrl ??
+						"") ||
+					undefined,
 				tags: value.tags
 					.split(",")
 					.map((t) => t.trim())
@@ -367,9 +375,6 @@ export function ObraForm({
 		}
 		if (metadataDetails.year !== undefined) {
 			form.setFieldValue("year", String(metadataDetails.year));
-		}
-		if (metadataDetails.canonicalUrl && !form.state.values.readingUrl) {
-			form.setFieldValue("readingUrl", metadataDetails.canonicalUrl);
 		}
 		const total = getTotalFromMetadata(metadataDetails, type);
 		if (total) {
@@ -519,7 +524,7 @@ export function ObraForm({
 														<span className="truncate">
 															{bookFormats.find(
 																(format) => format.value === field.state.value,
-															)?.label ?? "Libro físico"}
+															)?.label ?? "Ebook"}
 														</span>
 													</SelectTrigger>
 													<SelectContent>

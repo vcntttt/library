@@ -121,6 +121,7 @@ export const create = mutation({
 			tags: normalizeTags(input.tags),
 			recommendedBy: normalizeOptionalString(input.recommendedBy),
 			readingUrl: normalizeOptionalString(input.readingUrl),
+			sourceUrl: normalizeOptionalString(input.sourceUrl),
 			externalSource: external?.source,
 			externalId: external?.id,
 			metadata,
@@ -183,6 +184,9 @@ export const update = mutation({
 		}
 		if (hasOwn(patch, "readingUrl")) {
 			nextPatch.readingUrl = normalizeOptionalString(patch.readingUrl);
+		}
+		if (hasOwn(patch, "sourceUrl")) {
+			nextPatch.sourceUrl = normalizeOptionalString(patch.sourceUrl);
 		}
 		if (hasOwn(patch, "external")) {
 			const external = sanitizeExternal(patch.external);
@@ -342,6 +346,7 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		})),
 		recommendedBy: row.recommendedBy,
 		readingUrl: row.readingUrl,
+		sourceUrl: row.sourceUrl,
 		coverUrl: row.customCoverUrl ?? row.coverUrl,
 		originalCoverUrl: row.coverUrl,
 		customCoverUrl: row.customCoverUrl,

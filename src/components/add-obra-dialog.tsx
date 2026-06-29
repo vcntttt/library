@@ -81,6 +81,7 @@ export function AddObraDialog({
 	const [directUrlFallback, setDirectUrlFallback] =
 		useState<MetadataDirectUrlFallback | null>(null);
 	const [initialReadingUrl, setInitialReadingUrl] = useState("");
+	const [initialSourceUrl, setInitialSourceUrl] = useState("");
 	const [metadataError, setMetadataError] = useState<string | null>(null);
 	const [isSearchingMetadata, setIsSearchingMetadata] = useState(false);
 	const [isLoadingMetadataDetails, setIsLoadingMetadataDetails] =
@@ -193,6 +194,7 @@ export function AddObraDialog({
 			setMetadataDetails(null);
 			setDirectUrlFallback(null);
 			setInitialReadingUrl("");
+			setInitialSourceUrl("");
 			setMetadataError(null);
 			setIsSearchingMetadata(false);
 			setIsLoadingMetadataDetails(false);
@@ -203,6 +205,7 @@ export function AddObraDialog({
 		setActiveType(type);
 		setDirectUrlFallback(null);
 		setInitialReadingUrl("");
+		setInitialSourceUrl("");
 		setStep(2);
 	};
 
@@ -210,7 +213,8 @@ export function AddObraDialog({
 		setSelectedMetadata(null);
 		setMetadataDetails(null);
 		setMetadataError(null);
-		setInitialReadingUrl(directUrlFallback?.url ?? "");
+		setInitialReadingUrl("");
+		setInitialSourceUrl(directUrlFallback?.url ?? "");
 		setStep(3);
 	};
 
@@ -331,6 +335,7 @@ export function AddObraDialog({
 						metadataDetails={metadataDetails}
 						isLoadingDetails={isLoadingMetadataDetails}
 						initialReadingUrl={initialReadingUrl}
+						initialSourceUrl={initialSourceUrl}
 						onBack={() => {
 							setStep(2);
 							setSelectedMetadata(null);
