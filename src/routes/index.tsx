@@ -122,7 +122,7 @@ function DashboardAuthed() {
 								Biblioteca privada
 							</p>
 							<h1 className="font-serif text-4xl font-medium leading-tight tracking-tight sm:text-5xl">
-								{activelyWatching.length} obras viendo ahora
+								{activelyWatching.length} obras en progreso
 							</h1>
 						</div>
 						<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
