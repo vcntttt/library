@@ -4,6 +4,7 @@ import type {
 	externalReferenceValidator,
 	obraMetadataValidator,
 	obraTypeValidator,
+	progressSeasonsValidator,
 	progressValidator,
 	quotePatchValidator,
 	updateObraPatchValidator,
@@ -13,6 +14,7 @@ export type ObraType = Infer<typeof obraTypeValidator>;
 export type ObraMetadata = Infer<typeof obraMetadataValidator>;
 export type ExternalReference = Infer<typeof externalReferenceValidator>;
 export type ObraProgress = Infer<typeof progressValidator>;
+export type ObraProgressSeason = Infer<typeof progressSeasonsValidator>[number];
 export type ObraQuotePatch = Infer<typeof quotePatchValidator>;
 export type CreateObraInput = Infer<typeof createObraValidator>;
 export type UpdateObraPatch = Infer<typeof updateObraPatchValidator> &
@@ -21,6 +23,7 @@ export type UpdateObraPatch = Infer<typeof updateObraPatchValidator> &
 export function assertCreateObraInput(input: CreateObraInput) {
 	if (!input.title.trim()) throw new Error("El titulo es requerido.");
 	if (input.progress) assertProgress(input.progress);
+	if (input.progressSeasons) assertProgressSeasons(input.progressSeasons);
 	return input;
 }
 
@@ -29,6 +32,7 @@ export function assertUpdateObraPatch(patch: UpdateObraPatch) {
 		throw new Error("El titulo es requerido.");
 	}
 	if (patch.progress) assertProgress(patch.progress);
+	if (patch.progressSeasons) assertProgressSeasons(patch.progressSeasons);
 	if (patch.quotes) {
 		for (const quote of patch.quotes) {
 			if (!quote.content.trim()) throw new Error("La cita es requerida.");
@@ -76,6 +80,39 @@ export function sanitizeProgress(
 	const total = Math.max(0, Math.floor(progress.total));
 	if (total <= 0) return undefined;
 	return { current: Math.min(current, total), total };
+}
+
+export function sanitizeProgressSeasons(
+	seasons: ObraProgressSeason[] | null | undefined,
+): ObraProgressSeason[] | undefined {
+	if (!seasons) return undefined;
+	const sanitized = seasons
+		.map((season) => ({
+			seasonNumber: Math.max(0, Math.floor(season.seasonNumber)),
+			episodeCount: Math.max(0, Math.floor(season.episodeCount)),
+		}))
+		.filter((season) => season.seasonNumber > 0 && season.episodeCount > 0);
+	const unique = new Map<number, ObraProgressSeason>();
+	for (const season of sanitized) {
+		unique.set(season.seasonNumber, season);
+	}
+	const sorted = Array.from(unique.values()).sort(
+		(a, b) => a.seasonNumber - b.seasonNumber,
+	);
+	return sorted.length > 0 ? sorted : undefined;
+}
+
+function assertProgressSeasons(seasons: ObraProgressSeason[]) {
+	for (const season of seasons) {
+		if (
+			season.seasonNumber < 0 ||
+			season.episodeCount < 0 ||
+			!Number.isFinite(season.seasonNumber) ||
+			!Number.isFinite(season.episodeCount)
+		) {
+			throw new Error("Distribución de temporadas invalida.");
+		}
+	}
 }
 
 export function sanitizeMetadata(

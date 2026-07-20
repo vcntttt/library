@@ -373,6 +373,11 @@ export function ObraForm({
 					value.type !== "movie" && parsedTotalProgress > 0
 						? { current: 0, total: parsedTotalProgress }
 						: undefined,
+				progressSeasons:
+					value.type === "series" || value.type === "anime"
+						? (metadataDetails?.seasonDetails ??
+							selectedMetadata?.seasonDetails)
+						: undefined,
 			};
 
 			await onSubmit(input);

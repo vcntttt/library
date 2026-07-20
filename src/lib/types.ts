@@ -20,6 +20,11 @@ export type ObraFormat = "physical" | "ebook" | "audiobook";
 
 export type ObraId = string;
 
+export interface ObraSeason {
+	seasonNumber: number;
+	episodeCount: number;
+}
+
 export interface ObraMetadata {
 	pages?: number;
 	durationMinutes?: number;
@@ -53,6 +58,10 @@ export interface ObraMetadata {
 export interface ObraProgress {
 	current: number;
 	total: number;
+}
+
+export interface ObraSeasonProgress {
+	seasons: ObraSeason[];
 }
 
 export interface ObraQuote {
@@ -101,6 +110,7 @@ export interface Obra {
 	external?: ExternalReference;
 	metadata?: ObraMetadata;
 	progress?: ObraProgress;
+	progressSeasons?: ObraSeason[];
 	startedAt?: number;
 	finishedAt?: number;
 	createdAt: number;
@@ -127,6 +137,7 @@ export interface CreateObraInput {
 	customYear?: number;
 	customTitle?: string;
 	progress?: ObraProgress;
+	progressSeasons?: ObraSeason[];
 	startedAt?: number;
 	finishedAt?: number;
 }
@@ -152,6 +163,7 @@ export interface UpdateObraPatch {
 	customYear?: number;
 	customTitle?: string;
 	progress?: ObraProgress;
+	progressSeasons?: ObraSeason[] | null;
 	startedAt?: number;
 	finishedAt?: number;
 }

@@ -5,6 +5,7 @@ import {
 	normalizeTags,
 	sanitizeMetadata,
 	sanitizeProgress,
+	sanitizeProgressSeasons,
 	syncMangaProgressTotal,
 } from "./obras";
 
@@ -31,6 +32,30 @@ describe("obra domain helpers", () => {
 			current: 10,
 			total: 10,
 		});
+	});
+
+	it("sanitizes progress seasons by ordering and removing invalid entries", () => {
+		expect(
+			sanitizeProgressSeasons([
+				{ seasonNumber: 2, episodeCount: 10 },
+				{ seasonNumber: 1, episodeCount: 5 },
+				{ seasonNumber: 0, episodeCount: 10 },
+				{ seasonNumber: -1, episodeCount: 10 },
+				{ seasonNumber: 1, episodeCount: -5 },
+			]),
+		).toEqual([
+			{ seasonNumber: 1, episodeCount: 5 },
+			{ seasonNumber: 2, episodeCount: 10 },
+		]);
+	});
+
+	it("deduplicates progress seasons keeping the largest episode count", () => {
+		expect(
+			sanitizeProgressSeasons([
+				{ seasonNumber: 1, episodeCount: 5 },
+				{ seasonNumber: 1, episodeCount: 8 },
+			]),
+		).toEqual([{ seasonNumber: 1, episodeCount: 8 }]);
 	});
 
 	it("strips manga-only metadata from non-manga obras", () => {

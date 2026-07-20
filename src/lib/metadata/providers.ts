@@ -713,6 +713,25 @@ async function getTmdbDetails(
 		}
 	}
 
+	const seasonDetails =
+		obraType !== "movie"
+			? data.seasons
+					?.map((season) => ({
+						seasonNumber: season.season_number,
+						episodeCount: season.episode_count,
+					}))
+					.filter(
+						(
+							season,
+						): season is { seasonNumber: number; episodeCount: number } =>
+							typeof season.seasonNumber === "number" &&
+							season.seasonNumber > 0 &&
+							typeof season.episodeCount === "number" &&
+							season.episodeCount > 0,
+					)
+					.sort((a, b) => a.seasonNumber - b.seasonNumber)
+			: undefined;
+
 	return {
 		source: "tmdb",
 		id,
@@ -724,6 +743,7 @@ async function getTmdbDetails(
 		status: data.status ?? undefined,
 		seasons: data.number_of_seasons,
 		episodes: data.number_of_episodes,
+		seasonDetails,
 		nextEpisodeDate: data.next_episode_to_air?.air_date
 			? new Date(data.next_episode_to_air.air_date).getTime()
 			: undefined,
@@ -1584,6 +1604,7 @@ function metadataDetailsToSearchResult(
 		status: details.status,
 		seasons: details.seasons,
 		episodes: details.episodes,
+		seasonDetails: details.seasonDetails,
 		episodesAired: details.episodesAired,
 		nextEpisodeDate: details.nextEpisodeDate,
 		runtime: details.runtime,
@@ -2432,6 +2453,11 @@ interface TmdbDetails {
 		episode_number?: number;
 		air_date?: string;
 	} | null;
+	seasons?: Array<{
+		season_number?: number;
+		episode_count?: number;
+		name?: string;
+	}>;
 }
 
 interface TmdbWatchProviders {

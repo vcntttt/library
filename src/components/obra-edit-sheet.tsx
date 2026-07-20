@@ -5,6 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Minus, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SeasonProgressEditor } from "@/components/season-progress-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,8 +32,15 @@ import {
 	getInitialProgressTotal,
 	getProgressUnitLabel,
 } from "@/lib/progress";
+import { formatSeasonProgress, validateSeasons } from "@/lib/season-progress";
 import { getStatusLabel } from "@/lib/status";
-import type { Obra, ObraFormat, ObraId, ObraStatus } from "@/lib/types";
+import type {
+	Obra,
+	ObraFormat,
+	ObraId,
+	ObraSeason,
+	ObraStatus,
+} from "@/lib/types";
 import { cn, formatDateInput, parseDateInput } from "@/lib/utils";
 
 interface EditableQuote {
@@ -56,6 +64,7 @@ interface EditValues {
 	review: string;
 	progressCurrent: number;
 	progressTotal: number;
+	progressSeasons: ObraSeason[];
 }
 
 type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
@@ -92,6 +101,7 @@ function getEditValues(obra: Obra): EditValues {
 		review: obra.review ?? "",
 		progressCurrent: obra.progress?.current ?? 0,
 		progressTotal: getInitialProgressTotal(obra),
+		progressSeasons: obra.progressSeasons ?? [],
 	};
 }
 
@@ -133,7 +143,10 @@ function buildPersonalPatch(values: EditValues, obra: Obra) {
 }
 
 function buildProgressPatch(
-	values: Pick<EditValues, "progressCurrent" | "progressTotal">,
+	values: Pick<
+		EditValues,
+		"progressCurrent" | "progressTotal" | "progressSeasons"
+	>,
 	obra: Obra,
 	status?: ObraStatus,
 ) {
@@ -143,10 +156,18 @@ function buildProgressPatch(
 		Math.max(0, Math.floor(values.progressCurrent || 0)),
 		total,
 	);
+	const seasons = validateSeasons(values.progressSeasons);
+	const patch: Record<string, unknown> = { ...(status ? { status } : {}) };
 	if (total <= 0) {
-		return { progress: undefined, ...(status ? { status } : {}) };
+		patch.progress = undefined;
+		patch.progressSeasons = undefined;
+		return patch;
 	}
-	return { progress: { current, total }, ...(status ? { status } : {}) };
+	patch.progress = { current, total };
+	if (seasons.length > 0) {
+		patch.progressSeasons = seasons;
+	}
+	return patch;
 }
 
 function buildQuotesPatch(quotes: EditableQuote[]) {
@@ -185,6 +206,7 @@ export function ObraEditSheet({
 		string,
 		unknown
 	> | null>(null);
+	const [isSeasonEditorOpen, setIsSeasonEditorOpen] = useState(false);
 	const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 	const pendingSavePatches = useRef(new Map<string, Record<string, unknown>>());
 	const syncedSessionKey = useRef<string | null>(null);
@@ -336,6 +358,25 @@ export function ObraEditSheet({
 			"progress",
 			600,
 		);
+	};
+
+	const handleSeasonProgressChange = (next: {
+		seasons: ObraSeason[];
+		current: number;
+		total: number;
+	}) => {
+		if (!obra || !values) return;
+		const nextValues = {
+			...values,
+			progressCurrent: next.current,
+			progressTotal: next.total,
+			progressSeasons: next.seasons,
+		};
+		setValues(nextValues);
+		savePatch(buildProgressPatch(nextValues, obra), {
+			debounceKey: "progress",
+			delayMs: 600,
+		});
 	};
 
 	const handleAddQuote = () => {
@@ -578,6 +619,15 @@ export function ObraEditSheet({
 														})
 													: "-"}
 											</span>
+											{(obra.type === "series" || obra.type === "anime") &&
+												values.progressSeasons.length > 0 && (
+													<span className="text-sm font-medium text-foreground">
+														{formatSeasonProgress(
+															values.progressSeasons,
+															values.progressCurrent,
+														)}
+													</span>
+												)}
 										</div>
 										<div className="flex items-center gap-3">
 											<Button
@@ -635,6 +685,17 @@ export function ObraEditSheet({
 												<Plus />
 											</Button>
 										</div>
+										{(obra.type === "series" || obra.type === "anime") && (
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												onClick={() => setIsSeasonEditorOpen(true)}
+												className="w-full rounded-none border-border hover:border-primary hover:text-primary"
+											>
+												Editar por temporadas
+											</Button>
+										)}
 										<div className="flex flex-col gap-2">
 											<Label>
 												Total
@@ -656,6 +717,14 @@ export function ObraEditSheet({
 												className="max-w-[140px] rounded-none border-border bg-background focus-visible:ring-primary"
 											/>
 										</div>
+										<SeasonProgressEditor
+											open={isSeasonEditorOpen}
+											onOpenChange={setIsSeasonEditorOpen}
+											seasons={values.progressSeasons}
+											current={values.progressCurrent}
+											total={values.progressTotal}
+											onChange={handleSeasonProgressChange}
+										/>
 									</div>
 								</section>
 							)}

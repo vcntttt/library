@@ -82,6 +82,13 @@ export const progressValidator = v.object({
 	total: v.number(),
 });
 
+export const progressSeasonsValidator = v.array(
+	v.object({
+		seasonNumber: v.number(),
+		episodeCount: v.number(),
+	}),
+);
+
 export const quotePatchValidator = v.object({
 	id: v.optional(v.id("obraQuotes")),
 	content: v.string(),
@@ -108,6 +115,7 @@ export const createObraFields = {
 	customYear: v.optional(v.number()),
 	customTitle: v.optional(v.string()),
 	progress: v.optional(progressValidator),
+	progressSeasons: v.optional(progressSeasonsValidator),
 	startedAt: v.optional(v.number()),
 	finishedAt: v.optional(v.number()),
 };
@@ -135,6 +143,7 @@ export const updateObraPatchFields = {
 	customYear: v.optional(v.number()),
 	customTitle: v.optional(v.string()),
 	progress: v.optional(v.union(progressValidator, v.null())),
+	progressSeasons: v.optional(v.union(progressSeasonsValidator, v.null())),
 	startedAt: v.optional(v.number()),
 	finishedAt: v.optional(v.number()),
 };

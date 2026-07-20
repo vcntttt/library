@@ -21,6 +21,11 @@ export interface MetadataDirectUrlFallback {
 	reason: string;
 }
 
+export interface MetadataSeason {
+	seasonNumber: number;
+	episodeCount: number;
+}
+
 export interface MetadataSearchResult {
 	source: MetadataSource;
 	id: string;
@@ -54,6 +59,7 @@ export interface MetadataSearchResult {
 	latestChapterCheckedAt?: number;
 	mangaPlusTitleId?: string;
 	mangaDexId?: string;
+	seasonDetails?: MetadataSeason[];
 }
 
 export interface MetadataDetails {
@@ -89,4 +95,5 @@ export interface MetadataDetails {
 	latestChapterCheckedAt?: number;
 	mangaPlusTitleId?: string;
 	mangaDexId?: string;
+	seasonDetails?: MetadataSeason[];
 }

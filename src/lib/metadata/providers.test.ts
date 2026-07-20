@@ -620,6 +620,11 @@ describe("metadata providers", () => {
 					number_of_seasons: 8,
 					number_of_episodes: 73,
 					poster_path: "/got.jpg",
+					seasons: [
+						{ season_number: 0, episode_count: 1, name: "Specials" },
+						{ season_number: 1, episode_count: 10 },
+						{ season_number: 2, episode_count: 10 },
+					],
 				}),
 			);
 
@@ -649,6 +654,10 @@ describe("metadata providers", () => {
 			title: "Game of Thrones",
 			seasons: 8,
 			episodes: 73,
+			seasonDetails: [
+				{ seasonNumber: 1, episodeCount: 10 },
+				{ seasonNumber: 2, episodeCount: 10 },
+			],
 		});
 	});
 

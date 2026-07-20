@@ -16,6 +16,7 @@ import {
 	sanitizeExternal,
 	sanitizeMetadata,
 	sanitizeProgress,
+	sanitizeProgressSeasons,
 	sanitizeQuotes,
 	syncMangaProgressTotal,
 } from "./lib/obras";
@@ -87,11 +88,12 @@ export const create = mutation({
 	args: createObraFields,
 	handler: async (ctx, rawInput) => {
 		const userId = await requireUserId(ctx);
-		const input = assertCreateObraInput(rawInput);
-		const now = Date.now();
-		const progress = sanitizeProgress(input.progress);
-		const external = sanitizeExternal(input.external);
-		const metadata = sanitizeMetadata(input.metadata, input.type);
+	const input = assertCreateObraInput(rawInput);
+	const now = Date.now();
+	const progress = sanitizeProgress(input.progress);
+	const progressSeasons = sanitizeProgressSeasons(input.progressSeasons);
+	const external = sanitizeExternal(input.external);
+	const metadata = sanitizeMetadata(input.metadata, input.type);
 
 		let startedAt = nullableNumber(input.startedAt);
 		let finishedAt = nullableNumber(input.finishedAt);
@@ -132,13 +134,14 @@ export const create = mutation({
 		year: nullableNumber(input.year),
 		customYear: nullableNumber(input.customYear),
 		customTitle: normalizeOptionalString(input.customTitle),
-			progressCurrent: progress?.current,
-			progressTotal: progress?.total,
-			startedAt,
-			finishedAt,
-			createdAt: now,
-			updatedAt: now,
-		});
+		progressCurrent: progress?.current,
+		progressTotal: progress?.total,
+		progressSeasons,
+		startedAt,
+		finishedAt,
+		createdAt: now,
+		updatedAt: now,
+	});
 
 		const row = await ctx.db.get(id);
 		if (!row) throw new Error("No se pudo crear la obra.");
@@ -224,6 +227,9 @@ export const update = mutation({
 			const progress = sanitizeProgress(patch.progress);
 			nextPatch.progressCurrent = progress?.current;
 			nextPatch.progressTotal = progress?.total;
+		}
+		if (hasOwn(patch, "progressSeasons")) {
+			nextPatch.progressSeasons = sanitizeProgressSeasons(patch.progressSeasons);
 		}
 		if (hasOwn(patch, "startedAt")) {
 			nextPatch.startedAt = nullableNumber(patch.startedAt);
@@ -368,6 +374,7 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 						total: row.progressTotal,
 					}
 				: undefined,
+		progressSeasons: row.progressSeasons,
 		startedAt: row.startedAt,
 		finishedAt: row.finishedAt,
 		createdAt: row.createdAt,

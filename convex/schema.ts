@@ -44,6 +44,14 @@ export default defineSchema({
 		customTitle: v.optional(v.string()),
 		progressCurrent: v.optional(v.number()),
 		progressTotal: v.optional(v.number()),
+		progressSeasons: v.optional(
+			v.array(
+				v.object({
+					seasonNumber: v.number(),
+					episodeCount: v.number(),
+				}),
+			),
+		),
 		startedAt: v.optional(v.number()),
 		finishedAt: v.optional(v.number()),
 		createdAt: v.number(),

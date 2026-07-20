@@ -34,6 +34,7 @@ import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
 import type { MangaChapterSource, MetadataSource } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import { formatProgressValue, getProgressUnitLabel } from "@/lib/progress";
+import { formatSeasonProgress } from "@/lib/season-progress";
 import type { Obra, ObraId, ObraType } from "@/lib/types";
 import { formatDateShort } from "@/lib/utils";
 
@@ -350,6 +351,11 @@ function ObraCoverPanel({
 		progressTotal > 0
 			? Math.min(100, (progressCurrent / progressTotal) * 100)
 			: 0;
+	const seasonProgressLabel =
+		(obra.type === "series" || obra.type === "anime") &&
+		obra.progressSeasons?.length
+			? formatSeasonProgress(obra.progressSeasons, progressCurrent)
+			: null;
 
 	return (
 		<aside className="space-y-5">
@@ -376,6 +382,11 @@ function ObraCoverPanel({
 							{progressTotal ? formatProgressValue(progressTotal, obra) : "—"}
 						</span>
 					</div>
+					{seasonProgressLabel && (
+						<p className="text-sm font-medium text-foreground">
+							{seasonProgressLabel}
+						</p>
+					)}
 					<div className="h-1 w-full bg-border">
 						<div
 							className="h-full bg-primary"
