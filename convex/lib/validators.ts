@@ -154,3 +154,70 @@ export const notificationStatusValidator = v.union(
 	v.literal("delivered"),
 	v.literal("failed"),
 );
+
+export const readingFormatValidator = v.union(
+	v.literal("epub"),
+	v.literal("pdf"),
+	v.literal("other"),
+);
+
+export const readingAnnotationStatusValidator = v.union(
+	v.literal("unprocessed"),
+	v.literal("kept"),
+	v.literal("ignored"),
+	// Compatibilidad con anotaciones creadas antes de renombrar "discarded".
+	v.literal("discarded"),
+);
+
+export const readingProgressInputValidator = v.object({
+	deviceId: v.string(),
+	deviceLabel: v.optional(v.string()),
+	filePath: v.optional(v.string()),
+	page: v.optional(v.number()),
+	percent: v.optional(v.number()),
+	totalPages: v.optional(v.number()),
+	revision: v.optional(v.number()),
+	sourceTimestamp: v.optional(v.number()),
+	locator: v.optional(v.string()),
+});
+
+export const readingAnnotationInputValidator = v.object({
+	sourceKey: v.string(),
+	text: v.string(),
+	note: v.optional(v.string()),
+	chapter: v.optional(v.string()),
+	color: v.optional(v.string()),
+	page: v.optional(v.string()),
+	pageNumber: v.optional(v.number()),
+	positionStart: v.optional(v.string()),
+	positionEnd: v.optional(v.string()),
+	capturedAt: v.optional(v.string()),
+	updatedAtSource: v.optional(v.string()),
+	deviceId: v.optional(v.string()),
+	deviceLabel: v.optional(v.string()),
+});
+
+export const readingDocumentInputValidator = v.object({
+	sourceKey: v.string(),
+	sourcePath: v.string(),
+	title: v.string(),
+	format: readingFormatValidator,
+	fileHash: v.optional(v.string()),
+	fileModifiedAt: v.optional(v.number()),
+	progress: v.array(readingProgressInputValidator),
+	annotations: v.array(readingAnnotationInputValidator),
+});
+
+export const ideaInputValidator = v.object({
+	relativePath: v.string(),
+	title: v.string(),
+	contentHash: v.string(),
+	fileModifiedAt: v.optional(v.number()),
+});
+
+export const ideaRatingValidator = v.union(
+	v.literal("again"),
+	v.literal("hard"),
+	v.literal("good"),
+	v.literal("easy"),
+);

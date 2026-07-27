@@ -13,13 +13,19 @@ import { Route as VariantCRouteImport } from './routes/variant-c'
 import { Route as VariantBRouteImport } from './routes/variant-b'
 import { Route as VariantARouteImport } from './routes/variant-a'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LecturaRouteImport } from './routes/lectura'
+import { Route as IdeasRouteImport } from './routes/ideas'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
+import { Route as ApiIdeasIndexRouteImport } from './routes/api/ideas/index'
+import { Route as ApiReadingSyncRouteImport } from './routes/api/reading/sync'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
 import { Route as ApiMetadataImageRouteImport } from './routes/api/metadata/image'
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
+import { Route as ApiIdeasSyncRouteImport } from './routes/api/ideas/sync'
+import { Route as ApiIdeasContentRouteImport } from './routes/api/ideas/content'
 import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
 import { Route as InternalAlfredNotificationsMarkReadRouteImport } from './routes/internal/alfred/notifications/mark-read'
 import { Route as InternalAlfredNotificationsAckRouteImport } from './routes/internal/alfred/notifications/ack'
@@ -44,6 +50,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LecturaRoute = LecturaRouteImport.update({
+  id: '/lectura',
+  path: '/lectura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IdeasRoute = IdeasRouteImport.update({
+  id: '/ideas',
+  path: '/ideas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExplorarRoute = ExplorarRouteImport.update({
   id: '/explorar',
   path: '/explorar',
@@ -64,6 +80,16 @@ const ObraObraIdRoute = ObraObraIdRouteImport.update({
   path: '/obra/$obraId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIdeasIndexRoute = ApiIdeasIndexRouteImport.update({
+  id: '/api/ideas/',
+  path: '/api/ideas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReadingSyncRoute = ApiReadingSyncRouteImport.update({
+  id: '/api/reading/sync',
+  path: '/api/reading/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
   id: '/api/metadata/search',
   path: '/api/metadata/search',
@@ -77,6 +103,16 @@ const ApiMetadataImageRoute = ApiMetadataImageRouteImport.update({
 const ApiMetadataDetailsRoute = ApiMetadataDetailsRouteImport.update({
   id: '/api/metadata/details',
   path: '/api/metadata/details',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIdeasSyncRoute = ApiIdeasSyncRouteImport.update({
+  id: '/api/ideas/sync',
+  path: '/api/ideas/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIdeasContentRoute = ApiIdeasContentRouteImport.update({
+  id: '/api/ideas/content',
+  path: '/api/ideas/content',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InternalAlfredNotificationsPullRoute =
@@ -102,14 +138,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/explorar': typeof ExplorarRoute
+  '/ideas': typeof IdeasRoute
+  '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
   '/obra/$obraId': typeof ObraObraIdRoute
+  '/api/ideas/content': typeof ApiIdeasContentRoute
+  '/api/ideas/sync': typeof ApiIdeasSyncRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/reading/sync': typeof ApiReadingSyncRoute
+  '/api/ideas/': typeof ApiIdeasIndexRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -118,14 +160,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/explorar': typeof ExplorarRoute
+  '/ideas': typeof IdeasRoute
+  '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
   '/obra/$obraId': typeof ObraObraIdRoute
+  '/api/ideas/content': typeof ApiIdeasContentRoute
+  '/api/ideas/sync': typeof ApiIdeasSyncRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/reading/sync': typeof ApiReadingSyncRoute
+  '/api/ideas': typeof ApiIdeasIndexRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -135,14 +183,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/biblioteca': typeof BibliotecaRoute
   '/explorar': typeof ExplorarRoute
+  '/ideas': typeof IdeasRoute
+  '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
   '/obra/$obraId': typeof ObraObraIdRoute
+  '/api/ideas/content': typeof ApiIdeasContentRoute
+  '/api/ideas/sync': typeof ApiIdeasSyncRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/reading/sync': typeof ApiReadingSyncRoute
+  '/api/ideas/': typeof ApiIdeasIndexRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -153,14 +207,20 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/explorar'
+    | '/ideas'
+    | '/lectura'
     | '/login'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
     | '/obra/$obraId'
+    | '/api/ideas/content'
+    | '/api/ideas/sync'
     | '/api/metadata/details'
     | '/api/metadata/image'
     | '/api/metadata/search'
+    | '/api/reading/sync'
+    | '/api/ideas/'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -169,14 +229,20 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/explorar'
+    | '/ideas'
+    | '/lectura'
     | '/login'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
     | '/obra/$obraId'
+    | '/api/ideas/content'
+    | '/api/ideas/sync'
     | '/api/metadata/details'
     | '/api/metadata/image'
     | '/api/metadata/search'
+    | '/api/reading/sync'
+    | '/api/ideas'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -185,14 +251,20 @@ export interface FileRouteTypes {
     | '/'
     | '/biblioteca'
     | '/explorar'
+    | '/ideas'
+    | '/lectura'
     | '/login'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
     | '/obra/$obraId'
+    | '/api/ideas/content'
+    | '/api/ideas/sync'
     | '/api/metadata/details'
     | '/api/metadata/image'
     | '/api/metadata/search'
+    | '/api/reading/sync'
+    | '/api/ideas/'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -202,14 +274,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BibliotecaRoute: typeof BibliotecaRoute
   ExplorarRoute: typeof ExplorarRoute
+  IdeasRoute: typeof IdeasRoute
+  LecturaRoute: typeof LecturaRoute
   LoginRoute: typeof LoginRoute
   VariantARoute: typeof VariantARoute
   VariantBRoute: typeof VariantBRoute
   VariantCRoute: typeof VariantCRoute
   ObraObraIdRoute: typeof ObraObraIdRoute
+  ApiIdeasContentRoute: typeof ApiIdeasContentRoute
+  ApiIdeasSyncRoute: typeof ApiIdeasSyncRoute
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
   ApiMetadataImageRoute: typeof ApiMetadataImageRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
+  ApiReadingSyncRoute: typeof ApiReadingSyncRoute
+  ApiIdeasIndexRoute: typeof ApiIdeasIndexRoute
   InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
   InternalAlfredNotificationsMarkReadRoute: typeof InternalAlfredNotificationsMarkReadRoute
   InternalAlfredNotificationsPullRoute: typeof InternalAlfredNotificationsPullRoute
@@ -245,6 +323,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lectura': {
+      id: '/lectura'
+      path: '/lectura'
+      fullPath: '/lectura'
+      preLoaderRoute: typeof LecturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ideas': {
+      id: '/ideas'
+      path: '/ideas'
+      fullPath: '/ideas'
+      preLoaderRoute: typeof IdeasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explorar': {
       id: '/explorar'
       path: '/explorar'
@@ -273,6 +365,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ObraObraIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ideas/': {
+      id: '/api/ideas/'
+      path: '/api/ideas'
+      fullPath: '/api/ideas/'
+      preLoaderRoute: typeof ApiIdeasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reading/sync': {
+      id: '/api/reading/sync'
+      path: '/api/reading/sync'
+      fullPath: '/api/reading/sync'
+      preLoaderRoute: typeof ApiReadingSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/metadata/search': {
       id: '/api/metadata/search'
       path: '/api/metadata/search'
@@ -292,6 +398,20 @@ declare module '@tanstack/react-router' {
       path: '/api/metadata/details'
       fullPath: '/api/metadata/details'
       preLoaderRoute: typeof ApiMetadataDetailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ideas/sync': {
+      id: '/api/ideas/sync'
+      path: '/api/ideas/sync'
+      fullPath: '/api/ideas/sync'
+      preLoaderRoute: typeof ApiIdeasSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ideas/content': {
+      id: '/api/ideas/content'
+      path: '/api/ideas/content'
+      fullPath: '/api/ideas/content'
+      preLoaderRoute: typeof ApiIdeasContentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/internal/alfred/notifications/pull': {
@@ -322,14 +442,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
   ExplorarRoute: ExplorarRoute,
+  IdeasRoute: IdeasRoute,
+  LecturaRoute: LecturaRoute,
   LoginRoute: LoginRoute,
   VariantARoute: VariantARoute,
   VariantBRoute: VariantBRoute,
   VariantCRoute: VariantCRoute,
   ObraObraIdRoute: ObraObraIdRoute,
+  ApiIdeasContentRoute: ApiIdeasContentRoute,
+  ApiIdeasSyncRoute: ApiIdeasSyncRoute,
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
   ApiMetadataImageRoute: ApiMetadataImageRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
+  ApiReadingSyncRoute: ApiReadingSyncRoute,
+  ApiIdeasIndexRoute: ApiIdeasIndexRoute,
   InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,
   InternalAlfredNotificationsMarkReadRoute:
     InternalAlfredNotificationsMarkReadRoute,

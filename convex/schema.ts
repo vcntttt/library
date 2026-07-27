@@ -91,4 +91,108 @@ export default defineSchema({
 	})
 		.index("by_eventId", ["eventId"])
 		.index("by_status_createdAt", ["status", "createdAt"]),
+	readingDocuments: defineTable({
+		userId: v.id("users"),
+		sourceKey: v.string(),
+		sourcePath: v.string(),
+		title: v.string(),
+		format: v.union(v.literal("epub"), v.literal("pdf"), v.literal("other")),
+		fileHash: v.optional(v.string()),
+		fileModifiedAt: v.optional(v.number()),
+		obraId: v.optional(v.id("obras")),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_sourceKey", ["userId", "sourceKey"])
+		.index("by_user_updatedAt", ["userId", "updatedAt"]),
+	readingProgress: defineTable({
+		userId: v.id("users"),
+		documentId: v.id("readingDocuments"),
+		deviceId: v.string(),
+		deviceLabel: v.optional(v.string()),
+		filePath: v.optional(v.string()),
+		page: v.optional(v.number()),
+		percent: v.optional(v.number()),
+		totalPages: v.optional(v.number()),
+		revision: v.optional(v.number()),
+		sourceTimestamp: v.optional(v.number()),
+		locator: v.optional(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_document_device", ["documentId", "deviceId"])
+		.index("by_user_updatedAt", ["userId", "updatedAt"]),
+	readingAnnotations: defineTable({
+		userId: v.id("users"),
+		documentId: v.id("readingDocuments"),
+		sourceKey: v.string(),
+		text: v.string(),
+		note: v.optional(v.string()),
+		chapter: v.optional(v.string()),
+		color: v.optional(v.string()),
+		page: v.optional(v.string()),
+		pageNumber: v.optional(v.number()),
+		positionStart: v.optional(v.string()),
+		positionEnd: v.optional(v.string()),
+		capturedAt: v.optional(v.string()),
+		updatedAtSource: v.optional(v.string()),
+		deviceId: v.optional(v.string()),
+		deviceLabel: v.optional(v.string()),
+		status: v.union(
+			v.literal("unprocessed"),
+			v.literal("kept"),
+			v.literal("ignored"),
+			// Estado legado; no se usa desde la interfaz.
+			v.literal("discarded"),
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_document_sourceKey", ["documentId", "sourceKey"])
+		.index("by_user_status_updatedAt", ["userId", "status", "updatedAt"])
+		.index("by_user_updatedAt", ["userId", "updatedAt"]),
+	ideas: defineTable({
+		userId: v.id("users"),
+		relativePath: v.string(),
+		title: v.string(),
+		contentHash: v.string(),
+		fileModifiedAt: v.optional(v.number()),
+		reviewDueAt: v.optional(v.number()),
+		reviewedAt: v.optional(v.number()),
+		reviewCard: v.optional(
+			v.object({
+				due: v.number(),
+				stability: v.number(),
+				difficulty: v.number(),
+				elapsedDays: v.number(),
+				scheduledDays: v.number(),
+				learningSteps: v.number(),
+				reps: v.number(),
+				lapses: v.number(),
+				state: v.number(),
+				lastReview: v.optional(v.number()),
+			}),
+		),
+		reviewLogs: v.optional(
+			v.array(
+				v.object({
+					rating: v.number(),
+					state: v.number(),
+					due: v.number(),
+					stability: v.number(),
+					difficulty: v.number(),
+					elapsedDays: v.number(),
+					lastElapsedDays: v.number(),
+					scheduledDays: v.number(),
+					learningSteps: v.number(),
+					review: v.number(),
+				}),
+			),
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_path", ["userId", "relativePath"])
+		.index("by_user_updatedAt", ["userId", "updatedAt"])
+		.index("by_user_reviewDueAt", ["userId", "reviewDueAt"]),
 });
