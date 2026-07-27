@@ -21,6 +21,16 @@ const navItems = [
 		label: "Explorar",
 		isActive: (pathname: string) => pathname.startsWith("/explorar"),
 	},
+	{
+		to: "/lectura",
+		label: "Lectura",
+		isActive: (pathname: string) => pathname.startsWith("/lectura"),
+	},
+	{
+		to: "/ideas",
+		label: "Ideas",
+		isActive: (pathname: string) => pathname.startsWith("/ideas"),
+	},
 ] as const;
 
 export default function Header() {

@@ -116,6 +116,14 @@ Configurar en `.env.local` o copiar desde `.env.example`:
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
+- `READING_BOOKS_PATH` (ruta absoluta a la carpeta `Books` sincronizada con
+  KOReader en el servidor)
+- `OBSIDIAN_VAULT_PATH` (ruta absoluta al vault de Obsidian sincronizado en el
+  servidor)
+- `READING_INTEGRATION_OWNER_ID` (ID de usuario Convex autorizado para acceder
+  a las rutas privadas de lectura y al vault)
+- `READING_SYNC_MAX_FILES` (opcional, máximo de libros inspeccionados por
+  sincronización; por defecto 500)
 
 ## Scripts
 
@@ -151,6 +159,10 @@ Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
+- `READING_BOOKS_PATH`
+- `OBSIDIAN_VAULT_PATH`
+- `READING_INTEGRATION_OWNER_ID`
+- `READING_SYNC_MAX_FILES` (opcional)
 
 ### Verificación E2E en navegador
 
@@ -204,6 +216,8 @@ Variables viejas para eliminar del deploy:
 - La base de datos guarda estructura
 - El texto libre guarda pensamiento
 - Datos exportables, respaldables y legibles por humanos (sin lock-in)
+- El contenido de las ideas vive en Markdown; Convex guarda su índice y agenda
+  FSRS.
 
 Export/import estructurado sigue siendo una posibilidad futura, pero la migración actual empezó con datos limpios en Convex.
 

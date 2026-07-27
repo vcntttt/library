@@ -43,3 +43,11 @@ La dirección actual es consolidar ese flujo para que sea el primer tipo realmen
 - `latestChapter` es la referencia operativa para seguimiento.
 - `chapters` sigue siendo fallback o dato de catálogo.
 - No ampliar el alcance a series/películas/libros salvo cambios compartidos necesarios para no romper manga.
+
+### Nueva dirección: integración de lectura
+
+La nueva prioridad funcional es conectar libros, KOReader, Library/Convex y Obsidian.
+
+- Los documentos de lectura y las anotaciones son entidades distintas de las obras.
+- Las ideas revisables son Markdown libre en el vault y se revisan desde Library.
+- La especificación activa está en `docs/plans/2026-07-22-reading-integration-design.md`.
