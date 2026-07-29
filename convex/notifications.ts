@@ -69,6 +69,7 @@ export const checkForNewChapters = internalAction({
 
 		for (const obra of tracked) {
 			if (!obra.externalId) continue;
+			if (obra.type !== "manga" && obra.type !== "manhwa") continue;
 			checked += 1;
 
 			try {
@@ -151,6 +152,7 @@ export const checkForNewEpisodes = internalAction({
 
 		for (const obra of tracked) {
 			if (!obra.externalId) continue;
+			if (obra.type !== "series" && obra.type !== "anime") continue;
 			checked += 1;
 
 			try {
