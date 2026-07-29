@@ -35,7 +35,7 @@ export default function Header() {
 					aria-label="Ir al inicio de Biblioteca"
 				>
 					<img
-						src="/logo.jpg"
+						src="/logo.png"
 						alt=""
 						className="h-9 w-9 rounded-xl object-cover shadow-sm"
 					/>

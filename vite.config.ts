@@ -29,7 +29,7 @@ const config = defineConfig({
 		VitePWA({
 			registerType: "autoUpdate",
 			manifest: false,
-			includeAssets: ["logo.jpg"],
+			includeAssets: ["logo.png"],
 			workbox: {
 				cleanupOutdatedCaches: true,
 				globPatterns: ["**/*.{js,css,html,jpg,jpeg,ico,png,svg,webp,woff2}"],

@@ -4,8 +4,8 @@
   "description": "Biblioteca personal",
   "icons": [
     {
-      "src": "logo.jpg",
-      "type": "image/jpeg",
+      "src": "logo.png",
+      "type": "image/png",
       "sizes": "1024x1024"
     }
   ],
