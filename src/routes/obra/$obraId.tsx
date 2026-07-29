@@ -732,11 +732,31 @@ function ObraAuthed({
 		}
 		if (
 			(obra.type === "series" || obra.type === "anime") &&
+			metadata.latestEpisodeNumber
+		) {
+			metadataItems.push({
+				label: "Último episodio",
+				value: metadata.latestSeasonNumber
+					? `Temporada ${metadata.latestSeasonNumber} · Episodio ${metadata.latestEpisodeNumber}`
+					: `Episodio ${metadata.latestEpisodeNumber}`,
+			});
+		}
+		if (
+			(obra.type === "series" || obra.type === "anime") &&
 			metadata.nextEpisodeDate
 		) {
 			metadataItems.push({
 				label: "Próximo episodio",
 				value: formatDateShort(metadata.nextEpisodeDate),
+			});
+		}
+		if (
+			(obra.type === "series" || obra.type === "anime") &&
+			metadata.latestEpisodeCheckedAt
+		) {
+			metadataItems.push({
+				label: "Última verificación",
+				value: formatDateShort(metadata.latestEpisodeCheckedAt),
 			});
 		}
 		if (

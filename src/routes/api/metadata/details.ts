@@ -54,6 +54,7 @@ export const Route = createFileRoute("/api/metadata/details")({
 				const sourceParam = url.searchParams.get("source")?.trim() ?? "";
 				const id = url.searchParams.get("id")?.trim() ?? "";
 				const typeParam = url.searchParams.get("type")?.trim() ?? "";
+				const forceRefresh = url.searchParams.get("refresh") === "1";
 				const obraType = isObraType(typeParam) ? typeParam : undefined;
 
 				if (!id || !isMetadataSource(sourceParam)) {
@@ -61,7 +62,12 @@ export const Route = createFileRoute("/api/metadata/details")({
 				}
 
 				try {
-					const details = await getMetadataDetails(sourceParam, id, obraType);
+					const details = await getMetadataDetails(
+						sourceParam,
+						id,
+						obraType,
+						forceRefresh,
+					);
 					return json({ details });
 				} catch (error) {
 					return jsonError(

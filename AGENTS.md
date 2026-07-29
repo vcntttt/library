@@ -125,6 +125,7 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
   - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
+- `ALFRED_NOTIFY_USER_EMAIL` (usuario propietario cuyas obras se notifican)
 - E2E browser tests:
   - `E2E_TEST_EMAIL`
   - `E2E_TEST_PASSWORD`

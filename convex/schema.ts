@@ -55,9 +55,10 @@ export default defineSchema({
 		startedAt: v.optional(v.number()),
 		finishedAt: v.optional(v.number()),
 		createdAt: v.number(),
-		updatedAt: v.number(),
-	})
+			updatedAt: v.number(),
+		})
 		.index("by_user_updatedAt", ["userId", "updatedAt"])
+		.index("by_user_createdAt", ["userId", "createdAt"])
 		.index("by_user_status_updatedAt", ["userId", "status", "updatedAt"])
 		.index("by_user_type_updatedAt", ["userId", "type", "updatedAt"])
 		.index("by_manga_tracking", ["type", "status", "externalSource"]),
@@ -72,17 +73,30 @@ export default defineSchema({
 		.index("by_user_obra_createdAt", ["userId", "obraId", "createdAt"])
 		.index("by_user_updatedAt", ["userId", "updatedAt"]),
 	notificationEvents: defineTable({
-		eventType: v.literal("manga.release"),
+		eventType: v.union(
+			v.literal("manga.release"),
+			v.literal("media.episode.release"),
+		),
 		eventId: v.string(),
 		obraId: v.id("obras"),
-		anilistId: v.string(),
+		userId: v.optional(v.id("users")),
+		anilistId: v.optional(v.string()),
+		externalId: v.optional(v.string()),
 		title: v.string(),
-		chapter: v.number(),
-		source: mangaChapterSourceValidator,
+		chapter: v.optional(v.number()),
+		episode: v.optional(v.number()),
+		seasonNumber: v.optional(v.number()),
+		episodeNumber: v.optional(v.number()),
+		source: v.union(mangaChapterSourceValidator, v.literal("tmdb")),
 		url: v.optional(v.string()),
 		detectedAt: v.number(),
-		status: v.union(v.literal("pending"), v.literal("delivered")),
+		status: v.union(
+			v.literal("pending"),
+			v.literal("processing"),
+			v.literal("delivered"),
+		),
 		attempts: v.number(),
+		leaseExpiresAt: v.optional(v.number()),
 		lastAttemptAt: v.optional(v.number()),
 		deliveredAt: v.optional(v.number()),
 		lastError: v.optional(v.string()),
@@ -90,5 +104,16 @@ export default defineSchema({
 		updatedAt: v.number(),
 	})
 		.index("by_eventId", ["eventId"])
-		.index("by_status_createdAt", ["status", "createdAt"]),
+		.index("by_status_createdAt", ["status", "createdAt"])
+		.index("by_user_status_createdAt", ["userId", "status", "createdAt"]),
+	notificationWorkerState: defineTable({
+		userId: v.id("users"),
+		worker: v.union(
+			v.literal("manga"),
+			v.literal("episodic"),
+			v.literal("legacy-events"),
+		),
+		cursor: v.optional(v.string()),
+		updatedAt: v.number(),
+	}).index("by_user_worker", ["userId", "worker"]),
 });

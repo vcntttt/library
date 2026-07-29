@@ -47,7 +47,11 @@ export interface MetadataSearchResult {
 	seasons?: number;
 	episodes?: number;
 	episodesAired?: number;
+	latestSeasonNumber?: number;
+	latestEpisodeNumber?: number;
 	nextEpisodeDate?: number;
+	latestEpisodeCheckedAt?: number;
+	lastNotifiedEpisode?: number;
 	status?: string;
 	volumes?: number;
 	season?: string;
@@ -83,7 +87,11 @@ export interface MetadataDetails {
 	seasons?: number;
 	episodes?: number;
 	episodesAired?: number;
+	latestSeasonNumber?: number;
+	latestEpisodeNumber?: number;
 	nextEpisodeDate?: number;
+	latestEpisodeCheckedAt?: number;
+	lastNotifiedEpisode?: number;
 	status?: string;
 	volumes?: number;
 	season?: string;

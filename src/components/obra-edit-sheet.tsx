@@ -2,9 +2,11 @@
 
 import { api as convexApi } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useAuthToken } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { ExternalLink, Minus, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Minus, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CompletionReviewDialog } from "@/components/completion-review-dialog";
 import { SeasonProgressEditor } from "@/components/season-progress-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { isMetadataFinished } from "@/lib/metadata/format";
+import { buildMetadataPayload } from "@/lib/metadata/payload";
+import type { MetadataDetails } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import {
 	formatProgressValue,
@@ -32,7 +37,12 @@ import {
 	getInitialProgressTotal,
 	getProgressUnitLabel,
 } from "@/lib/progress";
-import { formatSeasonProgress, validateSeasons } from "@/lib/season-progress";
+import {
+	formatSeasonProgress,
+	mergeSeasons,
+	totalEpisodesForSeasons,
+	validateSeasons,
+} from "@/lib/season-progress";
 import { getStatusLabel } from "@/lib/status";
 import type {
 	Obra,
@@ -197,6 +207,7 @@ export function ObraEditSheet({
 		convexId ? { id: convexId } : "skip",
 	);
 	const updateObra = useMutation(convexApi.obras.update);
+	const authToken = useAuthToken();
 	const obra = doc ? obraFromDoc(doc) : null;
 	const [values, setValues] = useState<EditValues | null>(null);
 	const [quotes, setQuotes] = useState<EditableQuote[]>([]);
@@ -207,6 +218,11 @@ export function ObraEditSheet({
 		unknown
 	> | null>(null);
 	const [isSeasonEditorOpen, setIsSeasonEditorOpen] = useState(false);
+	const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
+	const [metadataRefreshMessage, setMetadataRefreshMessage] = useState<
+		string | null
+	>(null);
+	const [isCompletionReviewOpen, setIsCompletionReviewOpen] = useState(false);
 	const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 	const pendingSavePatches = useRef(new Map<string, Record<string, unknown>>());
 	const syncedSessionKey = useRef<string | null>(null);
@@ -321,8 +337,24 @@ export function ObraEditSheet({
 		savePatch(patch, { debounceKey, delayMs });
 	};
 
-	const handleStatusChange = (status: ObraStatus) => {
-		savePatch({ status });
+	const handleStatusChange = async (status: ObraStatus) => {
+		if (!obra || !values) return;
+		const nextValues =
+			status === "finished" && values.progressTotal > 0
+				? { ...values, progressCurrent: values.progressTotal }
+				: values;
+		setValues(nextValues);
+		const saved = await commitPatch(
+			buildProgressPatch(nextValues, obra, status) ?? { status },
+		);
+		if (
+			saved &&
+			status === "finished" &&
+			obra.status !== "finished" &&
+			!obra.review
+		) {
+			setIsCompletionReviewOpen(true);
+		}
 	};
 
 	const handleOpenReadingLink = (urlValue: string) => {
@@ -338,7 +370,13 @@ export function ObraEditSheet({
 		const safeCurrent = Math.min(Math.max(nextCurrent, 0), nextTotal);
 		const nextValues = { ...values, progressCurrent: safeCurrent };
 		setValues(nextValues);
-		savePatch(buildProgressPatch(nextValues, obra), {
+		const resumedStatus =
+			safeCurrent > values.progressCurrent &&
+			obra.status !== "in-progress" &&
+			obra.status !== "finished"
+				? "in-progress"
+				: undefined;
+		savePatch(buildProgressPatch(nextValues, obra, resumedStatus), {
 			debounceKey: "progress",
 			delayMs: 600,
 		});
@@ -373,10 +411,129 @@ export function ObraEditSheet({
 			progressSeasons: next.seasons,
 		};
 		setValues(nextValues);
-		savePatch(buildProgressPatch(nextValues, obra), {
+		const resumedStatus =
+			next.current > values.progressCurrent &&
+			obra.status !== "in-progress" &&
+			obra.status !== "finished"
+				? "in-progress"
+				: undefined;
+		savePatch(buildProgressPatch(nextValues, obra, resumedStatus), {
 			debounceKey: "progress",
 			delayMs: 600,
 		});
+	};
+
+	const handleFinishSeason = async (next: {
+		seasons: ObraSeason[];
+		current: number;
+		total: number;
+		isLastSeason: boolean;
+	}) => {
+		if (!obra || !values) return;
+		const shouldFinishObra =
+			next.isLastSeason && isMetadataFinished(obra.metadata?.status);
+		const nextStatus = shouldFinishObra
+			? "finished"
+			: obra.status !== "in-progress" &&
+					obra.status !== "finished" &&
+					next.current > values.progressCurrent
+				? "in-progress"
+				: undefined;
+		const completedTotal = Math.max(next.total, values.progressTotal);
+		const nextValues = {
+			...values,
+			progressCurrent: shouldFinishObra ? completedTotal : next.current,
+			progressTotal: completedTotal,
+			progressSeasons: next.seasons,
+		};
+		setValues(nextValues);
+		const saved = await commitPatch(
+			buildProgressPatch(nextValues, obra, nextStatus) ??
+				(shouldFinishObra ? { status: "finished" } : {}),
+		);
+		if (saved && shouldFinishObra) {
+			setIsSeasonEditorOpen(false);
+			if (!obra.review) setIsCompletionReviewOpen(true);
+		}
+	};
+
+	const handleRefreshMetadata = async () => {
+		if (!obra?.external || !values || isRefreshingMetadata) return;
+		setIsRefreshingMetadata(true);
+		setMetadataRefreshMessage(null);
+		try {
+			const params = new URLSearchParams({
+				source: obra.external.source,
+				id: obra.external.id,
+				type: obra.type,
+				refresh: "1",
+			});
+			const response = await fetch(`/api/metadata/details?${params}`, {
+				headers: authToken
+					? { authorization: `Bearer ${authToken}` }
+					: undefined,
+			});
+			if (!response.ok) {
+				const errorPayload = await response.json().catch(() => ({}));
+				throw new Error(
+					typeof errorPayload?.error === "string"
+						? errorPayload.error
+						: "No se pudo actualizar la información.",
+				);
+			}
+
+			const payload = await response.json();
+			const details = payload.details as MetadataDetails;
+			const seasons = mergeSeasons(
+				values.progressSeasons,
+				details.seasonDetails ?? [],
+			);
+			const seasonTotal = totalEpisodesForSeasons(seasons);
+			const providerTotal =
+				typeof details.episodes === "number" ? details.episodes : 0;
+			const nextTotal = Math.max(
+				seasonTotal,
+				providerTotal,
+				values.progressTotal,
+			);
+			const nextValues = {
+				...values,
+				progressCurrent: values.progressCurrent,
+				progressTotal: nextTotal,
+				progressSeasons: seasons.length > 0 ? seasons : values.progressSeasons,
+			};
+			const metadata = {
+				...(obra.metadata ?? {}),
+				...(buildMetadataPayload(details, {
+					initializeNotificationBaseline: false,
+					previousMetadata: obra.metadata,
+				}) ?? {}),
+			};
+			const patch = {
+				title: details.title ?? obra.originalTitle ?? obra.title,
+				creator: details.creator ?? obra.originalCreator,
+				year: details.year ?? obra.originalYear,
+				coverUrl: details.coverUrl ?? obra.originalCoverUrl,
+				metadata,
+				...(obra.type !== "movie" ? buildProgressPatch(nextValues, obra) : {}),
+			};
+			const saved = await commitPatch(patch);
+			if (!saved) return;
+			setValues(nextValues);
+			setMetadataRefreshMessage(
+				seasons.length > 0
+					? `Información actualizada: ${seasons.length} temporadas y ${seasonTotal} episodios.`
+					: "Información actualizada; el proveedor no entregó el detalle de temporadas.",
+			);
+		} catch (error) {
+			setMetadataRefreshMessage(
+				error instanceof Error
+					? error.message
+					: "No se pudo actualizar la información.",
+			);
+		} finally {
+			setIsRefreshingMetadata(false);
+		}
 	};
 
 	const handleAddQuote = () => {
@@ -486,7 +643,34 @@ export function ObraEditSheet({
 					) : (
 						<div className="flex flex-col gap-8">
 							<section className="flex flex-col gap-4 border border-border bg-card p-5">
-								<p className="text-sm font-medium">Información básica</p>
+								<div className="flex items-center justify-between gap-3">
+									<p className="text-sm font-medium">Información básica</p>
+									{obra.external && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											disabled={isRefreshingMetadata}
+											onClick={() => void handleRefreshMetadata()}
+											className="rounded-none border-border hover:border-primary hover:text-primary"
+										>
+											<RefreshCw
+												className={cn(
+													"h-4 w-4",
+													isRefreshingMetadata && "animate-spin",
+												)}
+											/>
+											{isRefreshingMetadata
+												? "Consultando..."
+												: "Actualizar información"}
+										</Button>
+									)}
+								</div>
+								{metadataRefreshMessage && (
+									<p className="text-xs text-muted-foreground">
+										{metadataRefreshMessage}
+									</p>
+								)}
 								<div className="flex flex-col gap-2">
 									<Label>Título</Label>
 									<Input
@@ -724,6 +908,7 @@ export function ObraEditSheet({
 											current={values.progressCurrent}
 											total={values.progressTotal}
 											onChange={handleSeasonProgressChange}
+											onFinishSeason={(next) => void handleFinishSeason(next)}
 										/>
 									</div>
 								</section>
@@ -790,7 +975,7 @@ export function ObraEditSheet({
 									<Select
 										value={obra.status}
 										onValueChange={(value) =>
-											handleStatusChange(value as ObraStatus)
+											void handleStatusChange(value as ObraStatus)
 										}
 									>
 										<SelectTrigger className="rounded-none border-border bg-background focus:ring-primary">
@@ -988,6 +1173,17 @@ export function ObraEditSheet({
 					)}
 				</div>
 			</SheetContent>
+			{obra && (
+				<CompletionReviewDialog
+					open={isCompletionReviewOpen}
+					onOpenChange={setIsCompletionReviewOpen}
+					title={obra.title}
+					initialReview={obra.review}
+					onSave={async (review) =>
+						await commitPatch({ review: review || undefined })
+					}
+				/>
+			)}
 		</Sheet>
 	);
 }

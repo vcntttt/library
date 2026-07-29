@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
 	assertCreateObraInput,
 	assertUpdateObraPatch,
+	completeProgressForStatus,
 	normalizeTags,
 	sanitizeMetadata,
 	sanitizeProgress,
 	sanitizeProgressSeasons,
+	shouldReopenFinishedProgress,
 	syncMangaProgressTotal,
+	syncProgressTotal,
 } from "./obras";
 
 describe("obra domain helpers", () => {
@@ -75,6 +78,54 @@ describe("obra domain helpers", () => {
 		expect(syncMangaProgressTotal(872, { latestChapter: 873 }, "manga")).toBe(
 			873,
 		);
+	});
+
+	it("completes progress when an obra is marked as finished", () => {
+		expect(
+			completeProgressForStatus(
+				"finished",
+				"manga",
+				{ current: 43, total: 45 },
+				45,
+			),
+		).toEqual({ current: 45, total: 45 });
+	});
+
+	it("derives a finished progress total from metadata", () => {
+		const total = syncProgressTotal(undefined, { episodes: 45 }, "series");
+		expect(
+			completeProgressForStatus("finished", "series", undefined, total),
+		).toEqual({ current: 45, total: 45 });
+	});
+
+	it("keeps an in-progress obra incomplete at the known total", () => {
+		expect(
+			completeProgressForStatus(
+				"in-progress",
+				"anime",
+				{ current: 11, total: 12 },
+				12,
+			),
+		).toEqual({ current: 11, total: 12 });
+	});
+
+	it("reopens a finished obra when tracking discovers unconsumed content", () => {
+		expect(
+			shouldReopenFinishedProgress({
+				status: "finished",
+				explicitlyFinishing: false,
+				trackingChanged: true,
+				progress: { current: 12, total: 13 },
+			}),
+		).toBe(true);
+		expect(
+			shouldReopenFinishedProgress({
+				status: "finished",
+				explicitlyFinishing: true,
+				trackingChanged: true,
+				progress: { current: 12, total: 13 },
+			}),
+		).toBe(false);
 	});
 
 	it("accepts valid quote patches and rejects empty quote content", () => {
