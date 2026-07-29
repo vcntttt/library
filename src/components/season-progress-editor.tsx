@@ -156,6 +156,7 @@ export function SeasonProgressEditor({
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent
 				side="right"
+				overlayProps={{ onClick: () => onOpenChange(false) }}
 				className="h-dvh max-h-dvh w-full max-w-none overflow-y-auto border-l-border bg-card p-0 sm:max-w-xl"
 			>
 				<SheetHeader className="sticky top-0 z-10 border-b border-border bg-card px-5 py-4">

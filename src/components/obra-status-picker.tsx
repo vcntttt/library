@@ -205,7 +205,11 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 			</span>
 
 			<Dialog open={isPickerOpen} onOpenChange={handlePickerOpenChange}>
-				<DialogContent className="rounded-none sm:max-w-sm p-0 gap-0 overflow-hidden border border-border bg-card">
+				<DialogContent
+					className="rounded-none sm:max-w-sm p-0 gap-0 overflow-hidden border border-border bg-card"
+					onClick={(event) => event.stopPropagation()}
+					onPointerDown={(event) => event.stopPropagation()}
+				>
 					<DialogHeader className="px-4 pt-4 pb-2">
 						<DialogTitle className="text-xs font-normal uppercase tracking-[0.12em] text-muted-foreground">
 							Cambiar estado

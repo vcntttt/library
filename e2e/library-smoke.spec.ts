@@ -74,8 +74,35 @@ test.describe("flujos autenticados", () => {
 			await expect(page.getByText("Total: 2 / 2")).toBeVisible();
 
 			await page.keyboard.press("Escape");
-			await page.getByRole("combobox").click();
-			await page.getByRole("option", { name: "Terminada" }).click();
+			await page.keyboard.press("Escape");
+			await page.goto("/biblioteca");
+			await page.getByRole("textbox", { name: "Buscar obras" }).fill(title);
+			const obraRow = page.getByRole("row").filter({ hasText: title });
+			await obraRow.getByRole("button", { name: "En progreso" }).click();
+			await page
+				.getByRole("button", { name: "Progreso por temporadas" })
+				.click();
+			await expect(
+				page.getByText(
+					"Marca hasta dónde has visto editando temporada y capítulo.",
+				),
+			).toBeVisible();
+			await expect(page).toHaveURL(/\/biblioteca$/);
+			await page.locator('[data-slot="sheet-overlay"]').click({
+				position: { x: 8, y: 8 },
+			});
+			await expect(
+				page.getByText(
+					"Marca hasta dónde has visto editando temporada y capítulo.",
+				),
+			).toBeHidden();
+
+			await page.keyboard.press("Escape");
+			await openObraDetailByTitle(page, title);
+			await page.getByRole("button", { name: "En progreso" }).click();
+			await page
+				.getByRole("button", { name: "Terminada", exact: true })
+				.click();
 			await expect(
 				page.getByText(
 					"Terminaste esta obra. ¿Quieres dejar una reseña ahora?",
