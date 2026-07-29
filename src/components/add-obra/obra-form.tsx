@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { buildMetadataPayload } from "@/lib/metadata/payload";
 import type {
 	MetadataDetails,
 	MetadataSearchResult,
@@ -176,6 +177,16 @@ function getMetadataRows(
 			showLoading: true,
 		});
 		rows.push({
+			label: "Último episodio",
+			value:
+				typeof metadata.latestEpisodeNumber === "number"
+					? metadata.latestSeasonNumber
+						? `Temporada ${metadata.latestSeasonNumber} · Episodio ${metadata.latestEpisodeNumber}`
+						: `Episodio ${metadata.latestEpisodeNumber}`
+					: undefined,
+			showLoading: true,
+		});
+		rows.push({
 			label: "Próximo episodio",
 			value:
 				metadata.nextEpisodeDate !== undefined
@@ -229,45 +240,6 @@ function getMetadataRows(
 	return rows.filter(
 		(row) => Boolean(row.value) || (isLoading && row.showLoading),
 	);
-}
-
-function buildMetadataPayload(
-	source: MetadataDetails | MetadataSearchResult | null,
-) {
-	if (!source) return undefined;
-
-	const payload = {
-		pages: source.pages ?? undefined,
-		durationMinutes: source.durationMinutes ?? undefined,
-		subtitle: source.subtitle ?? undefined,
-		publisher: source.publisher ?? undefined,
-		publishedDate: source.publishedDate ?? undefined,
-		language: source.language ?? undefined,
-		isbn10: source.isbn10 ?? undefined,
-		isbn13: source.isbn13 ?? undefined,
-		categories: source.categories ?? undefined,
-		description: source.description ?? undefined,
-		canonicalUrl: source.canonicalUrl ?? undefined,
-		seasons: source.seasons ?? undefined,
-		episodes: source.episodes ?? undefined,
-		episodesAired: source.episodesAired ?? undefined,
-		nextEpisodeDate: source.nextEpisodeDate ?? undefined,
-		status: source.status ?? undefined,
-		volumes: source.volumes ?? undefined,
-		season: source.season ?? undefined,
-		seasonYear: source.seasonYear ?? undefined,
-		runtime: source.runtime ?? undefined,
-		watchProviders: source.watchProviders ?? undefined,
-		latestChapter: source.latestChapter ?? undefined,
-		latestChapterSource: source.latestChapterSource ?? undefined,
-		latestChapterCheckedAt: source.latestChapterCheckedAt ?? undefined,
-		lastNotifiedChapter: source.latestChapter ?? undefined,
-		mangaPlusTitleId: source.mangaPlusTitleId ?? undefined,
-		mangaDexId: source.mangaDexId ?? undefined,
-	};
-
-	const hasData = Object.values(payload).some((value) => value !== undefined);
-	return hasData ? payload : undefined;
 }
 
 interface ObraFormProps {

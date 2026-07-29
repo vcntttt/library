@@ -3,6 +3,7 @@ import type { Obra } from "@/lib/types";
 import {
 	getMangaReleaseSummary,
 	getObraMetaLine,
+	isMetadataFinished,
 	isObraUpToDate,
 } from "./format";
 
@@ -20,6 +21,13 @@ function makeManga(overrides: Partial<Obra> = {}): Obra {
 }
 
 describe("manga formatting", () => {
+	it("reconoce estados externos finalizados", () => {
+		expect(isMetadataFinished("Ended")).toBe(true);
+		expect(isMetadataFinished("FINISHED")).toBe(true);
+		expect(isMetadataFinished("Returning Series")).toBe(false);
+		expect(isMetadataFinished(undefined)).toBe(false);
+	});
+
 	it("shows audiobook format and duration for consumed biographies", () => {
 		const biographies: Obra[] = [
 			{

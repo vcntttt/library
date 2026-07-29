@@ -3,9 +3,10 @@ import { expect, type Page } from "@playwright/test";
 interface CreateManualObraInput {
 	title: string;
 	creator: string;
-	type: "manga";
+	type: "manga" | "series";
 	totalProgress: string;
 	tags: string;
+	status?: "in-progress";
 }
 
 export async function createManualObra(
@@ -16,15 +17,25 @@ export async function createManualObra(
 	await expect(page.getByRole("heading", { name: "Biblioteca" })).toBeVisible();
 
 	await page.getByRole("button", { name: /Agregar (nueva )?obra/ }).click();
-	await page.getByRole("button", { name: "Manga" }).click();
+	await page
+		.getByRole("button", {
+			name: input.type === "manga" ? "Manga" : "Serie",
+		})
+		.click();
 	await page
 		.getByRole("button", { name: "Saltar búsqueda y crear manualmente" })
 		.click();
 
 	await page.getByLabel("Título").fill(input.title);
 	await page.getByLabel("Autor / Director / Estudio").fill(input.creator);
-	await page.getByLabel("Total capítulos").fill(input.totalProgress);
+	await page
+		.getByLabel(input.type === "manga" ? "Total capítulos" : "Total episodios")
+		.fill(input.totalProgress);
 	await page.getByLabel("Etiquetas (separadas por coma)").fill(input.tags);
+	if (input.status === "in-progress") {
+		await page.getByText("Pendiente", { exact: true }).last().click();
+		await page.getByRole("option", { name: "En progreso" }).click();
+	}
 	await page.getByRole("button", { name: "Agregar" }).click();
 
 	await expect(page.getByRole("dialog")).toBeHidden();

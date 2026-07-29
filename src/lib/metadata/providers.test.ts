@@ -619,6 +619,17 @@ describe("metadata providers", () => {
 					first_air_date: "2011-04-17",
 					number_of_seasons: 8,
 					number_of_episodes: 73,
+					status: "Returning Series",
+					last_episode_to_air: {
+						season_number: 2,
+						episode_number: 3,
+						air_date: "2012-04-15",
+					},
+					next_episode_to_air: {
+						season_number: 2,
+						episode_number: 4,
+						air_date: "2012-04-22",
+					},
 					poster_path: "/got.jpg",
 					seasons: [
 						{ season_number: 0, episode_count: 1, name: "Specials" },
@@ -654,6 +665,9 @@ describe("metadata providers", () => {
 			title: "Game of Thrones",
 			seasons: 8,
 			episodes: 73,
+			episodesAired: 13,
+			latestSeasonNumber: 2,
+			latestEpisodeNumber: 3,
 			seasonDetails: [
 				{ seasonNumber: 1, episodeCount: 10 },
 				{ seasonNumber: 2, episodeCount: 10 },

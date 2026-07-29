@@ -49,4 +49,40 @@ test.describe("flujos autenticados", () => {
 			await deleteObraByTitle(page, title).catch(() => undefined);
 		}
 	});
+
+	test("usuario E2E puede terminar una temporada y recibir el flujo de reseña", async ({
+		page,
+	}) => {
+		const title = `${TEST_RUN_PREFIX} Serie progreso`;
+
+		try {
+			await createManualObra(page, {
+				title,
+				creator: "Playwright",
+				type: "series",
+				totalProgress: "2",
+				tags: "e2e, progreso",
+				status: "in-progress",
+			});
+
+			await openObraDetailByTitle(page, title);
+			await page.getByRole("button", { name: "Editar" }).click();
+			await page.getByRole("button", { name: "Editar por temporadas" }).click();
+			await page.getByRole("button", { name: "Agregar temporada" }).click();
+			await page.getByLabel("Episodios de la temporada 1").fill("2");
+			await page.getByRole("button", { name: "Terminar temporada" }).click();
+			await expect(page.getByText("Total: 2 / 2")).toBeVisible();
+
+			await page.keyboard.press("Escape");
+			await page.getByRole("combobox").click();
+			await page.getByRole("option", { name: "Terminada" }).click();
+			await expect(
+				page.getByText(
+					"Terminaste esta obra. ¿Quieres dejar una reseña ahora?",
+				),
+			).toBeVisible();
+		} finally {
+			await deleteObraByTitle(page, title).catch(() => undefined);
+		}
+	});
 });

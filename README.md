@@ -116,6 +116,7 @@ Configurar en `.env.local` o copiar desde `.env.example`:
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
+- `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ## Scripts
 
@@ -151,6 +152,7 @@ Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime
 - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`
+- `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ### Verificación E2E en navegador
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import {
+	getSeasonEndProgress,
 	getSeasonProgress,
 	setSeasonProgress,
 	totalEpisodesForSeasons,
@@ -31,6 +32,13 @@ interface SeasonProgressEditorProps {
 		current: number;
 		total: number;
 	}) => void;
+	onFinishSeason?: (next: {
+		seasons: ObraSeason[];
+		current: number;
+		total: number;
+		seasonNumber: number;
+		isLastSeason: boolean;
+	}) => void;
 }
 
 const MAX_VISIBLE_EPISODES = 24;
@@ -42,6 +50,7 @@ export function SeasonProgressEditor({
 	current,
 	total,
 	onChange,
+	onFinishSeason,
 }: SeasonProgressEditorProps) {
 	const [localSeasons, setLocalSeasons] = useState<ObraSeason[]>([]);
 	const [localCurrent, setLocalCurrent] = useState(current);
@@ -64,14 +73,20 @@ export function SeasonProgressEditor({
 		() => totalEpisodesForSeasons(sanitized),
 		[sanitized],
 	);
+	const effectiveTotal = Math.max(derivedTotal, total);
 
 	const applySeasons = (nextSeasons: ObraSeason[]) => {
 		const valid = validateSeasons(nextSeasons);
 		setLocalSeasons(valid);
 		const nextTotal = totalEpisodesForSeasons(valid);
-		const nextCurrent = Math.min(localCurrent, nextTotal);
+		const effectiveNextTotal = Math.max(nextTotal, total);
+		const nextCurrent = Math.min(localCurrent, effectiveNextTotal);
 		setLocalCurrent(nextCurrent);
-		onChange({ seasons: valid, current: nextCurrent, total: nextTotal });
+		onChange({
+			seasons: valid,
+			current: nextCurrent,
+			total: effectiveNextTotal,
+		});
 	};
 
 	const updateSeasonEpisodeCount = (seasonNumber: number, count: number) => {
@@ -102,11 +117,35 @@ export function SeasonProgressEditor({
 	const setCurrentBySeasonEpisode = (seasonNumber: number, episode: number) => {
 		const nextCurrent = setSeasonProgress(sanitized, seasonNumber, episode);
 		setLocalCurrent(nextCurrent);
-		onChange({ seasons: sanitized, current: nextCurrent, total: derivedTotal });
+		onChange({
+			seasons: sanitized,
+			current: nextCurrent,
+			total: effectiveTotal,
+		});
 	};
 
 	const handleEpisodeClick = (seasonNumber: number, episode: number) => {
 		setCurrentBySeasonEpisode(seasonNumber, episode);
+	};
+
+	const finishSeason = (seasonNumber: number) => {
+		const nextCurrent = Math.max(
+			localCurrent,
+			getSeasonEndProgress(sanitized, seasonNumber),
+		);
+		const next = {
+			seasons: sanitized,
+			current: nextCurrent,
+			total: effectiveTotal,
+			seasonNumber,
+			isLastSeason: sanitized.at(-1)?.seasonNumber === seasonNumber,
+		};
+		setLocalCurrent(nextCurrent);
+		if (onFinishSeason) {
+			onFinishSeason(next);
+			return;
+		}
+		onChange(next);
 	};
 
 	const handleCurrentInputChange = (seasonNumber: number, episode: number) => {
@@ -165,7 +204,7 @@ export function SeasonProgressEditor({
 							</div>
 						</div>
 						<p className="text-sm text-muted-foreground">
-							Total: {localCurrent} / {derivedTotal > 0 ? derivedTotal : total}
+							Total: {localCurrent} / {effectiveTotal}
 						</p>
 					</section>
 
@@ -177,6 +216,7 @@ export function SeasonProgressEditor({
 									type="button"
 									variant="outline"
 									size="icon"
+									aria-label="Eliminar última temporada"
 									disabled={sanitized.length <= 1}
 									onClick={removeLastSeason}
 									className="rounded-none border-border hover:border-destructive hover:text-destructive"
@@ -187,6 +227,7 @@ export function SeasonProgressEditor({
 									type="button"
 									variant="outline"
 									size="icon"
+									aria-label="Agregar temporada"
 									onClick={addSeason}
 									className="rounded-none border-border hover:border-primary hover:text-primary"
 								>
@@ -205,20 +246,44 @@ export function SeasonProgressEditor({
 										key={season.seasonNumber}
 										className="flex flex-col gap-2"
 									>
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between gap-3">
 											<Label>Temporada {season.seasonNumber}</Label>
-											<Input
-												type="number"
-												min={1}
-												value={season.episodeCount}
-												onChange={(event) => {
-													updateSeasonEpisodeCount(
+											<div className="flex items-center gap-2">
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													disabled={
+														getSeasonEndProgress(
+															sanitized,
+															season.seasonNumber,
+														) <= localCurrent
+													}
+													onClick={() => finishSeason(season.seasonNumber)}
+													className="rounded-none"
+												>
+													<Check className="size-4" />
+													{getSeasonEndProgress(
+														sanitized,
 														season.seasonNumber,
-														Number(event.target.value),
-													);
-												}}
-												className="max-w-[100px] rounded-none border-border bg-background focus-visible:ring-primary"
-											/>
+													) <= localCurrent
+														? "Terminada"
+														: "Terminar temporada"}
+												</Button>
+												<Input
+													type="number"
+													min={1}
+													value={season.episodeCount}
+													aria-label={`Episodios de la temporada ${season.seasonNumber}`}
+													onChange={(event) => {
+														updateSeasonEpisodeCount(
+															season.seasonNumber,
+															Number(event.target.value),
+														);
+													}}
+													className="max-w-[100px] rounded-none border-border bg-background focus-visible:ring-primary"
+												/>
+											</div>
 										</div>
 										<EpisodeGrid
 											season={season}

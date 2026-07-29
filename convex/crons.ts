@@ -10,4 +10,11 @@ crons.interval(
 	{},
 );
 
+crons.interval(
+	"check episodic releases",
+	{ hours: 2 },
+	internal.notifications.checkForNewEpisodes,
+	{},
+);
+
 export default crons;
