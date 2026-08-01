@@ -24,12 +24,9 @@
     "secrets:audit": "secrets-sync audit dev",
     "secrets:export": "secrets-sync export dev",
     "secrets:publish": "secrets-sync export dev --apply",
-    "convex:sync-env": "bun --env-file=.env.production scripts/sync-convex-env.ts",
-    "convex:deploy": "deploy library --export-env .env.production && bun run convex:sync-env && bunx convex deploy --env-file .env.production",
     "deploy:dry-run": "deploy library --dry-run --yes",
     "deploy:sync-only": "deploy library --sync-only",
-    "dokploy:list-apps": "deploy --help",
-    "deploy": "bun run convex:deploy && deploy library --skip-env-check"
+    "deploy": "deploy library --with-convex"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
