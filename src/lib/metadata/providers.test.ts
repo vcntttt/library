@@ -1111,4 +1111,30 @@ describe("metadata providers", () => {
 			undefined,
 		);
 	});
+
+	it("loads the movie director from TMDB credits", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				title: "Dune",
+				release_date: "2021-10-22",
+				credits: {
+					crew: [
+						{ job: "Writer", name: "Jon Spaihts" },
+						{ job: "Director", name: "Denis Villeneuve" },
+					],
+				},
+			}),
+		);
+
+		vi.stubGlobal("fetch", fetchMock);
+		vi.stubEnv("TMDB_API_KEY", "test-key");
+		const { getMetadataDetails } = await import("./providers");
+
+		const details = await getMetadataDetails("tmdb", "438631", "movie");
+
+		expect(details.creator).toBe("Denis Villeneuve");
+		expect(fetchMock.mock.calls[0]?.[0]).toContain(
+			"append_to_response=credits",
+		);
+	});
 });

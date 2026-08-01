@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VariantCRouteImport } from './routes/variant-c'
 import { Route as VariantBRouteImport } from './routes/variant-b'
 import { Route as VariantARouteImport } from './routes/variant-a'
+import { Route as SanidadRouteImport } from './routes/sanidad'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LecturaRouteImport } from './routes/lectura'
 import { Route as IdeasRouteImport } from './routes/ideas'
@@ -43,6 +44,11 @@ const VariantBRoute = VariantBRouteImport.update({
 const VariantARoute = VariantARouteImport.update({
   id: '/variant-a',
   path: '/variant-a',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SanidadRoute = SanidadRouteImport.update({
+  id: '/sanidad',
+  path: '/sanidad',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/ideas': typeof IdeasRoute
   '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
+  '/sanidad': typeof SanidadRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/ideas': typeof IdeasRoute
   '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
+  '/sanidad': typeof SanidadRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/ideas': typeof IdeasRoute
   '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
+  '/sanidad': typeof SanidadRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/ideas'
     | '/lectura'
     | '/login'
+    | '/sanidad'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/ideas'
     | '/lectura'
     | '/login'
+    | '/sanidad'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/ideas'
     | '/lectura'
     | '/login'
+    | '/sanidad'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   IdeasRoute: typeof IdeasRoute
   LecturaRoute: typeof LecturaRoute
   LoginRoute: typeof LoginRoute
+  SanidadRoute: typeof SanidadRoute
   VariantARoute: typeof VariantARoute
   VariantBRoute: typeof VariantBRoute
   VariantCRoute: typeof VariantCRoute
@@ -314,6 +327,13 @@ declare module '@tanstack/react-router' {
       path: '/variant-a'
       fullPath: '/variant-a'
       preLoaderRoute: typeof VariantARouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sanidad': {
+      id: '/sanidad'
+      path: '/sanidad'
+      fullPath: '/sanidad'
+      preLoaderRoute: typeof SanidadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -445,6 +465,7 @@ const rootRouteChildren: RootRouteChildren = {
   IdeasRoute: IdeasRoute,
   LecturaRoute: LecturaRoute,
   LoginRoute: LoginRoute,
+  SanidadRoute: SanidadRoute,
   VariantARoute: VariantARoute,
   VariantBRoute: VariantBRoute,
   VariantCRoute: VariantCRoute,
