@@ -24,6 +24,12 @@ const statusLabels: Record<string, string> = {
 };
 
 const ongoingStatuses = new Set(["Returning Series", "RELEASING"]);
+const finishedStatuses = new Set([
+	"Ended",
+	"Canceled",
+	"FINISHED",
+	"CANCELLED",
+]);
 
 export const formatMetadataStatus = (status?: string) => {
 	if (!status) return undefined;
@@ -83,6 +89,11 @@ export const getObraMetaLine = (obra: Obra) => {
 export const isMetadataOngoing = (status?: string) => {
 	if (!status) return false;
 	return ongoingStatuses.has(status);
+};
+
+export const isMetadataFinished = (status?: string) => {
+	if (!status) return false;
+	return finishedStatuses.has(status);
 };
 
 export const isObraUpToDate = (obra: Obra) => {

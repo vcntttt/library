@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
 	formatSeasonProgress,
 	getInitialSeasonsFromMetadata,
+	getSeasonEndProgress,
 	getSeasonProgress,
+	mergeSeasons,
 	setSeasonProgress,
 	totalEpisodesForSeasons,
 	validateSeasons,
@@ -50,6 +52,33 @@ describe("totalEpisodesForSeasons", () => {
 	});
 });
 
+describe("mergeSeasons", () => {
+	it("agrega temporadas nuevas sin reducir conteos existentes", () => {
+		expect(
+			mergeSeasons(
+				[
+					{ seasonNumber: 1, episodeCount: 12 },
+					{ seasonNumber: 2, episodeCount: 10 },
+				],
+				[
+					{ seasonNumber: 2, episodeCount: 8 },
+					{ seasonNumber: 3, episodeCount: 6 },
+				],
+			),
+		).toEqual([
+			{ seasonNumber: 1, episodeCount: 12 },
+			{ seasonNumber: 2, episodeCount: 10 },
+			{ seasonNumber: 3, episodeCount: 6 },
+		]);
+	});
+});
+
+describe("getSeasonEndProgress", () => {
+	it("calcula el progreso acumulado al terminar una temporada", () => {
+		expect(getSeasonEndProgress(himymSeasons, 2)).toBe(44);
+	});
+});
+
 describe("getSeasonProgress", () => {
 	it("devuelve null sin temporadas", () => {
 		expect(getSeasonProgress([], 40)).toBeNull();
@@ -83,7 +112,7 @@ describe("getSeasonProgress", () => {
 		expect(getSeasonProgress(himymSeasons, 500)).toEqual({
 			seasonNumber: 9,
 			episode: 24,
-			completed: false,
+			completed: true,
 		});
 	});
 });

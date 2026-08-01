@@ -39,7 +39,16 @@ export default function Header() {
 	return (
 		<header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur-sm">
 			<div className="container mx-auto flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-0">
-				<Link to="/" className="flex items-baseline gap-3">
+				<Link
+					to="/"
+					className="flex items-center gap-3"
+					aria-label="Ir al inicio de Biblioteca"
+				>
+					<img
+						src="/logo.png"
+						alt=""
+						className="h-9 w-9 rounded-xl object-cover shadow-sm"
+					/>
 					<h1 className="font-serif text-xl font-semibold tracking-tight">
 						Biblioteca
 					</h1>

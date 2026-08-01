@@ -10,6 +10,7 @@ import {
 import {
 	assertCreateObraInput,
 	assertUpdateObraPatch,
+	completeProgressForStatus,
 	normalizeOptionalString,
 	normalizeTags,
 	nullableNumber,
@@ -18,7 +19,8 @@ import {
 	sanitizeProgress,
 	sanitizeProgressSeasons,
 	sanitizeQuotes,
-	syncMangaProgressTotal,
+	shouldReopenFinishedProgress,
+	syncProgressTotal,
 } from "./lib/obras";
 import {
 	createObraFields,
@@ -88,12 +90,22 @@ export const create = mutation({
 	args: createObraFields,
 	handler: async (ctx, rawInput) => {
 		const userId = await requireUserId(ctx);
-	const input = assertCreateObraInput(rawInput);
-	const now = Date.now();
-	const progress = sanitizeProgress(input.progress);
-	const progressSeasons = sanitizeProgressSeasons(input.progressSeasons);
-	const external = sanitizeExternal(input.external);
-	const metadata = sanitizeMetadata(input.metadata, input.type);
+		const input = assertCreateObraInput(rawInput);
+		const now = Date.now();
+		let progress = sanitizeProgress(input.progress);
+		const progressSeasons = sanitizeProgressSeasons(input.progressSeasons);
+		const external = sanitizeExternal(input.external);
+		const metadata = sanitizeMetadata(input.metadata, input.type);
+		const knownTotal = syncProgressTotal(progress?.total, metadata, input.type, {
+			format: input.format,
+			progressSeasons,
+		});
+		progress = completeProgressForStatus(
+			input.status,
+			input.type,
+			progress,
+			knownTotal,
+		);
 
 		let startedAt = nullableNumber(input.startedAt);
 		let finishedAt = nullableNumber(input.finishedAt);
@@ -127,21 +139,21 @@ export const create = mutation({
 			externalSource: external?.source,
 			externalId: external?.id,
 			metadata,
-		coverUrl: normalizeOptionalString(input.coverUrl),
-		customCoverUrl: normalizeOptionalString(input.customCoverUrl),
-		creator: normalizeOptionalString(input.creator),
-		customCreator: normalizeOptionalString(input.customCreator),
-		year: nullableNumber(input.year),
-		customYear: nullableNumber(input.customYear),
-		customTitle: normalizeOptionalString(input.customTitle),
-		progressCurrent: progress?.current,
-		progressTotal: progress?.total,
-		progressSeasons,
-		startedAt,
-		finishedAt,
-		createdAt: now,
-		updatedAt: now,
-	});
+			coverUrl: normalizeOptionalString(input.coverUrl),
+			customCoverUrl: normalizeOptionalString(input.customCoverUrl),
+			creator: normalizeOptionalString(input.creator),
+			customCreator: normalizeOptionalString(input.customCreator),
+			year: nullableNumber(input.year),
+			customYear: nullableNumber(input.customYear),
+			customTitle: normalizeOptionalString(input.customTitle),
+			progressCurrent: progress?.current,
+			progressTotal: progress?.total,
+			progressSeasons,
+			startedAt,
+			finishedAt,
+			createdAt: now,
+			updatedAt: now,
+		});
 
 		const row = await ctx.db.get(id);
 		if (!row) throw new Error("No se pudo crear la obra.");
@@ -238,24 +250,65 @@ export const update = mutation({
 			nextPatch.finishedAt = nullableNumber(patch.finishedAt);
 		}
 
-		if (
-			!hasOwn(patch, "progress") &&
-			hasOwn(patch, "metadata") &&
-			nextPatch.metadata &&
-			typeof existing.progressTotal === "number"
-		) {
-			const syncedTotal = syncMangaProgressTotal(
-				existing.progressTotal,
-				nextPatch.metadata,
-				nextPatch.type ?? existing.type,
-			);
-			if (syncedTotal !== undefined) {
-				nextPatch.progressTotal = syncedTotal;
-			}
-		}
-
-		const nextStatus = nextPatch.status ?? existing.status;
+		let nextStatus = nextPatch.status ?? existing.status;
 		const nextType = nextPatch.type ?? existing.type;
+		const nextMetadata = hasOwn(patch, "metadata")
+			? nextPatch.metadata
+			: existing.metadata;
+		const nextProgressSeasons = hasOwn(patch, "progressSeasons")
+			? nextPatch.progressSeasons
+			: existing.progressSeasons;
+		const currentProgress =
+			hasOwn(patch, "progress") || nextPatch.progressTotal !== undefined
+				? nextPatch.progressTotal !== undefined
+					? {
+							current: nextPatch.progressCurrent ?? 0,
+							total: nextPatch.progressTotal,
+						}
+					: undefined
+				: existing.progressCurrent != null && existing.progressTotal != null
+					? {
+							current: existing.progressCurrent,
+							total: existing.progressTotal,
+						}
+					: undefined;
+		const shouldSyncProgress =
+			Boolean(currentProgress) ||
+			nextStatus === "finished" ||
+			hasOwn(patch, "progressSeasons");
+		const knownTotal = shouldSyncProgress
+			? syncProgressTotal(currentProgress?.total, nextMetadata, nextType, {
+					format: nextPatch.format ?? existing.format,
+					progressSeasons: nextProgressSeasons,
+				})
+			: undefined;
+		const explicitlyFinishing =
+			hasOwn(patch, "status") && patch.status === "finished";
+		const completedProgress = completeProgressForStatus(
+			explicitlyFinishing ? "finished" : "in-progress",
+			nextType,
+			currentProgress,
+			knownTotal,
+		);
+		if (completedProgress) {
+			nextPatch.progressCurrent = completedProgress.current;
+			nextPatch.progressTotal = completedProgress.total;
+		}
+		const trackingChanged =
+			hasOwn(patch, "progress") ||
+			hasOwn(patch, "progressSeasons") ||
+			hasOwn(patch, "metadata");
+		if (
+			shouldReopenFinishedProgress({
+				status: nextStatus,
+				explicitlyFinishing,
+				trackingChanged,
+				progress: completedProgress,
+			})
+		) {
+			nextStatus = "in-progress";
+			nextPatch.status = "in-progress";
+		}
 		if (nextType !== "book") {
 			nextPatch.format = undefined;
 		}

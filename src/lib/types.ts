@@ -40,7 +40,11 @@ export interface ObraMetadata {
 	seasons?: number;
 	episodes?: number;
 	episodesAired?: number;
+	latestSeasonNumber?: number;
+	latestEpisodeNumber?: number;
 	nextEpisodeDate?: number;
+	latestEpisodeCheckedAt?: number;
+	lastNotifiedEpisode?: number;
 	status?: string;
 	volumes?: number;
 	season?: string;

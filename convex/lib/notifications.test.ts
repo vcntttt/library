@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	getNewEpisodeRelease,
+	mergeAcknowledgedEpisodeMetadata,
 	mergeAcknowledgedMangaMetadata,
+	mergeEpisodicMetadata,
 	nextReadProgress,
 } from "./notifications";
 
@@ -55,6 +58,57 @@ describe("notification domain helpers", () => {
 			progressCurrent: 15,
 			progressTotal: 20,
 			alreadyRead: true,
+		});
+	});
+
+	it("merges episodic metadata without reducing known counts", () => {
+		expect(
+			mergeEpisodicMetadata(
+				{
+					seasons: 3,
+					episodes: 30,
+					episodesAired: 25,
+					lastNotifiedEpisode: 25,
+				},
+				{
+					seasons: 2,
+					episodes: 24,
+					episodesAired: 24,
+					status: "Returning Series",
+				},
+				1_700_000_000_000,
+			),
+		).toMatchObject({
+			seasons: 3,
+			episodes: 30,
+			episodesAired: 25,
+			lastNotifiedEpisode: 25,
+			status: "Returning Series",
+		});
+	});
+
+	it("detects only genuinely new episodic releases", () => {
+		expect(
+			getNewEpisodeRelease(
+				{ episodesAired: 11, lastNotifiedEpisode: 11 },
+				{ episodesAired: 12 },
+			),
+		).toBe(12);
+		expect(
+			getNewEpisodeRelease(undefined, { episodesAired: 12 }),
+		).toBeUndefined();
+	});
+
+	it("acknowledges episodic releases without moving backwards", () => {
+		expect(
+			mergeAcknowledgedEpisodeMetadata(
+				{ episodesAired: 12, lastNotifiedEpisode: 12 },
+				11,
+				1_700_000_000_000,
+			),
+		).toMatchObject({
+			episodesAired: 12,
+			lastNotifiedEpisode: 12,
 		});
 	});
 });

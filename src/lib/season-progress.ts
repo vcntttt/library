@@ -37,6 +37,23 @@ export function totalEpisodesForSeasons(seasons: ObraSeason[]): number {
 	);
 }
 
+export function mergeSeasons(
+	existing: ObraSeason[],
+	incoming: ObraSeason[],
+): ObraSeason[] {
+	return validateSeasons([...existing, ...incoming]);
+}
+
+export function getSeasonEndProgress(
+	seasons: ObraSeason[],
+	seasonNumber: number,
+): number {
+	const sanitized = validateSeasons(seasons);
+	return sanitized
+		.filter((season) => season.seasonNumber <= seasonNumber)
+		.reduce((total, season) => total + season.episodeCount, 0);
+}
+
 export function getSeasonProgress(
 	seasons: ObraSeason[],
 	totalCurrent: number,
@@ -55,7 +72,7 @@ export function getSeasonProgress(
 		return {
 			seasonNumber: last.seasonNumber,
 			episode: last.episodeCount,
-			completed: safeCurrent === total,
+			completed: true,
 		};
 	}
 

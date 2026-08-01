@@ -731,6 +731,27 @@ async function getTmdbDetails(
 					)
 					.sort((a, b) => a.seasonNumber - b.seasonNumber)
 			: undefined;
+	const latestEpisode = data.last_episode_to_air;
+	const nextEpisode = data.next_episode_to_air;
+	const latestSeasonNumber =
+		latestEpisode?.season_number ?? nextEpisode?.season_number;
+	const latestEpisodeNumber =
+		latestEpisode?.episode_number ??
+		(nextEpisode?.episode_number
+			? Math.max(nextEpisode.episode_number - 1, 0)
+			: undefined);
+	const previousSeasonEpisodes =
+		latestSeasonNumber && seasonDetails
+			? seasonDetails
+					.filter((season) => season.seasonNumber < latestSeasonNumber)
+					.reduce((total, season) => total + season.episodeCount, 0)
+			: 0;
+	const episodesAired =
+		data.status === "Ended" && typeof data.number_of_episodes === "number"
+			? data.number_of_episodes
+			: typeof latestEpisodeNumber === "number"
+				? previousSeasonEpisodes + latestEpisodeNumber
+				: undefined;
 
 	return {
 		source: "tmdb",
@@ -743,10 +764,14 @@ async function getTmdbDetails(
 		status: data.status ?? undefined,
 		seasons: data.number_of_seasons,
 		episodes: data.number_of_episodes,
+		episodesAired,
+		latestSeasonNumber,
+		latestEpisodeNumber,
 		seasonDetails,
 		nextEpisodeDate: data.next_episode_to_air?.air_date
 			? new Date(data.next_episode_to_air.air_date).getTime()
 			: undefined,
+		latestEpisodeCheckedAt: Date.now(),
 		runtime: data.runtime ?? data.episode_run_time?.[0],
 		watchProviders,
 	};
@@ -781,6 +806,12 @@ async function getAnilistDetails(
 	const resolvedChapter =
 		latestChapterInfo?.latestChapter ??
 		(typeof media.chapters === "number" ? media.chapters : undefined);
+	const episodesAired =
+		media.status === "FINISHED" && typeof media.episodes === "number"
+			? media.episodes
+			: nextEpisode?.episode
+				? Math.max(nextEpisode.episode - 1, 0)
+				: undefined;
 
 	return {
 		source: "anilist",
@@ -797,10 +828,16 @@ async function getAnilistDetails(
 		seasonYear: media.seasonYear ?? undefined,
 		status: media.status ?? undefined,
 		episodes: media.episodes ?? undefined,
+		episodesAired,
+		latestSeasonNumber:
+			obraType === "anime" && typeof episodesAired === "number" ? 1 : undefined,
+		latestEpisodeNumber: obraType === "anime" ? episodesAired : undefined,
+		latestEpisodeCheckedAt: obraType === "anime" ? Date.now() : undefined,
+		seasonDetails:
+			obraType === "anime" && media.episodes
+				? [{ seasonNumber: 1, episodeCount: media.episodes }]
+				: undefined,
 		volumes: media.volumes ?? undefined,
-		episodesAired: nextEpisode?.episode
-			? Math.max(nextEpisode.episode - 1, 0)
-			: undefined,
 		nextEpisodeDate: nextEpisode?.airingAt
 			? nextEpisode.airingAt * 1000
 			: undefined,
@@ -1123,6 +1160,7 @@ export async function getMetadataDetails(
 	source: MetadataSource,
 	id: string,
 	obraType?: ObraType,
+	forceRefresh = false,
 ) {
 	const cacheKey = `${DETAILS_CACHE_VERSION}:${source}:${id}:${obraType ?? ""}`;
 	const cached = detailsCache.get(cacheKey);
@@ -1132,7 +1170,12 @@ export async function getMetadataDetails(
 		cached?.value.status === "RELEASING" &&
 		cached.value.latestChapter === undefined;
 
-	if (cached && cached.expiresAt > Date.now() && !shouldBypassCachedManga) {
+	if (
+		!forceRefresh &&
+		cached &&
+		cached.expiresAt > Date.now() &&
+		!shouldBypassCachedManga
+	) {
 		return cached.value;
 	}
 
@@ -1606,7 +1649,11 @@ function metadataDetailsToSearchResult(
 		episodes: details.episodes,
 		seasonDetails: details.seasonDetails,
 		episodesAired: details.episodesAired,
+		latestSeasonNumber: details.latestSeasonNumber,
+		latestEpisodeNumber: details.latestEpisodeNumber,
 		nextEpisodeDate: details.nextEpisodeDate,
+		latestEpisodeCheckedAt: details.latestEpisodeCheckedAt,
+		lastNotifiedEpisode: details.lastNotifiedEpisode,
 		runtime: details.runtime,
 		watchProviders: details.watchProviders,
 		volumes: details.volumes,
@@ -2451,6 +2498,12 @@ interface TmdbDetails {
 	episode_run_time?: number[] | null;
 	next_episode_to_air?: {
 		episode_number?: number;
+		season_number?: number;
+		air_date?: string;
+	} | null;
+	last_episode_to_air?: {
+		episode_number?: number;
+		season_number?: number;
 		air_date?: string;
 	} | null;
 	seasons?: Array<{

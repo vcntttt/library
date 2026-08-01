@@ -5,18 +5,18 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Check, Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { CompletionReviewDialog } from "@/components/completion-review-dialog";
+import { SeasonProgressEditor } from "@/components/season-progress-editor";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Textarea } from "@/components/ui/textarea";
+import { isMetadataFinished } from "@/lib/metadata/format";
 import { formatProgressValue, getProgressUnitLabel } from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
 import type { Obra, ObraStatus } from "@/lib/types";
@@ -41,7 +41,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	const updateObra = useMutation(convexApi.obras.update);
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
 	const [isReviewOpen, setIsReviewOpen] = useState(false);
-	const [reviewDraft, setReviewDraft] = useState("");
+	const [isSeasonEditorOpen, setIsSeasonEditorOpen] = useState(false);
 
 	const hasProgress = obra.type !== "movie";
 	const progressTotal = obra.progress?.total ?? 0;
@@ -72,7 +72,6 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 
 		if (nextStatus === "finished" && !obra.review) {
 			setTimeout(() => {
-				setReviewDraft("");
 				setIsReviewOpen(true);
 			}, 15);
 		}
@@ -119,6 +118,54 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		closePicker();
 	};
 
+	const handleSeasonProgressChange = async (next: {
+		seasons: NonNullable<Obra["progressSeasons"]>;
+		current: number;
+		total: number;
+	}) => {
+		const patch: Record<string, unknown> = {
+			progress: { current: next.current, total: next.total },
+			progressSeasons: next.seasons,
+		};
+		if (obra.status !== "in-progress" && next.current > 0) {
+			patch.status = "in-progress";
+		}
+		await updateObra({
+			id: obra.id as Id<"obras">,
+			patch,
+		});
+	};
+
+	const handleFinishSeason = async (next: {
+		seasons: NonNullable<Obra["progressSeasons"]>;
+		current: number;
+		total: number;
+		isLastSeason: boolean;
+	}) => {
+		const shouldFinishObra =
+			next.isLastSeason && isMetadataFinished(obra.metadata?.status);
+		const completedTotal = Math.max(next.total, progressTotal);
+		await updateObra({
+			id: obra.id as Id<"obras">,
+			patch: {
+				progress: {
+					current: shouldFinishObra ? completedTotal : next.current,
+					total: completedTotal,
+				},
+				progressSeasons: next.seasons,
+				...(shouldFinishObra
+					? { status: "finished" as const }
+					: obra.status !== "in-progress" && next.current > 0
+						? { status: "in-progress" as const }
+						: {}),
+			},
+		});
+		if (!shouldFinishObra) return;
+		setIsSeasonEditorOpen(false);
+		closePicker();
+		if (!obra.review) setIsReviewOpen(true);
+	};
+
 	const handlePickerOpenChange = (open: boolean) => {
 		if (!open) {
 			closePicker();
@@ -127,17 +174,11 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		}
 	};
 
-	const handleSaveReview = async () => {
-		const trimmed = reviewDraft.trim();
+	const handleSaveReview = async (review: string) => {
 		await updateObra({
 			id: obra.id as Id<"obras">,
-			patch: { review: trimmed || undefined },
+			patch: { review: review || undefined },
 		});
-		setIsReviewOpen(false);
-	};
-
-	const handleSkipReview = () => {
-		setIsReviewOpen(false);
 	};
 
 	return (
@@ -164,7 +205,11 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 			</span>
 
 			<Dialog open={isPickerOpen} onOpenChange={handlePickerOpenChange}>
-				<DialogContent className="rounded-none sm:max-w-sm p-0 gap-0 overflow-hidden border border-border bg-card">
+				<DialogContent
+					className="rounded-none sm:max-w-sm p-0 gap-0 overflow-hidden border border-border bg-card"
+					onClick={(event) => event.stopPropagation()}
+					onPointerDown={(event) => event.stopPropagation()}
+				>
 					<DialogHeader className="px-4 pt-4 pb-2">
 						<DialogTitle className="text-xs font-normal uppercase tracking-[0.12em] text-muted-foreground">
 							Cambiar estado
@@ -271,6 +316,17 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 										}}
 									/>
 								)}
+								{(obra.type === "series" || obra.type === "anime") &&
+									(obra.progressSeasons?.length ?? 0) > 0 && (
+										<Button
+											type="button"
+											variant="outline"
+											className="w-full rounded-none"
+											onClick={() => setIsSeasonEditorOpen(true)}
+										>
+											Progreso por temporadas
+										</Button>
+									)}
 							</div>
 						</>
 					)}
@@ -292,34 +348,22 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-				<DialogContent className="rounded-none sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>{obra.title}</DialogTitle>
-						<DialogDescription>
-							¿Quieres dejar una reseña ahora?
-						</DialogDescription>
-					</DialogHeader>
-					<Textarea
-						placeholder="Escribe tu reseña..."
-						value={reviewDraft}
-						onChange={(e) => setReviewDraft(e.target.value)}
-						className="rounded-none min-h-[120px]"
-					/>
-					<DialogFooter className="gap-2 sm:gap-0">
-						<Button
-							variant="ghost"
-							onClick={handleSkipReview}
-							className="rounded-none"
-						>
-							Omitir
-						</Button>
-						<Button onClick={handleSaveReview} className="rounded-none">
-							Guardar reseña
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<SeasonProgressEditor
+				open={isSeasonEditorOpen}
+				onOpenChange={setIsSeasonEditorOpen}
+				seasons={obra.progressSeasons ?? []}
+				current={progressCurrent}
+				total={progressTotal}
+				onChange={(next) => void handleSeasonProgressChange(next)}
+				onFinishSeason={(next) => void handleFinishSeason(next)}
+			/>
+			<CompletionReviewDialog
+				open={isReviewOpen}
+				onOpenChange={setIsReviewOpen}
+				title={obra.title}
+				initialReview={obra.review}
+				onSave={handleSaveReview}
+			/>
 		</>
 	);
 }

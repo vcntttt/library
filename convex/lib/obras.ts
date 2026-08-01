@@ -3,6 +3,7 @@ import type {
 	createObraValidator,
 	externalReferenceValidator,
 	obraMetadataValidator,
+	obraStatusValidator,
 	obraTypeValidator,
 	progressSeasonsValidator,
 	progressValidator,
@@ -11,6 +12,7 @@ import type {
 } from "./validators";
 
 export type ObraType = Infer<typeof obraTypeValidator>;
+export type ObraStatus = Infer<typeof obraStatusValidator>;
 export type ObraMetadata = Infer<typeof obraMetadataValidator>;
 export type ExternalReference = Infer<typeof externalReferenceValidator>;
 export type ObraProgress = Infer<typeof progressValidator>;
@@ -138,7 +140,11 @@ export function sanitizeMetadata(
 		seasons: nullableNumber(metadata.seasons),
 		episodes: nullableNumber(metadata.episodes),
 		episodesAired: nullableNumber(metadata.episodesAired),
+		latestSeasonNumber: nullableNumber(metadata.latestSeasonNumber),
+		latestEpisodeNumber: nullableNumber(metadata.latestEpisodeNumber),
 		nextEpisodeDate: nullableNumber(metadata.nextEpisodeDate),
+		latestEpisodeCheckedAt: nullableNumber(metadata.latestEpisodeCheckedAt),
+		lastNotifiedEpisode: nullableNumber(metadata.lastNotifiedEpisode),
 		status: normalizeOptionalString(metadata.status),
 		volumes: nullableNumber(metadata.volumes),
 		season: normalizeOptionalString(metadata.season),
@@ -165,6 +171,13 @@ export function sanitizeMetadata(
 		delete sanitized.lastNotifiedChapter;
 		delete sanitized.mangaPlusTitleId;
 		delete sanitized.mangaDexId;
+	}
+
+	if (obraType !== "series" && obraType !== "anime") {
+		delete sanitized.latestSeasonNumber;
+		delete sanitized.latestEpisodeNumber;
+		delete sanitized.latestEpisodeCheckedAt;
+		delete sanitized.lastNotifiedEpisode;
 	}
 
 	if (obraType !== "book") {
@@ -204,6 +217,69 @@ export function syncMangaProgressTotal(
 	const latestChapter = metadata?.latestChapter;
 	if (typeof latestChapter !== "number") return currentTotal;
 	return Math.max(currentTotal, Math.floor(latestChapter));
+}
+
+export function syncProgressTotal(
+	currentTotal: number | undefined,
+	metadata: ObraMetadata | undefined,
+	obraType: ObraType,
+	options?: {
+		format?: "physical" | "ebook" | "audiobook";
+		progressSeasons?: ObraProgressSeason[];
+	},
+) {
+	const candidates = [currentTotal ?? 0];
+	if (obraType === "book") {
+		candidates.push(
+			options?.format === "audiobook"
+				? (metadata?.durationMinutes ?? 0)
+				: (metadata?.pages ?? 0),
+		);
+	}
+	if (obraType === "manga" || obraType === "manhwa") {
+		candidates.push(metadata?.latestChapter ?? 0);
+	}
+	if (obraType === "series" || obraType === "anime") {
+		candidates.push(metadata?.episodes ?? 0);
+		candidates.push(
+			sanitizeProgressSeasons(options?.progressSeasons)?.reduce(
+				(total, season) => total + season.episodeCount,
+				0,
+			) ?? 0,
+		);
+	}
+	const total = Math.max(...candidates.map((value) => Math.floor(value)));
+	return total > 0 ? total : undefined;
+}
+
+export function completeProgressForStatus(
+	status: ObraStatus,
+	obraType: ObraType,
+	progress: ObraProgress | undefined,
+	knownTotal?: number,
+) {
+	if (obraType === "movie") return undefined;
+	const total = Math.max(progress?.total ?? 0, knownTotal ?? 0);
+	if (total <= 0) return progress;
+	if (status === "finished") return { current: total, total };
+	return {
+		current: Math.min(progress?.current ?? 0, total),
+		total,
+	};
+}
+
+export function shouldReopenFinishedProgress(args: {
+	status: ObraStatus;
+	explicitlyFinishing: boolean;
+	trackingChanged: boolean;
+	progress: ObraProgress | undefined;
+}) {
+	return (
+		args.status === "finished" &&
+		!args.explicitlyFinishing &&
+		args.trackingChanged &&
+		Boolean(args.progress && args.progress.current < args.progress.total)
+	);
 }
 
 function assertProgress(progress: ObraProgress) {

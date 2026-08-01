@@ -124,6 +124,7 @@ Configurar en `.env.local` o copiar desde `.env.example`:
   a las rutas privadas de lectura y al vault)
 - `READING_SYNC_MAX_FILES` (opcional, máximo de libros inspeccionados por
   sincronización; por defecto 500)
+- `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ## Scripts
 
@@ -163,6 +164,7 @@ Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime
 - `OBSIDIAN_VAULT_PATH`
 - `READING_INTEGRATION_OWNER_ID`
 - `READING_SYNC_MAX_FILES` (opcional)
+- `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ### Verificación E2E en navegador
 
