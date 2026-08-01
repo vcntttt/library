@@ -173,23 +173,27 @@ export function ObraCard({
 				className,
 			)}
 		>
-			<Link
-				to="/obra/$obraId"
-				params={{ obraId: obra.id }}
-				className="flex flex-1 flex-col p-4"
-			>
+			<div className="flex flex-1 flex-col p-4">
 				<div className="flex items-start justify-between gap-3">
 					<div className="flex min-w-0 flex-1 items-start gap-3">
-						{obra.coverUrl && (
-							<div className="h-16 w-12 overflow-hidden bg-background">
+						<Link
+							to="/obra/$obraId"
+							params={{ obraId: obra.id }}
+							className="h-16 w-12 shrink-0 overflow-hidden bg-background"
+						>
+							{obra.coverUrl ? (
 								<img
 									src={obra.coverUrl}
 									alt={`Portada de ${obra.title}`}
 									className="h-full w-full object-cover"
 									loading="lazy"
 								/>
-							</div>
-						)}
+							) : (
+								<div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+									Sin portada
+								</div>
+							)}
+						</Link>
 						<div className="min-w-0 flex-1">
 							<div className="mb-1 flex items-center gap-2">
 								<TypeBadge type={obra.type} format={obra.format} />
@@ -206,52 +210,60 @@ export function ObraCard({
 									/>
 								)}
 							</div>
-							<h3 className="truncate font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
-								{obra.title}
-							</h3>
-							{obra.creator && (
-								<p className="truncate text-sm text-muted-foreground">
-									{obra.creator}
-								</p>
-							)}
-							{metaLine && (
-								<p className="truncate text-sm text-muted-foreground">
-									{metaLine}
-								</p>
-							)}
+							<Link
+								to="/obra/$obraId"
+								params={{ obraId: obra.id }}
+								className="block min-w-0"
+							>
+								<h3 className="truncate font-semibold text-card-foreground font-serif transition-colors group-hover:text-primary">
+									{obra.title}
+								</h3>
+								{obra.creator && (
+									<p className="truncate text-sm text-muted-foreground">
+										{obra.creator}
+									</p>
+								)}
+								{metaLine && (
+									<p className="truncate text-sm text-muted-foreground">
+										{metaLine}
+									</p>
+								)}
+							</Link>
 						</div>
 					</div>
 				</div>
 
-				{showProgress && obra.progress && (
-					<div className="mt-3">
-						<ProgressBar
-							current={obra.progress.current}
-							total={obra.progress.total}
-							type={obra.type}
-							format={obra.format}
-						/>
-					</div>
-				)}
+				<Link to="/obra/$obraId" params={{ obraId: obra.id }} className="block">
+					{showProgress && obra.progress && (
+						<div className="mt-3">
+							<ProgressBar
+								current={obra.progress.current}
+								total={obra.progress.total}
+								type={obra.type}
+								format={obra.format}
+							/>
+						</div>
+					)}
 
-				{obra.tags.length > 0 && (
-					<div className="mt-3 flex flex-wrap gap-2">
-						{obra.tags.slice(0, 3).map((tag) => (
-							<span
-								key={tag}
-								className="border-b border-border pb-0.5 text-sm text-muted-foreground"
-							>
-								{tag}
-							</span>
-						))}
-						{obra.tags.length > 3 && (
-							<span className="text-sm text-muted-foreground">
-								+{obra.tags.length - 3}
-							</span>
-						)}
-					</div>
-				)}
-			</Link>
+					{obra.tags.length > 0 && (
+						<div className="mt-3 flex flex-wrap gap-2">
+							{obra.tags.slice(0, 3).map((tag) => (
+								<span
+									key={tag}
+									className="border-b border-border pb-0.5 text-sm text-muted-foreground"
+								>
+									{tag}
+								</span>
+							))}
+							{obra.tags.length > 3 && (
+								<span className="text-sm text-muted-foreground">
+									+{obra.tags.length - 3}
+								</span>
+							)}
+						</div>
+					)}
+				</Link>
+			</div>
 			{readingUrl && (
 				<div className="border-t border-border px-4 py-3">
 					<a
