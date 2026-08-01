@@ -19,7 +19,8 @@
     "check": "biome check",
     "convex:dev": "convex dev",
     "convex:push": "convex dev --once",
-    "convex:deploy": "homelab-dokploy-deploy library --export-env .env.local && bunx convex deploy --env-file .env.local",
+    "convex:sync-env": "bun --env-file=.env.local scripts/sync-convex-env.ts",
+    "convex:deploy": "homelab-dokploy-deploy library --export-env .env.local && bun run convex:sync-env && bunx convex deploy --env-file .env.local",
     "dokploy:list-apps": "homelab-dokploy-deploy --help",
     "deploy": "bun run convex:deploy && homelab-dokploy-deploy library"
   },
