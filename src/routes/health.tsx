@@ -11,7 +11,7 @@ import type { MetadataDetails } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import type { Obra, ObraType } from "@/lib/types";
 
-export const Route = createFileRoute("/sanidad")({
+export const Route = createFileRoute("/health")({
 	ssr: false,
 	component: SanidadPage,
 });

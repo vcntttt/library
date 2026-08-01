@@ -29,6 +29,14 @@ export function formatProgressValue(
 	return value.toLocaleString();
 }
 
+export function formatProgressRemaining(
+	current: number,
+	total: number,
+	obra: Pick<Obra, "type" | "format">,
+) {
+	return formatProgressValue(Math.max(Math.round(total - current), 0), obra);
+}
+
 export function getBookFormatLabel(format?: ObraFormat) {
 	if (format === "audiobook") return "Audiolibro";
 	if (format === "ebook") return "Libro";

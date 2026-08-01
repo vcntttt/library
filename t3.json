@@ -1,3 +1,46 @@
 {
-	"iconPath": "public/logo.png"
+	"$schema": "https://t3.codes/schema/t3.json",
+	"iconPath": "public/logo.png",
+	"scripts": [
+		{
+			"name": "Importar secretos de desarrollo",
+			"command": "bun run secrets:import",
+			"icon": "configure"
+		},
+		{
+			"name": "Comprobar secretos de desarrollo",
+			"command": "bun run secrets:check",
+			"icon": "test"
+		},
+		{
+			"name": "Auditar secretos y código",
+			"command": "bun run secrets:audit",
+			"icon": "test"
+		},
+		{
+			"name": "Previsualizar exportación a Infisical",
+			"command": "bun run secrets:export",
+			"icon": "configure"
+		},
+		{
+			"name": "Publicar secretos en Infisical",
+			"command": "bun run secrets:publish",
+			"icon": "configure"
+		},
+		{
+			"name": "Dry-run de producción",
+			"command": "bun run deploy:dry-run",
+			"icon": "test"
+		},
+		{
+			"name": "Sincronizar producción con Dokploy",
+			"command": "bun run deploy:sync-only",
+			"icon": "configure"
+		},
+		{
+			"name": "Deploy de producción",
+			"command": "bun run deploy",
+			"icon": "play"
+		}
+	]
 }

@@ -2,7 +2,7 @@ import { api as convexApi } from "@convex/_generated/api";
 import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { ChevronDown, LogOut } from "lucide-react";
+import { Activity, ChevronDown, LogOut } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -115,6 +115,14 @@ export function UserMenu() {
 							</span>
 						)}
 					</DropdownMenuLabel>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem
+						render={<Link to="/health" />}
+						className="cursor-pointer"
+					>
+						<Activity className="h-4 w-4" />
+						Sanidad de metadatos
+					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
 						onClick={() => void handleSignOut()}

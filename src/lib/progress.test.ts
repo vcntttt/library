@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	formatProgressRemaining,
 	formatProgressValue,
 	getInitialProgressTotal,
 	getProgressTotalFromMetadata,
@@ -104,5 +105,9 @@ describe("progress helpers", () => {
 		}
 		expect(formatProgressValue(801, audiobooks[0])).toBe("13 h 21 min");
 		expect(formatProgressValue(915, audiobooks[1])).toBe("15 h 15 min");
+		expect(formatProgressRemaining(876, 1622, audiobooks[0])).toBe(
+			"12 h 26 min",
+		);
+		expect(formatProgressRemaining(2000, 1622, audiobooks[0])).toBe("0 min");
 	});
 });

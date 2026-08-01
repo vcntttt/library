@@ -19,10 +19,17 @@
     "check": "biome check",
     "convex:dev": "convex dev",
     "convex:push": "convex dev --once",
-    "convex:sync-env": "bun --env-file=.env.local scripts/sync-convex-env.ts",
-    "convex:deploy": "homelab-dokploy-deploy library --export-env .env.local && bun run convex:sync-env && bunx convex deploy --env-file .env.local",
-    "dokploy:list-apps": "homelab-dokploy-deploy --help",
-    "deploy": "bun run convex:deploy && homelab-dokploy-deploy library"
+    "secrets:import": "secrets-sync import",
+    "secrets:check": "secrets-sync import --check",
+    "secrets:audit": "secrets-sync audit dev",
+    "secrets:export": "secrets-sync export dev",
+    "secrets:publish": "secrets-sync export dev --apply",
+    "convex:sync-env": "bun --env-file=.env.production.local scripts/sync-convex-env.ts",
+    "convex:deploy": "deploy library --export-env .env.production.local && bun run convex:sync-env && bunx convex deploy --env-file .env.production.local",
+    "deploy:dry-run": "deploy library --dry-run --yes",
+    "deploy:sync-only": "deploy library --sync-only",
+    "dokploy:list-apps": "deploy --help",
+    "deploy": "bun run convex:deploy && deploy library"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",

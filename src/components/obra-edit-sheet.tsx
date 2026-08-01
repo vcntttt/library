@@ -32,10 +32,12 @@ import { buildMetadataPayload } from "@/lib/metadata/payload";
 import type { MetadataDetails } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import {
+	formatProgressRemaining,
 	formatProgressValue,
 	getBookFormatLabel,
 	getInitialProgressTotal,
 	getProgressUnitLabel,
+	isAudiobook,
 } from "@/lib/progress";
 import {
 	formatSeasonProgress,
@@ -803,6 +805,19 @@ export function ObraEditSheet({
 														})
 													: "-"}
 											</span>
+											{isAudiobook({
+												type: obra.type,
+												format: progressFormat,
+											}) && (
+												<span className="text-sm text-muted-foreground">
+													Restante:{" "}
+													{formatProgressRemaining(
+														values.progressCurrent,
+														values.progressTotal,
+														{ type: obra.type, format: progressFormat },
+													)}
+												</span>
+											)}
 											{(obra.type === "series" || obra.type === "anime") &&
 												values.progressSeasons.length > 0 && (
 													<span className="text-sm font-medium text-foreground">

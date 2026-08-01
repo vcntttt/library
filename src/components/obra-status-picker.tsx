@@ -17,7 +17,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { isMetadataFinished } from "@/lib/metadata/format";
-import { formatProgressValue, getProgressUnitLabel } from "@/lib/progress";
+import {
+	formatProgressRemaining,
+	formatProgressValue,
+	getProgressUnitLabel,
+	isAudiobook,
+} from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
 import type { Obra, ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -42,11 +47,17 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
 	const [isReviewOpen, setIsReviewOpen] = useState(false);
 	const [isSeasonEditorOpen, setIsSeasonEditorOpen] = useState(false);
+	const [progressDraft, setProgressDraft] = useState<{
+		current: number;
+		total: number;
+	} | null>(null);
 
 	const hasProgress = obra.type !== "movie";
 	const progressTotal = obra.progress?.total ?? 0;
 	const progressCurrent = obra.progress?.current ?? 0;
 	const progressUnitLabel = getProgressUnitLabel(obra);
+	const displayedProgressCurrent = progressDraft?.current ?? progressCurrent;
+	const displayedProgressTotal = progressDraft?.total ?? progressTotal;
 	const showProgress =
 		hasProgress &&
 		obra.status !== "backlog" &&
@@ -60,6 +71,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	const canMarkUpToDate = releasedCount && releasedCount > 0;
 
 	const closePicker = () => {
+		setProgressDraft(null);
 		setTimeout(() => setIsPickerOpen(false), 10);
 	};
 
@@ -86,6 +98,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 			Math.round(nextTotal),
 		);
 		const safeTotal = Math.max(Math.round(nextTotal), 0);
+		setProgressDraft({ current: safeCurrent, total: safeTotal });
 
 		const patch: Record<string, unknown> = {
 			progress:
@@ -248,9 +261,19 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 								</p>
 								{progressUnitLabel && (
 									<p className="text-xs text-muted-foreground">
-										{formatProgressValue(progressCurrent, obra)} /{" "}
-										{formatProgressValue(progressTotal, obra)}{" "}
+										{formatProgressValue(displayedProgressCurrent, obra)} /{" "}
+										{formatProgressValue(displayedProgressTotal, obra)}{" "}
 										{progressUnitLabel}
+									</p>
+								)}
+								{isAudiobook(obra) && (
+									<p className="text-xs text-muted-foreground">
+										Restante:{" "}
+										{formatProgressRemaining(
+											displayedProgressCurrent,
+											displayedProgressTotal,
+											obra,
+										)}
 									</p>
 								)}
 								<div className="flex items-center gap-2">
@@ -259,7 +282,10 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 										size="icon"
 										className="h-7 w-7 rounded-none"
 										onClick={() =>
-											handleProgressChange(progressCurrent - 1, progressTotal)
+											handleProgressChange(
+												displayedProgressCurrent - 1,
+												displayedProgressTotal,
+											)
 										}
 									>
 										<Minus className="size-3" />
@@ -267,11 +293,11 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 									<Input
 										type="number"
 										min={0}
-										value={progressCurrent}
+										value={displayedProgressCurrent}
 										onChange={(e) =>
 											handleProgressChange(
 												Number(e.target.value),
-												progressTotal,
+												displayedProgressTotal,
 											)
 										}
 										className="h-7 w-16 rounded-none text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -280,10 +306,10 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 									<Input
 										type="number"
 										min={0}
-										value={progressTotal}
+										value={displayedProgressTotal}
 										onChange={(e) =>
 											handleProgressChange(
-												progressCurrent,
+												displayedProgressCurrent,
 												Number(e.target.value),
 											)
 										}
@@ -294,24 +320,32 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 										size="icon"
 										className="h-7 w-7 rounded-none"
 										onClick={() =>
-											handleProgressChange(progressCurrent + 1, progressTotal)
+											handleProgressChange(
+												displayedProgressCurrent + 1,
+												displayedProgressTotal,
+											)
 										}
 									>
 										<Plus className="size-3" />
 									</Button>
 								</div>
-								{progressTotal > 0 && (
+								{displayedProgressTotal > 0 && (
 									<Slider
 										min={0}
-										max={progressTotal}
+										max={displayedProgressTotal}
 										step={1}
-										value={[Math.min(progressCurrent, progressTotal)]}
+										value={[
+											Math.min(
+												displayedProgressCurrent,
+												displayedProgressTotal,
+											),
+										]}
 										onValueChange={(nextValue) => {
 											const value = Array.isArray(nextValue)
 												? nextValue[0]
 												: nextValue;
 											if (value !== undefined) {
-												handleProgressChange(value, progressTotal);
+												handleProgressChange(value, displayedProgressTotal);
 											}
 										}}
 									/>
