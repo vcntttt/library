@@ -692,6 +692,7 @@ async function getTmdbDetails(
 	const detailUrl = new URL(`https://api.themoviedb.org/3/${endpoint}/${id}`);
 	detailUrl.searchParams.set("api_key", apiKey);
 	detailUrl.searchParams.set("language", "es-ES");
+	detailUrl.searchParams.set("append_to_response", "credits");
 
 	const data = await fetchJson<TmdbDetails>(detailUrl.toString());
 	let watchProviders: string[] | undefined;
@@ -757,6 +758,7 @@ async function getTmdbDetails(
 		source: "tmdb",
 		id,
 		title: data.title ?? data.name ?? undefined,
+		creator: getTmdbCreator(data, isMovie),
 		year: parseYear(data.release_date ?? data.first_air_date),
 		coverUrl: data.poster_path
 			? `https://image.tmdb.org/t/p/original${data.poster_path}`
@@ -775,6 +777,25 @@ async function getTmdbDetails(
 		runtime: data.runtime ?? data.episode_run_time?.[0],
 		watchProviders,
 	};
+}
+
+function getTmdbCreator(data: TmdbDetails, isMovie: boolean) {
+	if (!isMovie) {
+		return (
+			data.created_by
+				?.map((creator) => creator.name)
+				.filter(Boolean)
+				.join(", ") || undefined
+		);
+	}
+
+	return (
+		data.credits?.crew
+			?.filter((person) => person.job === "Director")
+			.map((person) => person.name)
+			.filter(Boolean)
+			.join(", ") || undefined
+	);
 }
 
 async function getAnilistDetails(
@@ -2496,6 +2517,10 @@ interface TmdbDetails {
 	number_of_episodes?: number;
 	runtime?: number | null;
 	episode_run_time?: number[] | null;
+	created_by?: Array<{ name?: string }>;
+	credits?: {
+		crew?: Array<{ job?: string; name?: string }>;
+	};
 	next_episode_to_air?: {
 		episode_number?: number;
 		season_number?: number;

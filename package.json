@@ -21,7 +21,7 @@
     "convex:push": "convex dev --once",
     "convex:deploy": "convex deploy",
     "dokploy:list-apps": "bash ~/dev/dokploy/scripts/list-dokploy-apps.sh",
-    "deploy": "bun run convex:deploy && bash ../dokploy/scripts/deploy.sh library"
+    "deploy": "bun run convex:deploy && bash ../homelab/dokploy/scripts/deploy.sh library"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
