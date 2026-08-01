@@ -3,6 +3,7 @@ import { useAuthToken, useConvexAuth } from "@convex-dev/auth/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useState } from "react";
+import { ObraEditSheet } from "@/components/obra-edit-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getMetadataHealth } from "@/lib/metadata/health";
@@ -45,11 +46,15 @@ function SanidadAuthed() {
 	const [selected, setSelected] = useState<string[]>([]);
 	const [running, setRunning] = useState<string[]>([]);
 	const [results, setResults] = useState<Record<string, string>>({});
+	const [editingObraId, setEditingObraId] = useState<string | null>(null);
 	const obras = useMemo(() => (docs ?? []).map(obraFromDoc), [docs]);
 	const unhealthy = obras.filter(
 		(obra) => getMetadataHealth(obra).missing.length > 0,
 	);
 	const selectable = unhealthy.filter((obra) => obra.external);
+	const selectedCount = selected.filter((id) =>
+		selectable.some((obra) => obra.id === id),
+	).length;
 
 	const refresh = async (obra: Obra) => {
 		if (!obra.external || running.includes(obra.id)) return;
@@ -70,6 +75,13 @@ function SanidadAuthed() {
 			const { details } = (await response.json()) as {
 				details: MetadataDetails;
 			};
+			const nextMetadata = {
+				...(obra.metadata ?? {}),
+				...(buildMetadataPayload(details, {
+					initializeNotificationBaseline: false,
+					previousMetadata: obra.metadata,
+				}) ?? {}),
+			};
 			await updateObra({
 				id: obra.id as never,
 				patch: {
@@ -77,15 +89,20 @@ function SanidadAuthed() {
 					creator: details.creator ?? obra.originalCreator,
 					year: details.year ?? obra.originalYear,
 					coverUrl: details.coverUrl ?? obra.originalCoverUrl,
-					metadata: {
-						...(obra.metadata ?? {}),
-						...(buildMetadataPayload(details, {
-							initializeNotificationBaseline: false,
-							previousMetadata: obra.metadata,
-						}) ?? {}),
-					},
+					metadata: nextMetadata,
 				},
 			});
+			const updatedObra = {
+				...obra,
+				originalTitle: details.title ?? obra.originalTitle,
+				originalCreator: details.creator ?? obra.originalCreator,
+				originalYear: details.year ?? obra.originalYear,
+				originalCoverUrl: details.coverUrl ?? obra.originalCoverUrl,
+				metadata: nextMetadata,
+			};
+			if (getMetadataHealth(updatedObra).missing.length === 0) {
+				setSelected((current) => current.filter((id) => id !== obra.id));
+			}
 			setResults((current) => ({ ...current, [obra.id]: "Actualizada" }));
 		} catch (error) {
 			setResults((current) => ({
@@ -134,10 +151,10 @@ function SanidadAuthed() {
 							{allSelected ? "Quitar selección" : "Seleccionar actualizables"}
 						</Button>
 						<Button
-							disabled={!selected.length || running.length > 0}
+							disabled={!selectedCount || running.length > 0}
 							onClick={refreshSelected}
 						>
-							Actualizar seleccionadas ({selected.length})
+							Actualizar seleccionadas ({selectedCount})
 						</Button>
 					</div>
 				</div>
@@ -201,6 +218,13 @@ function SanidadAuthed() {
 												{results[obra.id]}
 											</span>
 										)}
+										<Button
+											size="sm"
+											variant="ghost"
+											onClick={() => setEditingObraId(obra.id)}
+										>
+											Editar manualmente
+										</Button>
 										{!canUpdate ? (
 											<Badge variant="outline">Sin fuente externa</Badge>
 										) : (
@@ -221,6 +245,13 @@ function SanidadAuthed() {
 						})}
 					</div>
 				)}
+				<ObraEditSheet
+					obraId={editingObraId}
+					open={editingObraId !== null}
+					onOpenChange={(open) => {
+						if (!open) setEditingObraId(null);
+					}}
+				/>
 			</div>
 		</main>
 	);
