@@ -19,9 +19,9 @@
     "check": "biome check",
     "convex:dev": "convex dev",
     "convex:push": "convex dev --once",
-    "convex:deploy": "convex deploy",
-    "dokploy:list-apps": "bash ~/dev/dokploy/scripts/list-dokploy-apps.sh",
-    "deploy": "bun run convex:deploy && bash ../dokploy/scripts/deploy.sh library"
+    "convex:deploy": "homelab-dokploy-deploy library --export-env .env.local && bunx convex deploy --env-file .env.local",
+    "dokploy:list-apps": "homelab-dokploy-deploy --help",
+    "deploy": "bun run convex:deploy && homelab-dokploy-deploy library"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
