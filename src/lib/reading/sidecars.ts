@@ -315,7 +315,11 @@ class LuaTableParser {
 			else if (escaped === "f") value += "\f";
 			else if (escaped === "v") value += "\v";
 			else if (escaped === "\n" || escaped === "\r") {
+				value += " ";
 				if (escaped === "\r" && this.source[this.index] === "\n") {
+					this.index += 1;
+				}
+				while (/[ \t]/.test(this.source[this.index] ?? "")) {
 					this.index += 1;
 				}
 			} else if (escaped === "z") {

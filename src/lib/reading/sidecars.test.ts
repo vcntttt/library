@@ -88,6 +88,31 @@ describe("parseReadingSidecars", () => {
 		]);
 	});
 
+	it("separa con espacios las continuaciones de línea de KOReader", () => {
+		const result = parseReadingSidecars({
+			sourceKey: "books/show-your-work.epub",
+			title: "Show your work!",
+			format: "epub",
+			metadata: String.raw`return {
+	annotations = {
+		[1] = {
+			["text"] = "puedas\
+expresarte y siendo\
+		una inversión de tiempo",
+			["pos0"] = "start",
+			["pos1"] = "end",
+		},
+	},
+}`,
+		});
+
+		expect(result.annotations).toEqual([
+			expect.objectContaining({
+				text: "puedas expresarte y siendo una inversión de tiempo",
+			}),
+		]);
+	});
+
 	it("descarta anotaciones sin texto y acepta sidecars ausentes", () => {
 		const result = parseReadingSidecars({
 			sourceKey: "books/empty.epub",

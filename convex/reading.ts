@@ -236,6 +236,31 @@ export const setAnnotationStatus = mutation({
 	},
 });
 
+export const keepAllUnprocessedAnnotations = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const userId = await requireUserId(ctx);
+		const annotations = await ctx.db
+			.query("readingAnnotations")
+			.withIndex("by_user_status_updatedAt", (q) =>
+				q.eq("userId", userId).eq("status", "unprocessed"),
+			)
+			.collect();
+		const updatedAt = Date.now();
+
+		await Promise.all(
+			annotations.map((annotation) =>
+				ctx.db.patch(annotation._id, {
+					status: "kept",
+					updatedAt,
+				}),
+			),
+		);
+
+		return { updated: annotations.length };
+	},
+});
+
 export const updateAnnotationComment = mutation({
 	args: {
 		id: v.id("readingAnnotations"),
