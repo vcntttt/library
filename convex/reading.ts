@@ -86,7 +86,8 @@ export const listAnnotations = query({
 					document: document
 						? {
 							id: document._id,
-						title: document.title,
+							title: document.title,
+							obraId: document.obraId,
 							sourceKey: document.sourceKey,
 						}
 						: null,
@@ -231,6 +232,26 @@ export const setAnnotationStatus = mutation({
 		}
 
 		await ctx.db.patch(id, { status, updatedAt: Date.now() });
+		return id;
+	},
+});
+
+export const updateAnnotationComment = mutation({
+	args: {
+		id: v.id("readingAnnotations"),
+		comment: v.string(),
+	},
+	handler: async (ctx, { id, comment }) => {
+		const userId = await requireUserId(ctx);
+		const annotation = await ctx.db.get(id);
+		if (!annotation || annotation.userId !== userId) {
+			throw new Error("Anotación de lectura no encontrada.");
+		}
+
+		await ctx.db.patch(id, {
+			comment: comment.trim() || undefined,
+			updatedAt: Date.now(),
+		});
 		return id;
 	},
 });

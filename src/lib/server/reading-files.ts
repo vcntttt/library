@@ -61,20 +61,14 @@ async function readBookPayload(root: string, bookPath: string) {
 		dirname(bookPath),
 		`${basename(bookPath, extname(bookPath))}.sdr`,
 	);
-	const [progress, annotations] = await Promise.all([
-		readSidecarJson(
-			`${sidecarDirectory}/${basename(bookPath)}.syncery-progress.json`,
-		),
-		readSidecarJson(
-			`${sidecarDirectory}/${basename(bookPath)}.syncery-annotations.json`,
-		),
-	]);
+	const metadataPath = `${sidecarDirectory}/metadata${extname(bookPath).toLowerCase()}.lua`;
+	const metadata = await readSidecarText(metadataPath);
 	const parsed = parseReadingSidecars({
 		sourceKey,
 		title: basename(bookPath, extname(bookPath)),
 		format: formatFromExtension(extname(bookPath)),
-		progress,
-		annotations,
+		metadata: metadata?.value,
+		metadataSourceTimestamp: metadata?.modifiedAt,
 	});
 
 	return {
@@ -87,9 +81,13 @@ async function readBookPayload(root: string, bookPath: string) {
 	};
 }
 
-async function readSidecarJson(path: string) {
+async function readSidecarText(path: string) {
 	try {
-		return JSON.parse(await readFile(path, "utf8")) as unknown;
+		const [value, fileStats] = await Promise.all([
+			readFile(path, "utf8"),
+			stat(path),
+		]);
+		return { value, modifiedAt: fileStats.mtimeMs };
 	} catch (error) {
 		if (
 			typeof error === "object" &&
