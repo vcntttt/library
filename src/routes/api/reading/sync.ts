@@ -56,7 +56,17 @@ export const Route = createFileRoute("/api/reading/sync")({
 						});
 					}
 
-					return json({ importedDocuments: files.length });
+					return json({
+						importedDocuments: files.length,
+						importedAnnotations: files.reduce(
+							(total, file) => total + file.annotations.length,
+							0,
+						),
+						importedProgress: files.reduce(
+							(total, file) => total + file.progress.length,
+							0,
+						),
+					});
 				} catch (error) {
 					console.error("[reading/sync] import failed", error);
 					return jsonError(

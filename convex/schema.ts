@@ -143,6 +143,7 @@ export default defineSchema({
 		sourceKey: v.string(),
 		text: v.string(),
 		note: v.optional(v.string()),
+		comment: v.optional(v.string()),
 		chapter: v.optional(v.string()),
 		color: v.optional(v.string()),
 		page: v.optional(v.string()),
