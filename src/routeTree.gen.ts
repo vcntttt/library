@@ -19,7 +19,10 @@ import { Route as HealthRouteImport } from './routes/health'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LecturaIndexRouteImport } from './routes/lectura/index'
 import { Route as ObraObraIdRouteImport } from './routes/obra/$obraId'
+import { Route as LecturaInboxRouteImport } from './routes/lectura/inbox'
+import { Route as LecturaDocumentosRouteImport } from './routes/lectura/documentos'
 import { Route as ApiIdeasIndexRouteImport } from './routes/api/ideas/index'
 import { Route as ApiReadingSyncRouteImport } from './routes/api/reading/sync'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
@@ -81,10 +84,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LecturaIndexRoute = LecturaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LecturaRoute,
+} as any)
 const ObraObraIdRoute = ObraObraIdRouteImport.update({
   id: '/obra/$obraId',
   path: '/obra/$obraId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LecturaInboxRoute = LecturaInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => LecturaRoute,
+} as any)
+const LecturaDocumentosRoute = LecturaDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => LecturaRoute,
 } as any)
 const ApiIdeasIndexRoute = ApiIdeasIndexRouteImport.update({
   id: '/api/ideas/',
@@ -146,12 +164,15 @@ export interface FileRoutesByFullPath {
   '/explorar': typeof ExplorarRoute
   '/health': typeof HealthRoute
   '/ideas': typeof IdeasRoute
-  '/lectura': typeof LecturaRoute
+  '/lectura': typeof LecturaRouteWithChildren
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
+  '/lectura/documentos': typeof LecturaDocumentosRoute
+  '/lectura/inbox': typeof LecturaInboxRoute
   '/obra/$obraId': typeof ObraObraIdRoute
+  '/lectura/': typeof LecturaIndexRoute
   '/api/ideas/content': typeof ApiIdeasContentRoute
   '/api/ideas/sync': typeof ApiIdeasSyncRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
@@ -169,12 +190,14 @@ export interface FileRoutesByTo {
   '/explorar': typeof ExplorarRoute
   '/health': typeof HealthRoute
   '/ideas': typeof IdeasRoute
-  '/lectura': typeof LecturaRoute
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
+  '/lectura/documentos': typeof LecturaDocumentosRoute
+  '/lectura/inbox': typeof LecturaInboxRoute
   '/obra/$obraId': typeof ObraObraIdRoute
+  '/lectura': typeof LecturaIndexRoute
   '/api/ideas/content': typeof ApiIdeasContentRoute
   '/api/ideas/sync': typeof ApiIdeasSyncRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
@@ -193,12 +216,15 @@ export interface FileRoutesById {
   '/explorar': typeof ExplorarRoute
   '/health': typeof HealthRoute
   '/ideas': typeof IdeasRoute
-  '/lectura': typeof LecturaRoute
+  '/lectura': typeof LecturaRouteWithChildren
   '/login': typeof LoginRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
+  '/lectura/documentos': typeof LecturaDocumentosRoute
+  '/lectura/inbox': typeof LecturaInboxRoute
   '/obra/$obraId': typeof ObraObraIdRoute
+  '/lectura/': typeof LecturaIndexRoute
   '/api/ideas/content': typeof ApiIdeasContentRoute
   '/api/ideas/sync': typeof ApiIdeasSyncRoute
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
@@ -223,7 +249,10 @@ export interface FileRouteTypes {
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
+    | '/lectura/documentos'
+    | '/lectura/inbox'
     | '/obra/$obraId'
+    | '/lectura/'
     | '/api/ideas/content'
     | '/api/ideas/sync'
     | '/api/metadata/details'
@@ -241,12 +270,14 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/health'
     | '/ideas'
-    | '/lectura'
     | '/login'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
+    | '/lectura/documentos'
+    | '/lectura/inbox'
     | '/obra/$obraId'
+    | '/lectura'
     | '/api/ideas/content'
     | '/api/ideas/sync'
     | '/api/metadata/details'
@@ -269,7 +300,10 @@ export interface FileRouteTypes {
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
+    | '/lectura/documentos'
+    | '/lectura/inbox'
     | '/obra/$obraId'
+    | '/lectura/'
     | '/api/ideas/content'
     | '/api/ideas/sync'
     | '/api/metadata/details'
@@ -288,7 +322,7 @@ export interface RootRouteChildren {
   ExplorarRoute: typeof ExplorarRoute
   HealthRoute: typeof HealthRoute
   IdeasRoute: typeof IdeasRoute
-  LecturaRoute: typeof LecturaRoute
+  LecturaRoute: typeof LecturaRouteWithChildren
   LoginRoute: typeof LoginRoute
   VariantARoute: typeof VariantARoute
   VariantBRoute: typeof VariantBRoute
@@ -378,12 +412,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lectura/': {
+      id: '/lectura/'
+      path: '/'
+      fullPath: '/lectura/'
+      preLoaderRoute: typeof LecturaIndexRouteImport
+      parentRoute: typeof LecturaRoute
+    }
     '/obra/$obraId': {
       id: '/obra/$obraId'
       path: '/obra/$obraId'
       fullPath: '/obra/$obraId'
       preLoaderRoute: typeof ObraObraIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/lectura/inbox': {
+      id: '/lectura/inbox'
+      path: '/inbox'
+      fullPath: '/lectura/inbox'
+      preLoaderRoute: typeof LecturaInboxRouteImport
+      parentRoute: typeof LecturaRoute
+    }
+    '/lectura/documentos': {
+      id: '/lectura/documentos'
+      path: '/documentos'
+      fullPath: '/lectura/documentos'
+      preLoaderRoute: typeof LecturaDocumentosRouteImport
+      parentRoute: typeof LecturaRoute
     }
     '/api/ideas/': {
       id: '/api/ideas/'
@@ -458,13 +513,28 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface LecturaRouteChildren {
+  LecturaDocumentosRoute: typeof LecturaDocumentosRoute
+  LecturaInboxRoute: typeof LecturaInboxRoute
+  LecturaIndexRoute: typeof LecturaIndexRoute
+}
+
+const LecturaRouteChildren: LecturaRouteChildren = {
+  LecturaDocumentosRoute: LecturaDocumentosRoute,
+  LecturaInboxRoute: LecturaInboxRoute,
+  LecturaIndexRoute: LecturaIndexRoute,
+}
+
+const LecturaRouteWithChildren =
+  LecturaRoute._addFileChildren(LecturaRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BibliotecaRoute: BibliotecaRoute,
   ExplorarRoute: ExplorarRoute,
   HealthRoute: HealthRoute,
   IdeasRoute: IdeasRoute,
-  LecturaRoute: LecturaRoute,
+  LecturaRoute: LecturaRouteWithChildren,
   LoginRoute: LoginRoute,
   VariantARoute: VariantARoute,
   VariantBRoute: VariantBRoute,

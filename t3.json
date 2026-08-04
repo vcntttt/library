@@ -5,7 +5,8 @@
 		{
 			"name": "Importar secretos de desarrollo",
 			"command": "bun run secrets:import",
-			"icon": "configure"
+			"icon": "configure",
+			"runOnWorktreeCreate": true
 		},
 		{
 			"name": "Comprobar secretos de desarrollo",
