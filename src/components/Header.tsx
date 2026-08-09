@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
+import { useReadingIntegrationAccess } from "./reading/reading-access";
 import { ModeToggle } from "./toggle-theme";
 import { UserMenu } from "./user-menu";
 
@@ -25,16 +26,22 @@ const navItems = [
 		to: "/lectura",
 		label: "Lectura",
 		isActive: (pathname: string) => pathname.startsWith("/lectura"),
+		requiresReadingAccess: true,
 	},
 	{
 		to: "/ideas",
 		label: "Ideas",
 		isActive: (pathname: string) => pathname.startsWith("/ideas"),
+		requiresReadingAccess: true,
 	},
 ] as const;
 
 export default function Header() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const { hasAccess: hasReadingAccess } = useReadingIntegrationAccess();
+	const visibleNavItems = navItems.filter(
+		(item) => !item.requiresReadingAccess || hasReadingAccess,
+	);
 
 	return (
 		<header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur-sm">
@@ -56,7 +63,7 @@ export default function Header() {
 
 				<div className="flex w-full flex-wrap items-center gap-4 sm:w-auto sm:flex-nowrap">
 					<nav className="flex flex-wrap items-center gap-6">
-						{navItems.map((item) => (
+						{visibleNavItems.map((item) => (
 							<Link
 								key={item.to}
 								to={item.to}

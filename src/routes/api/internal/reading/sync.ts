@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/internal/reading/sync")({
 	server: {
 		handlers: {
 			POST: async ({ request }) => {
-				const ownerId = process.env.READING_INTEGRATION_OWNER_ID;
+				const ownerId = process.env.READING_INTEGRATION_OWNER_ID?.trim();
 				const expectedSecret = process.env.READING_SYNC_SECRET;
 				const rootPath = process.env.READING_BOOKS_PATH;
 				if (!ownerId) {

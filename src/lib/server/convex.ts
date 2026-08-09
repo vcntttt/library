@@ -89,7 +89,7 @@ export async function requireConvexSessionFromRequest(request: Request) {
 
 export async function requireReadingIntegrationOwner(request: Request) {
 	const user = await requireConvexSessionFromRequest(request);
-	const ownerId = process.env.READING_INTEGRATION_OWNER_ID;
+	const ownerId = process.env.READING_INTEGRATION_OWNER_ID?.trim();
 	if (!ownerId) throw new IntegrationOwnerNotConfiguredError();
 	if (user._id !== ownerId) throw new ForbiddenIntegrationError();
 	return user;

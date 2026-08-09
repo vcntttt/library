@@ -1,34 +1,34 @@
-import { api as convexApi } from "@convex/_generated/api";
-import { useConvexAuth } from "@convex-dev/auth/react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useReadingIntegrationAccess } from "./reading-access";
 
-export function ReadingAuthGate({ children }: { children: ReactNode }) {
-	const { isAuthenticated, isLoading } = useConvexAuth();
-	const isIntegrationOwner = useQuery(
-		convexApi.reading.isIntegrationOwner,
-		isAuthenticated ? {} : "skip",
-	);
+interface ReadingIntegrationGateProps {
+	children: ReactNode;
+	title: string;
+	loginDescription: string;
+	disabledDescription: string;
+	loadingFallback?: ReactNode;
+}
 
-	if (isLoading || (isAuthenticated && isIntegrationOwner === undefined)) {
-		return (
-			<div className="mx-auto max-w-6xl space-y-8 px-6 py-10">
-				<Skeleton className="h-10 w-48 rounded-none" />
-				<Skeleton className="h-32 w-full rounded-none" />
-			</div>
-		);
-	}
+export function ReadingIntegrationGate({
+	children,
+	title,
+	loginDescription,
+	disabledDescription,
+	loadingFallback,
+}: ReadingIntegrationGateProps) {
+	const { isAuthenticated, isLoading, hasAccess } =
+		useReadingIntegrationAccess();
+
+	if (isLoading) return loadingFallback ?? <ReadingGateSkeleton />;
 
 	if (!isAuthenticated) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
 				<div className="max-w-lg space-y-3 border border-border bg-card p-6">
-					<h1 className="font-serif text-2xl font-semibold">Lectura</h1>
-					<p className="text-sm text-muted-foreground">
-						Inicia sesión para sincronizar tus anotaciones.
-					</p>
+					<h1 className="font-serif text-2xl font-semibold">{title}</h1>
+					<p className="text-sm text-muted-foreground">{loginDescription}</p>
 					<Link to="/login" className="text-sm underline underline-offset-4">
 						Ir a login
 					</Link>
@@ -37,20 +37,39 @@ export function ReadingAuthGate({ children }: { children: ReactNode }) {
 		);
 	}
 
-	if (!isIntegrationOwner) {
+	if (!hasAccess) {
 		return (
 			<div className="mx-auto max-w-6xl px-6 py-10">
 				<div className="max-w-lg space-y-3 border border-border bg-card p-6">
-					<h1 className="font-serif text-2xl font-semibold">Lectura</h1>
-					<p className="text-sm text-muted-foreground">
-						La integración con KOReader no está habilitada para este usuario.
-					</p>
+					<h1 className="font-serif text-2xl font-semibold">{title}</h1>
+					<p className="text-sm text-muted-foreground">{disabledDescription}</p>
 				</div>
 			</div>
 		);
 	}
 
 	return <>{children}</>;
+}
+
+export function ReadingAuthGate({ children }: { children: ReactNode }) {
+	return (
+		<ReadingIntegrationGate
+			title="Lectura"
+			loginDescription="Inicia sesión para sincronizar tus anotaciones."
+			disabledDescription="La integración con KOReader no está habilitada para este usuario."
+		>
+			{children}
+		</ReadingIntegrationGate>
+	);
+}
+
+function ReadingGateSkeleton() {
+	return (
+		<div className="mx-auto max-w-6xl space-y-8 px-6 py-10">
+			<Skeleton className="h-10 w-48 rounded-none" />
+			<Skeleton className="h-32 w-full rounded-none" />
+		</div>
+	);
 }
 
 export function ReadingBreadcrumb({ current }: { current?: string }) {

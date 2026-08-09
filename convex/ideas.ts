@@ -1,7 +1,7 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { scheduleReview } from "./lib/fsrs";
+import { requireIntegrationOwner } from "../src/lib/reading/integration-owner";
 import { ideaInputValidator, ideaRatingValidator } from "./lib/validators";
 
 export const list = query({
@@ -116,8 +116,6 @@ export const review = mutation({
 	},
 });
 
-async function requireUserId(ctx: Parameters<typeof getAuthUserId>[0]) {
-	const userId = await getAuthUserId(ctx);
-	if (!userId) throw new Error("No autorizado.");
-	return userId;
+async function requireUserId(ctx: Parameters<typeof requireIntegrationOwner>[0]) {
+	return requireIntegrationOwner(ctx);
 }

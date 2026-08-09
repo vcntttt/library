@@ -1,13 +1,13 @@
 import { api as convexApi } from "@convex/_generated/api";
-import { useAuthToken, useConvexAuth } from "@convex-dev/auth/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useAuthToken } from "@convex-dev/auth/react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ReadingIntegrationGate } from "@/components/reading/reading-navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/ideas")({
@@ -29,35 +29,14 @@ interface IdeaConflictPayload {
 }
 
 function IdeasPage() {
-	const { isAuthenticated, isLoading } = useConvexAuth();
-	if (isLoading) return <IdeasPageSkeleton />;
-	if (!isAuthenticated) {
-		return (
-			<div className="mx-auto max-w-6xl px-6 py-10">
-				<div className="max-w-lg border border-border bg-card p-6 space-y-3">
-					<h1 className="font-serif text-2xl font-semibold">Ideas</h1>
-					<p className="text-sm text-muted-foreground">
-						Inicia sesión para trabajar con tus notas de Obsidian.
-					</p>
-					<Link to="/login" className="text-sm underline underline-offset-4">
-						Ir a login
-					</Link>
-				</div>
-			</div>
-		);
-	}
-	return <IdeasAuthed />;
-}
-
-function IdeasPageSkeleton() {
 	return (
-		<div className="mx-auto max-w-6xl space-y-8 px-6 py-10">
-			<Skeleton className="h-10 w-48 rounded-none" />
-			<div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
-				<Skeleton className="h-96 rounded-none" />
-				<Skeleton className="h-96 rounded-none" />
-			</div>
-		</div>
+		<ReadingIntegrationGate
+			title="Ideas"
+			loginDescription="Inicia sesión para trabajar con tus notas de Obsidian."
+			disabledDescription="La integración de ideas no está habilitada para este usuario."
+		>
+			<IdeasAuthed />
+		</ReadingIntegrationGate>
 	);
 }
 

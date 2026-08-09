@@ -1,4 +1,3 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -7,6 +6,10 @@ import {
 	type MutationCtx,
 	type QueryCtx,
 } from "./_generated/server";
+import {
+	isIntegrationOwner as checkIntegrationOwner,
+	requireIntegrationOwner,
+} from "../src/lib/reading/integration-owner";
 import {
 	readingAnnotationStatusValidator,
 	readingDocumentInputValidator,
@@ -28,8 +31,7 @@ const readingSyncErrorValidator = v.object({
 export const isIntegrationOwner = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getAuthenticatedUserId(ctx);
-		return process.env.READING_INTEGRATION_OWNER_ID === userId;
+		return checkIntegrationOwner(ctx);
 	},
 });
 
@@ -869,16 +871,6 @@ function normalizeLimit(value: number | undefined) {
 	return Math.min(MAX_LIMIT, Math.max(1, Math.floor(value)));
 }
 
-async function getAuthenticatedUserId(ctx: QueryCtx | MutationCtx) {
-	const userId = await getAuthUserId(ctx);
-	if (!userId) throw new Error("No autorizado.");
-	return userId;
-}
-
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
-	const userId = await getAuthenticatedUserId(ctx);
-	if (process.env.READING_INTEGRATION_OWNER_ID !== userId) {
-		throw new Error("No autorizado.");
-	}
-	return userId;
+	return requireIntegrationOwner(ctx);
 }

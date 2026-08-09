@@ -23,6 +23,19 @@ test("usuario no autenticado ve gate privado y link a login", async ({
 	).toBeVisible();
 });
 
+test("usuario sin acceso a lectura no ve sus enlaces en el header", async ({
+	page,
+}) => {
+	await page.goto("/lectura");
+
+	await expect(
+		page.getByRole("link", { name: "Lectura", exact: true }),
+	).toHaveCount(0);
+	await expect(
+		page.getByRole("link", { name: "Ideas", exact: true }),
+	).toHaveCount(0);
+});
+
 test.describe("flujos autenticados", () => {
 	test.beforeEach(async ({ page }) => {
 		await login(page);
