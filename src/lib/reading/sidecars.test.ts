@@ -132,4 +132,22 @@ expresarte y siendo\
 			expect.objectContaining({ sourceKey: "valid", text: "Texto válido" }),
 		]);
 	});
+
+	it("conserva el estado explícito de finalización de KOReader", () => {
+		const result = parseReadingSidecars({
+			sourceKey: "books/finished.epub",
+			title: "Finished",
+			format: "epub",
+			metadata: `return {
+				percent_finished = 1,
+				summary = { status = "complete" },
+			}`,
+		});
+
+		expect(result.document.completionStatus).toBe("complete");
+		expect(result.progress[0]).toMatchObject({
+			percent: 1,
+			completionStatus: "complete",
+		});
+	});
 });

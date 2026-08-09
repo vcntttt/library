@@ -44,6 +44,9 @@ interface ObraStatusPickerProps {
 
 export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	const updateObra = useMutation(convexApi.obras.update);
+	const saveReview = useMutation(convexApi.obras.saveReview);
+	const snoozeReview = useMutation(convexApi.obras.snoozeReview);
+	const skipReview = useMutation(convexApi.obras.skipReview);
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
 	const [isReviewOpen, setIsReviewOpen] = useState(false);
 	const [isSeasonEditorOpen, setIsSeasonEditorOpen] = useState(false);
@@ -60,6 +63,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	const displayedProgressTotal = progressDraft?.total ?? progressTotal;
 	const showProgress =
 		hasProgress &&
+		!obra.readingDocumentId &&
 		obra.status !== "backlog" &&
 		obra.status !== "finished" &&
 		progressTotal > 0;
@@ -82,7 +86,11 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		});
 		closePicker();
 
-		if (nextStatus === "finished" && !obra.review) {
+		if (
+			nextStatus === "finished" &&
+			!obra.review &&
+			obra.reviewStatus !== "skipped"
+		) {
 			setTimeout(() => {
 				setIsReviewOpen(true);
 			}, 15);
@@ -176,7 +184,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		if (!shouldFinishObra) return;
 		setIsSeasonEditorOpen(false);
 		closePicker();
-		if (!obra.review) setIsReviewOpen(true);
+		if (!obra.review && obra.reviewStatus !== "skipped") setIsReviewOpen(true);
 	};
 
 	const handlePickerOpenChange = (open: boolean) => {
@@ -188,10 +196,15 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	};
 
 	const handleSaveReview = async (review: string) => {
-		await updateObra({
-			id: obra.id as Id<"obras">,
-			patch: { review: review || undefined },
-		});
+		await saveReview({ id: obra.id as Id<"obras">, review });
+	};
+
+	const handleLaterReview = async () => {
+		await snoozeReview({ id: obra.id as Id<"obras"> });
+	};
+
+	const handleSkipReview = async () => {
+		await skipReview({ id: obra.id as Id<"obras"> });
 	};
 
 	return (
@@ -397,6 +410,8 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 				title={obra.title}
 				initialReview={obra.review}
 				onSave={handleSaveReview}
+				onLater={handleLaterReview}
+				onSkip={handleSkipReview}
 			/>
 		</>
 	);

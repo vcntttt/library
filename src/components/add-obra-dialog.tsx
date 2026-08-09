@@ -1,10 +1,12 @@
 import { api as convexApi } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { MetadataSearch } from "@/components/add-obra/metadata-search";
 import { ObraForm } from "@/components/add-obra/obra-form";
 import { TypeSelector } from "@/components/add-obra/type-selector";
+import { CompletionReviewDialog } from "@/components/completion-review-dialog";
 import { Plus } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +92,13 @@ export function AddObraDialog({
 	const metadataDebounceRef = useRef<number | null>(null);
 	const authToken = useAuthToken();
 	const createObra = useMutation(convexApi.obras.create);
+	const saveReview = useMutation(convexApi.obras.saveReview);
+	const snoozeReview = useMutation(convexApi.obras.snoozeReview);
+	const skipReview = useMutation(convexApi.obras.skipReview);
+	const [createdReview, setCreatedReview] = useState<{
+		id: Id<"obras">;
+		title: string;
+	} | null>(null);
 
 	const metadataSourceLabel = activeType
 		? metadataSourceLabels[metadataSourceByType[activeType]]
@@ -256,8 +265,11 @@ export function AddObraDialog({
 	};
 
 	const handleFormSubmit = async (input: CreateObraInput) => {
-		await createObra(input);
+		const created = await createObra(input);
 		handleOpenChange(false);
+		if (created.status === "finished" && created.reviewStatus === "pending") {
+			setCreatedReview({ id: created.id, title: created.title });
+		}
 	};
 
 	const getStepTitle = () => {
@@ -267,87 +279,101 @@ export function AddObraDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger
-				render={
-					triggerMode === "fab" ? (
-						<Button
-							size="icon-lg"
-							className={`group size-14 rounded-full shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 ${className ?? ""}`}
-							aria-label="Agregar nueva obra"
-						/>
-					) : (
-						<Button
-							size="lg"
-							className={`group h-10 gap-2 rounded-full px-4 font-semibold shadow-md shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 ${className ?? ""}`}
-							aria-label="Agregar nueva obra"
-						/>
-					)
-				}
-			>
-				<Plus
-					className={
-						triggerMode === "fab"
-							? "h-5 w-5 transition-transform group-hover:rotate-90"
-							: "h-4 w-4 transition-transform group-hover:rotate-90"
+		<>
+			<Dialog open={open} onOpenChange={handleOpenChange}>
+				<DialogTrigger
+					render={
+						triggerMode === "fab" ? (
+							<Button
+								size="icon-lg"
+								className={`group size-14 rounded-full shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 ${className ?? ""}`}
+								aria-label="Agregar nueva obra"
+							/>
+						) : (
+							<Button
+								size="lg"
+								className={`group h-10 gap-2 rounded-full px-4 font-semibold shadow-md shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 ${className ?? ""}`}
+								aria-label="Agregar nueva obra"
+							/>
+						)
 					}
+				>
+					<Plus
+						className={
+							triggerMode === "fab"
+								? "h-5 w-5 transition-transform group-hover:rotate-90"
+								: "h-4 w-4 transition-transform group-hover:rotate-90"
+						}
+					/>
+					{triggerMode === "default" ? (
+						"Agregar obra"
+					) : (
+						<span className="sr-only">Agregar obra</span>
+					)}
+				</DialogTrigger>
+				<DialogContent className="sm:max-w-2xl rounded-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle className="text-lg font-semibold font-serif">
+							{getStepTitle()}
+						</DialogTitle>
+					</DialogHeader>
+
+					{step === 1 && <TypeSelector onSelect={handleSelectType} />}
+
+					{step === 2 && activeType && (
+						<MetadataSearch
+							type={activeType}
+							query={metadataQuery}
+							onQueryChange={setMetadataQuery}
+							results={metadataResults}
+							isSearching={isSearchingMetadata}
+							error={metadataError}
+							directUrlFallback={directUrlFallback}
+							onSelectResult={handleSelectResult}
+							onSkip={handleSkipMetadataSearch}
+							onBack={() => {
+								setStep(1);
+								setActiveType("");
+								setDirectUrlFallback(null);
+								setInitialReadingUrl("");
+							}}
+							sourceLabel={metadataSourceLabel}
+						/>
+					)}
+
+					{step === 3 && activeType && (
+						<ObraForm
+							type={activeType}
+							selectedMetadata={selectedMetadata}
+							metadataDetails={metadataDetails}
+							isLoadingDetails={isLoadingMetadataDetails}
+							initialReadingUrl={initialReadingUrl}
+							initialSourceUrl={initialSourceUrl}
+							onBack={() => {
+								setStep(2);
+								setSelectedMetadata(null);
+								setMetadataDetails(null);
+								setMetadataError(null);
+								setInitialReadingUrl("");
+							}}
+							onCancel={() => handleOpenChange(false)}
+							onSubmit={handleFormSubmit}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
+			{createdReview && (
+				<CompletionReviewDialog
+					open
+					onOpenChange={(nextOpen) => {
+						if (!nextOpen) setCreatedReview(null);
+					}}
+					title={createdReview.title}
+					onSave={(review) => saveReview({ id: createdReview.id, review })}
+					onLater={() => snoozeReview({ id: createdReview.id })}
+					onSkip={() => skipReview({ id: createdReview.id })}
 				/>
-				{triggerMode === "default" ? (
-					"Agregar obra"
-				) : (
-					<span className="sr-only">Agregar obra</span>
-				)}
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-2xl rounded-xl max-h-[calc(100vh-2rem)] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle className="text-lg font-semibold font-serif">
-						{getStepTitle()}
-					</DialogTitle>
-				</DialogHeader>
-
-				{step === 1 && <TypeSelector onSelect={handleSelectType} />}
-
-				{step === 2 && activeType && (
-					<MetadataSearch
-						type={activeType}
-						query={metadataQuery}
-						onQueryChange={setMetadataQuery}
-						results={metadataResults}
-						isSearching={isSearchingMetadata}
-						error={metadataError}
-						directUrlFallback={directUrlFallback}
-						onSelectResult={handleSelectResult}
-						onSkip={handleSkipMetadataSearch}
-						onBack={() => {
-							setStep(1);
-							setActiveType("");
-							setDirectUrlFallback(null);
-							setInitialReadingUrl("");
-						}}
-						sourceLabel={metadataSourceLabel}
-					/>
-				)}
-
-				{step === 3 && activeType && (
-					<ObraForm
-						type={activeType}
-						selectedMetadata={selectedMetadata}
-						metadataDetails={metadataDetails}
-						isLoadingDetails={isLoadingMetadataDetails}
-						initialReadingUrl={initialReadingUrl}
-						initialSourceUrl={initialSourceUrl}
-						onBack={() => {
-							setStep(2);
-							setSelectedMetadata(null);
-							setMetadataDetails(null);
-							setMetadataError(null);
-							setInitialReadingUrl("");
-						}}
-						onCancel={() => handleOpenChange(false)}
-						onSubmit={handleFormSubmit}
-					/>
-				)}
-			</DialogContent>
-		</Dialog>
+			)}
+		</>
 	);
 }

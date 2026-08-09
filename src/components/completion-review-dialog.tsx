@@ -18,12 +18,16 @@ export function CompletionReviewDialog({
 	title,
 	initialReview,
 	onSave,
+	onLater,
+	onSkip,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	title: string;
 	initialReview?: string;
 	onSave: (review: string) => Promise<unknown>;
+	onLater?: () => Promise<unknown>;
+	onSkip?: () => Promise<unknown>;
 }) {
 	const [draft, setDraft] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +56,29 @@ export function CompletionReviewDialog({
 		}
 	};
 
+	const handleDecision = async (
+		action: (() => Promise<unknown>) | undefined,
+	) => {
+		if (!action) {
+			onOpenChange(false);
+			return;
+		}
+		setIsSaving(true);
+		setError(null);
+		try {
+			await action();
+			onOpenChange(false);
+		} catch (decisionError) {
+			setError(
+				decisionError instanceof Error
+					? decisionError.message
+					: "No se pudo actualizar la solicitud de reseña.",
+			);
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="rounded-none sm:max-w-md">
@@ -73,10 +100,19 @@ export function CompletionReviewDialog({
 						type="button"
 						variant="ghost"
 						disabled={isSaving}
-						onClick={() => onOpenChange(false)}
+						onClick={() => void handleDecision(onLater)}
 						className="rounded-none"
 					>
-						Omitir
+						Más tarde
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						disabled={isSaving}
+						onClick={() => void handleDecision(onSkip)}
+						className="rounded-none"
+					>
+						No escribir reseña
 					</Button>
 					<Button
 						type="button"

@@ -1,12 +1,18 @@
+import { api as convexApi } from "@convex/_generated/api";
 import { useConvexAuth } from "@convex-dev/auth/react";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ReadingAuthGate({ children }: { children: ReactNode }) {
 	const { isAuthenticated, isLoading } = useConvexAuth();
+	const isIntegrationOwner = useQuery(
+		convexApi.reading.isIntegrationOwner,
+		isAuthenticated ? {} : "skip",
+	);
 
-	if (isLoading) {
+	if (isLoading || (isAuthenticated && isIntegrationOwner === undefined)) {
 		return (
 			<div className="mx-auto max-w-6xl space-y-8 px-6 py-10">
 				<Skeleton className="h-10 w-48 rounded-none" />
@@ -26,6 +32,19 @@ export function ReadingAuthGate({ children }: { children: ReactNode }) {
 					<Link to="/login" className="text-sm underline underline-offset-4">
 						Ir a login
 					</Link>
+				</div>
+			</div>
+		);
+	}
+
+	if (!isIntegrationOwner) {
+		return (
+			<div className="mx-auto max-w-6xl px-6 py-10">
+				<div className="max-w-lg space-y-3 border border-border bg-card p-6">
+					<h1 className="font-serif text-2xl font-semibold">Lectura</h1>
+					<p className="text-sm text-muted-foreground">
+						La integración con KOReader no está habilitada para este usuario.
+					</p>
 				</div>
 			</div>
 		);

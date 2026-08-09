@@ -1,5 +1,6 @@
 import { api as convexApi } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useAuthToken } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { MoreHorizontal } from "lucide-react";
 import { useId, useMemo, useState } from "react";
@@ -36,20 +37,33 @@ export function ReadingGallery() {
 	});
 	const obras = useQuery(convexApi.obras.list, { limit: 500 });
 	const setStatus = useMutation(convexApi.reading.setAnnotationStatus);
-	const updateAnnotationComment = useMutation(
-		convexApi.reading.updateAnnotationComment,
+	const updateAnnotationCuration = useMutation(
+		convexApi.reading.updateAnnotationCuration,
 	);
+	const authToken = useAuthToken();
 	const [updatingAnnotationId, setUpdatingAnnotationId] =
 		useState<Id<"readingAnnotations"> | null>(null);
 	const [selectedAnnotationId, setSelectedAnnotationId] =
 		useState<Id<"readingAnnotations"> | null>(null);
 	const [commentDraft, setCommentDraft] = useState("");
+	const [curatedDraft, setCuratedDraft] = useState("");
 	const [isSavingComment, setIsSavingComment] = useState(false);
 	const [commentMessage, setCommentMessage] = useState<string | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedObraId, setSelectedObraId] = useState("all");
 	const [groupBy, setGroupBy] = useState<"none" | "chapter">("none");
+	const [context, setContext] = useState<{
+		status: string;
+		candidates: Array<{
+			id: string;
+			chapter: string;
+			before: string;
+			passage: string;
+			after: string;
+		}>;
+	} | null>(null);
+	const [isLoadingContext, setIsLoadingContext] = useState(false);
 	const commentId = useId();
 	const obraTitles = useMemo(
 		() => new Map((obras ?? []).map((obra) => [obra.id, obra.title])),
@@ -76,6 +90,8 @@ export function ReadingGallery() {
 
 			return [
 				annotation.text,
+				annotation.originalText,
+				annotation.curatedText,
 				annotation.note,
 				annotation.comment,
 				annotation.chapter,
@@ -133,11 +149,45 @@ export function ReadingGallery() {
 	const handleOpenAnnotation = (
 		id: Id<"readingAnnotations">,
 		comment?: string,
+		curatedText?: string,
 	) => {
 		setSelectedAnnotationId(id);
 		setCommentDraft(comment ?? "");
+		setCuratedDraft(curatedText ?? "");
+		setContext(null);
 		setCommentMessage(null);
 		setMessage(null);
+	};
+
+	const handleLoadContext = async () => {
+		if (!selectedAnnotation || !authToken) return;
+		setIsLoadingContext(true);
+		setCommentMessage(null);
+		try {
+			const response = await fetch("/api/reading/context", {
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${authToken}`,
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({
+					annotationId: selectedAnnotation.annotation._id,
+					text:
+						selectedAnnotation.annotation.originalText ??
+						selectedAnnotation.annotation.text,
+				}),
+			});
+			const payload = await response.json();
+			if (!response.ok)
+				throw new Error(payload.error ?? "No se pudo buscar contexto.");
+			setContext(payload);
+		} catch (error) {
+			setCommentMessage(
+				error instanceof Error ? error.message : "No se pudo buscar contexto.",
+			);
+		} finally {
+			setIsLoadingContext(false);
+		}
 	};
 
 	const handleSaveComment = async () => {
@@ -145,8 +195,9 @@ export function ReadingGallery() {
 		setIsSavingComment(true);
 		setCommentMessage(null);
 		try {
-			await updateAnnotationComment({
+			await updateAnnotationCuration({
 				id: selectedAnnotation.annotation._id,
+				curatedText: curatedDraft,
 				comment: commentDraft,
 			});
 			setCommentMessage("Comentario guardado.");
@@ -254,7 +305,11 @@ export function ReadingGallery() {
 											type="button"
 											className="flex min-h-0 flex-1 flex-col gap-5 pr-8 text-left"
 											onClick={() =>
-												handleOpenAnnotation(annotation._id, annotation.comment)
+												handleOpenAnnotation(
+													annotation._id,
+													annotation.comment,
+													annotation.curatedText ?? annotation.text,
+												)
 											}
 										>
 											<div className="flex flex-wrap items-center justify-between gap-3">
@@ -404,6 +459,78 @@ export function ReadingGallery() {
 										</p>
 									</section>
 								)}
+								<section className="space-y-2">
+									<h3 className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+										Original inmutable de KOReader
+									</h3>
+									<p className="whitespace-pre-wrap border border-border bg-background p-3 text-sm leading-relaxed">
+										{selectedAnnotation.annotation.originalText ??
+											selectedAnnotation.annotation.text}
+									</p>
+								</section>
+								<section className="space-y-2">
+									<label
+										className="text-sm font-medium"
+										htmlFor={`${commentId}-curated`}
+									>
+										Versión curada
+									</label>
+									<Textarea
+										id={`${commentId}-curated`}
+										value={curatedDraft}
+										onChange={(event) => setCuratedDraft(event.target.value)}
+										className="min-h-32 resize-y rounded-none"
+									/>
+									{selectedAnnotation.document?.format === "epub" && (
+										<Button
+											type="button"
+											variant="outline"
+											className="rounded-none"
+											disabled={isLoadingContext || !authToken}
+											onClick={() => void handleLoadContext()}
+										>
+											{isLoadingContext
+												? "Buscando contexto…"
+												: "Buscar contexto EPUB"}
+										</Button>
+									)}
+									{context && (
+										<div className="space-y-3 border-t border-border pt-3">
+											<p className="text-xs text-muted-foreground">
+												{context.status === "ambiguous"
+													? "Hay varias coincidencias. Elige una para usarla como base."
+													: context.status === "not-found"
+														? "No se encontró una coincidencia segura. Puedes editar sin contexto."
+														: "Contexto encontrado."}
+											</p>
+											{context.candidates.map((candidate) => (
+												<button
+													key={candidate.id}
+													type="button"
+													className="block w-full border border-border p-3 text-left text-sm hover:border-primary"
+													onClick={() => setCuratedDraft(candidate.passage)}
+												>
+													<span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+														{candidate.chapter}
+													</span>
+													{candidate.before && (
+														<p className="mt-2 text-muted-foreground">
+															{candidate.before}
+														</p>
+													)}
+													<p className="mt-1 font-medium">
+														{candidate.passage}
+													</p>
+													{candidate.after && (
+														<p className="mt-2 text-muted-foreground">
+															{candidate.after}
+														</p>
+													)}
+												</button>
+											))}
+										</div>
+									)}
+								</section>
 								<section className="space-y-2">
 									<label htmlFor={commentId} className="text-sm font-medium">
 										Mi comentario

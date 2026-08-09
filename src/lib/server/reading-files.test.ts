@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { scanReadingBooks } from "./reading-files";
+import { scanReadingBooks, scanReadingBooksDetailed } from "./reading-files";
 
 const temporaryRoots: string[] = [];
 
@@ -86,5 +86,52 @@ describe("scanReadingBooks", () => {
 				}),
 			],
 		});
+	});
+
+	it("continúa con otros archivos cuando un sidecar está corrupto", async () => {
+		const root = await mkdtemp(join(tmpdir(), "library-reading-partial-"));
+		temporaryRoots.push(root);
+		await mkdir(join(root, "Broken.sdr"));
+		await mkdir(join(root, "Valid.sdr"));
+		await writeFile(join(root, "Broken.epub"), "broken");
+		await writeFile(join(root, "Valid.epub"), "valid");
+		await writeFile(join(root, "Broken.sdr", "metadata.epub.lua"), "return {");
+		await writeFile(
+			join(root, "Valid.sdr", "metadata.epub.lua"),
+			"return { percent_finished = 0.2 }",
+		);
+
+		const result = await scanReadingBooksDetailed(root, {
+			stabilityWindowMs: 0,
+		});
+
+		expect(result.files).toHaveLength(1);
+		expect(result.files[0]?.sourcePath).toBe("Valid.epub");
+		expect(result.errors).toEqual([
+			expect.objectContaining({ path: "Broken.epub" }),
+		]);
+	});
+
+	it("omite una fuente sin cambios en una ejecución incremental", async () => {
+		const root = await mkdtemp(join(tmpdir(), "library-reading-incremental-"));
+		temporaryRoots.push(root);
+		await writeFile(join(root, "Stable.epub"), "stable");
+
+		const first = await scanReadingBooksDetailed(root, {
+			stabilityWindowMs: 0,
+		});
+		const second = await scanReadingBooksDetailed(root, {
+			stabilityWindowMs: 0,
+			knownSources: [
+				{
+					sourceKey: "Stable.epub",
+					fileModifiedAt: first.files[0]?.fileModifiedAt,
+					sidecarModifiedAt: first.files[0]?.sidecarModifiedAt,
+				},
+			],
+		});
+
+		expect(second.files).toHaveLength(0);
+		expect(second.skipped).toEqual(["Stable.epub"]);
 	});
 });
