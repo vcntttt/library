@@ -2,8 +2,8 @@ import { api as convexApi } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { MoreHorizontal } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { MoreHorizontal, Shuffle } from "lucide-react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -22,12 +22,21 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
-function getBentoClass(text: string) {
-	if (text.length >= 360) return "lg:col-span-6";
-	if (text.length >= 180) return "lg:col-span-4";
-	return "lg:col-span-3";
+/** Seeded Fisher-Yates shuffle (deterministic for a given seed). */
+function shuffleArray<T>(array: readonly T[], seed: number): T[] {
+	const result = [...array];
+	let s = seed;
+	for (let i = result.length - 1; i > 0; i--) {
+		// Simple mulberry32-style PRNG step
+		s = (s + 0x6d2b79f5) | 0;
+		let t = Math.imul(s ^ (s >>> 15), 1 | s);
+		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+		const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		const j = Math.floor(r * (i + 1));
+		[result[i], result[j]] = [result[j], result[i]];
+	}
+	return result;
 }
 
 export function ReadingGallery() {
@@ -53,6 +62,16 @@ export function ReadingGallery() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedObraId, setSelectedObraId] = useState("all");
 	const [groupBy, setGroupBy] = useState<"none" | "chapter">("none");
+	const [sortBy, setSortBy] = useState<"shuffle" | "recent" | "oldest">(
+		"shuffle",
+	);
+	const shuffleSeedRef = useRef(Date.now());
+	const handleReshuffle = useCallback(() => {
+		shuffleSeedRef.current = Date.now();
+		// Force re-render by toggling sort briefly
+		setSortBy("recent");
+		queueMicrotask(() => setSortBy("shuffle"));
+	}, []);
 	const [context, setContext] = useState<{
 		status: string;
 		candidates: Array<{
@@ -102,20 +121,36 @@ export function ReadingGallery() {
 				.some((value) => value?.toLocaleLowerCase().includes(term));
 		});
 	}, [keptAnnotations, obraTitles, searchQuery, selectedObraId]);
+	const sortedAnnotations = useMemo(() => {
+		if (!filteredAnnotations) return undefined;
+		if (sortBy === "shuffle") {
+			return shuffleArray(filteredAnnotations, shuffleSeedRef.current);
+		}
+		const sorted = [...filteredAnnotations];
+		sorted.sort((a, b) => {
+			const aTime = a.annotation.capturedAt ?? "";
+			const bTime = b.annotation.capturedAt ?? "";
+			return sortBy === "oldest"
+				? aTime.localeCompare(bTime)
+				: bTime.localeCompare(aTime);
+		});
+		return sorted;
+	}, [filteredAnnotations, sortBy]);
+
 	const annotationGroups = useMemo(() => {
-		if (!filteredAnnotations) return [];
+		if (!sortedAnnotations) return [];
 		if (groupBy === "none") {
-			return [{ label: null, annotations: filteredAnnotations }];
+			return [{ label: null, annotations: sortedAnnotations }];
 		}
 
 		const groups = new Map<
 			string,
 			{
 				label: string;
-				annotations: NonNullable<typeof filteredAnnotations>[number][];
+				annotations: NonNullable<typeof sortedAnnotations>[number][];
 			}
 		>();
-		for (const item of filteredAnnotations) {
+		for (const item of sortedAnnotations) {
 			const chapter = item.annotation.chapter?.trim() || "Sin capítulo";
 			const documentTitle = item.document?.title ?? "Documento sin título";
 			const key = `${item.document?.id}:${chapter}`;
@@ -128,7 +163,7 @@ export function ReadingGallery() {
 		}
 
 		return Array.from(groups.values());
-	}, [filteredAnnotations, groupBy]);
+	}, [sortedAnnotations, groupBy]);
 
 	const handleStatusChange = async (id: Id<"readingAnnotations">) => {
 		setUpdatingAnnotationId(id);
@@ -231,7 +266,7 @@ export function ReadingGallery() {
 				</span>
 			</div>
 
-			<div className="grid gap-3 border border-border bg-card p-3 md:grid-cols-[minmax(0,1fr)_minmax(12rem,16rem)_minmax(10rem,12rem)]">
+			<div className="grid gap-3 border border-border bg-card p-3 md:grid-cols-[minmax(0,1fr)_minmax(10rem,14rem)_minmax(9rem,11rem)_minmax(9rem,11rem)]">
 				<Input
 					value={searchQuery}
 					onChange={(event) => setSearchQuery(event.target.value)}
@@ -264,13 +299,39 @@ export function ReadingGallery() {
 					<option value="none">Sin agrupar</option>
 					<option value="chapter">Agrupar por capítulo</option>
 				</select>
+				<select
+					value={sortBy}
+					onChange={(event) =>
+						setSortBy(event.target.value as "shuffle" | "recent" | "oldest")
+					}
+					aria-label="Ordenar anotaciones"
+					className="border border-border bg-background px-3 py-2 text-sm"
+				>
+					<option value="shuffle">Aleatorio</option>
+					<option value="recent">Más recientes</option>
+					<option value="oldest">Más antiguas</option>
+				</select>
 			</div>
 
 			{keptAnnotations !== undefined && (
-				<p className="text-xs text-muted-foreground">
-					Mostrando {filteredAnnotations?.length ?? 0} de{" "}
-					{keptAnnotations.length} anotaciones
-				</p>
+				<div className="flex items-center justify-between">
+					<p className="text-xs text-muted-foreground">
+						Mostrando {filteredAnnotations?.length ?? 0} de{" "}
+						{keptAnnotations.length} anotaciones
+					</p>
+					{sortBy === "shuffle" && (
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							className="gap-1.5 rounded-none text-xs"
+							onClick={handleReshuffle}
+						>
+							<Shuffle className="size-3.5" />
+							Mezclar de nuevo
+						</Button>
+					)}
+				</div>
 			)}
 
 			{filteredAnnotations === undefined ? (
@@ -288,18 +349,11 @@ export function ReadingGallery() {
 							{label && (
 								<h3 className="font-serif text-xl font-semibold">{label}</h3>
 							)}
-							<div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-flow-dense lg:grid-cols-12">
+							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 								{annotations.map(({ annotation, document }) => (
 									<article
 										key={annotation._id}
-										className={cn(
-											"relative flex flex-col gap-5 overflow-hidden border border-border bg-card p-5 transition-colors hover:border-primary/60",
-											getBentoClass(
-												annotation.text +
-													(annotation.note ?? "") +
-													(annotation.comment ?? ""),
-											),
-										)}
+										className="relative flex h-64 flex-col gap-3 overflow-hidden border border-border bg-card p-5 transition-colors hover:border-primary/60"
 									>
 										<button
 											type="button"
@@ -330,8 +384,8 @@ export function ReadingGallery() {
 														: ""}
 												</div>
 											</div>
-											<blockquote className="flex-1 border-l-2 border-primary pl-4 font-serif text-lg leading-relaxed">
-												{annotation.text}
+											<blockquote className="flex-1 overflow-hidden border-l-2 border-primary pl-4 font-serif text-base leading-relaxed">
+												<span className="line-clamp-5">{annotation.text}</span>
 											</blockquote>
 											{annotation.note && (
 												<p className="border-t border-border pt-3 text-sm text-muted-foreground">
