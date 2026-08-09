@@ -3,10 +3,15 @@
 	"iconPath": "public/logo.png",
 	"scripts": [
 		{
-			"name": "Importar secretos de desarrollo",
-			"command": "bun run secrets:import",
+			"name": "Preparar worktree de desarrollo",
+			"command": "bun install && bun run secrets:import",
 			"icon": "configure",
 			"runOnWorktreeCreate": true
+		},
+		{
+			"name": "Importar secretos de desarrollo",
+			"command": "bun run secrets:import",
+			"icon": "configure"
 		},
 		{
 			"name": "Comprobar secretos de desarrollo",
