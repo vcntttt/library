@@ -46,8 +46,13 @@ La dirección actual es consolidar ese flujo para que sea el primer tipo realmen
 
 ### Nueva dirección: integración de lectura
 
-La nueva prioridad funcional es conectar libros, KOReader, Library/Convex y Obsidian.
+La prioridad funcional es terminar la integración owner-only entre KOReader y
+Library/Convex.
 
+- KOReader conserva los datos originales; Library mantiene progreso proyectado y
+  curaciones separadas.
 - Los documentos de lectura y las anotaciones son entidades distintas de las obras.
-- Las ideas revisables son Markdown libre en el vault y se revisan desde Library.
+- La sincronización automática, el editor contextual EPUB y las reseñas pendientes
+  forman el corte activo.
+- Obsidian, ideas revisables y FSRS permanecen fuera de este corte.
 - La especificación activa está en `docs/plans/2026-07-22-reading-integration-design.md`.

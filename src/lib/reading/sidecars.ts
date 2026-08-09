@@ -14,6 +14,8 @@ export interface ReadingDocumentSnapshot {
 	sourceKey: string;
 	title: string;
 	format: ReadingFormat;
+	author?: string;
+	completionStatus?: "complete" | "in-progress";
 }
 
 export interface ReadingProgressSnapshot {
@@ -26,6 +28,7 @@ export interface ReadingProgressSnapshot {
 	revision?: number;
 	sourceTimestamp?: number;
 	locator?: string;
+	completionStatus?: "complete" | "in-progress";
 }
 
 export interface ReadingAnnotationSnapshot {
@@ -61,8 +64,10 @@ export function parseReadingSidecars(
 	return {
 		document: {
 			sourceKey: input.sourceKey,
-			title: input.title.trim(),
+			title: koreader.document.title ?? input.title.trim(),
 			format: input.format,
+			author: koreader.document.author,
+			completionStatus: koreader.document.completionStatus,
 		},
 		progress: [...parseProgress(input.progress), ...koreader.progress],
 		annotations: [
@@ -75,19 +80,36 @@ export function parseReadingSidecars(
 function parseKoreaderMetadata(
 	input: unknown,
 	sourceTimestamp?: number,
-): Pick<ReadingSidecarParseResult, "progress" | "annotations"> {
+): {
+	progress: ReadingProgressSnapshot[];
+	annotations: ReadingAnnotationSnapshot[];
+	document: {
+		title?: string;
+		author?: string;
+		completionStatus?: "complete" | "in-progress";
+	};
+} {
 	if (typeof input !== "string" || !input.trim()) {
-		return { progress: [], annotations: [] };
+		return { progress: [], annotations: [], document: {} };
 	}
 
 	const root = parseLuaTable(input);
 	const progress: ReadingProgressSnapshot[] = [];
+	const summary = asRecord(root.summary);
+	const completionStatus = asCompletionStatus(
+		asString(summary?.status) ?? asString(root.status),
+	);
 	const percent = asNumber(root.percent_finished);
 	const locator = asString(root.last_xpointer);
-	if (percent !== undefined || locator !== undefined) {
+	if (
+		percent !== undefined ||
+		locator !== undefined ||
+		completionStatus !== undefined
+	) {
 		const snapshot: ReadingProgressSnapshot = {
 			deviceId: "koreader",
 			deviceLabel: "KOReader",
+			completionStatus,
 		};
 		assignString(snapshot, "filePath", root.doc_path);
 		assignNumber(snapshot, "percent", percent);
@@ -98,10 +120,20 @@ function parseKoreaderMetadata(
 	}
 
 	const annotations = asRecord(root.annotations);
-	if (!annotations) return { progress, annotations: [] };
+	const document: {
+		title?: string;
+		author?: string;
+		completionStatus?: "complete" | "in-progress";
+	} = {
+		title: asString(root.title),
+		author: asString(root.author) ?? asString(root.authors),
+		completionStatus,
+	};
+	if (!annotations) return { progress, annotations: [], document };
 
 	return {
 		progress,
+		document,
 		annotations: Object.entries(annotations)
 			.map(([entryKey, value]) => {
 				const annotation = asRecord(value);
@@ -155,6 +187,7 @@ function parseProgress(input: unknown): ReadingProgressSnapshot[] {
 			assignNumber(snapshot, "revision", entry.revision);
 			assignNumber(snapshot, "sourceTimestamp", entry.timestamp);
 			assignString(snapshot, "locator", entry.xpath);
+			assignCompletionStatus(snapshot, entry.status);
 			return snapshot;
 		})
 		.filter(
@@ -197,7 +230,11 @@ function parseAnnotations(input: unknown): ReadingAnnotationSnapshot[] {
 		);
 }
 
-type LuaValue = boolean | null | number | string | Record<string, LuaValue>;
+interface LuaTable {
+	[key: string]: LuaValue;
+}
+
+type LuaValue = boolean | null | number | string | LuaTable;
 
 function parseLuaTable(source: string): Record<string, unknown> {
 	const parser = new LuaTableParser(source);
@@ -402,6 +439,18 @@ function asNumber(value: unknown): number | undefined {
 	return typeof value === "number" && Number.isFinite(value)
 		? value
 		: undefined;
+}
+
+function asCompletionStatus(value: unknown) {
+	return value === "complete" || value === "in-progress" ? value : undefined;
+}
+
+function assignCompletionStatus(
+	target: ReadingProgressSnapshot,
+	value: unknown,
+) {
+	const status = asCompletionStatus(value);
+	if (status !== undefined) target.completionStatus = status;
 }
 
 function assignString<T extends object>(

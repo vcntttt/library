@@ -166,6 +166,11 @@ export function ReadingInbox() {
 									Nota: {annotation.note}
 								</p>
 							)}
+							{annotation.possibleDuplicateOf && (
+								<p className="border-l-2 border-amber-500 pl-3 text-xs text-amber-700 dark:text-amber-300">
+									Posible duplicado: compáralo antes de conservarlo.
+								</p>
+							)}
 							<div className="flex flex-wrap gap-2">
 								<Button
 									variant="outline"

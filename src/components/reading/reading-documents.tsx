@@ -12,6 +12,10 @@ export function ReadingDocuments() {
 	const [onlyUnlinked, setOnlyUnlinked] = useState(true);
 	const [updatingDocumentId, setUpdatingDocumentId] =
 		useState<Id<"readingDocuments"> | null>(null);
+	const [pendingLink, setPendingLink] = useState<{
+		id: Id<"readingDocuments">;
+		value: string;
+	} | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
 	const visibleDocuments = useMemo(
 		() =>
@@ -33,6 +37,7 @@ export function ReadingDocuments() {
 				id,
 				obraId: value ? (value as Id<"obras">) : null,
 			});
+			setPendingLink(null);
 		} catch (error) {
 			setMessage(
 				error instanceof Error
@@ -98,18 +103,50 @@ export function ReadingDocuments() {
 						>
 							<div>
 								<p className="font-medium">{document.title}</p>
+								{document.author && (
+									<p className="mt-1 text-sm text-muted-foreground">
+										{document.author}
+									</p>
+								)}
 								<p className="mt-1 break-words text-xs text-muted-foreground">
 									{document.sourcePath}
 								</p>
+								<p className="mt-2 text-xs text-muted-foreground">
+									{document.sources?.length ?? 0} fuente(s) ·{" "}
+									{document.format.toUpperCase()}
+								</p>
+								{(document.sources?.filter(
+									(source) => source.status === "missing",
+								).length ?? 0) > 0 && (
+									<p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+										Hay fuentes ausentes; sus datos se conservaron.
+									</p>
+								)}
 							</div>
+							{document.suggestion && (
+								<p className="border-l-2 border-primary pl-3 text-xs text-muted-foreground">
+									Sugerencia:{" "}
+									<span className="text-foreground">
+										{document.suggestion.title}
+									</span>{" "}
+									({Math.round(document.suggestion.score * 100)}%)
+								</p>
+							)}
 							<label className="block text-xs uppercase tracking-[0.12em] text-muted-foreground">
 								Obra relacionada
 								<select
-									value={document.obraId ?? ""}
+									value={
+										pendingLink?.id === document._id
+											? pendingLink.value
+											: (document.obraId ?? "")
+									}
 									disabled={updatingDocumentId === document._id}
 									className="mt-2 w-full border border-border bg-background px-2 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
 									onChange={(event) =>
-										void handleLinkDocument(document._id, event.target.value)
+										setPendingLink({
+											id: document._id,
+											value: event.target.value,
+										})
 									}
 								>
 									<option value="">Sin vincular</option>
@@ -119,6 +156,24 @@ export function ReadingDocuments() {
 										</option>
 									))}
 								</select>
+								{pendingLink?.id === document._id && (
+									<div className="mt-2 flex items-center justify-between gap-2">
+										<p className="text-xs normal-case tracking-normal text-muted-foreground">
+											Confirma este vínculo para proyectar el progreso.
+										</p>
+										<Button
+											type="button"
+											size="sm"
+											className="shrink-0 rounded-none"
+											disabled={updatingDocumentId === document._id}
+											onClick={() =>
+												void handleLinkDocument(document._id, pendingLink.value)
+											}
+										>
+											Confirmar
+										</Button>
+									</div>
+								)}
 							</label>
 						</article>
 					))}

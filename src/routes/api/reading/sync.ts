@@ -1,4 +1,3 @@
-import { api as convexApi } from "@convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	createConvexServerClient,
@@ -8,7 +7,7 @@ import {
 	requireReadingIntegrationOwner,
 } from "@/lib/server/convex";
 import { json, jsonError } from "@/lib/server/http";
-import { scanReadingBooks } from "@/lib/server/reading-files";
+import { runReadingSync } from "@/lib/server/reading-sync";
 
 export const Route = createFileRoute("/api/reading/sync")({
 	server: {
@@ -23,50 +22,32 @@ export const Route = createFileRoute("/api/reading/sync")({
 							503,
 						);
 					}
-					if (isForbiddenIntegrationError(error)) {
+					if (isForbiddenIntegrationError(error))
 						return jsonError("No autorizado.", 403);
-					}
 					if (!isUnauthorizedError(error)) {
 						console.error("[reading/sync] session validation failed", error);
-						return jsonError("No se pudo validar la sesión.", 500);
 					}
-					return jsonError("No autorizado.", 401);
+					return jsonError(
+						"No autorizado.",
+						isUnauthorizedError(error) ? 401 : 500,
+					);
 				}
 
 				const rootPath = process.env.READING_BOOKS_PATH;
-				if (!rootPath) {
+				const token = request.headers
+					.get("authorization")
+					?.replace(/^Bearer\s+/i, "");
+				if (!rootPath)
 					return jsonError(
 						"Falta configurar READING_BOOKS_PATH en el servidor.",
 						503,
 					);
-				}
-
-				const token = request.headers
-					.get("authorization")
-					?.replace(/^Bearer\s+/i, "");
 				if (!token) return jsonError("No autorizado.", 401);
 
+				const client = createConvexServerClient();
+				client.setAuth(token);
 				try {
-					const files = await scanReadingBooks(rootPath);
-					const client = createConvexServerClient();
-					client.setAuth(token);
-					for (const file of files) {
-						await client.mutation(convexApi.reading.upsertDocument, {
-							document: file,
-						});
-					}
-
-					return json({
-						importedDocuments: files.length,
-						importedAnnotations: files.reduce(
-							(total, file) => total + file.annotations.length,
-							0,
-						),
-						importedProgress: files.reduce(
-							(total, file) => total + file.progress.length,
-							0,
-						),
-					});
+					return json(await runReadingSync(client, rootPath, "manual"));
 				} catch (error) {
 					console.error("[reading/sync] import failed", error);
 					return jsonError(

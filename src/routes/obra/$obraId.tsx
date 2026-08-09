@@ -10,6 +10,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Pencil } from "lucide-react";
 import { useState } from "react";
+import { CompletionReviewDialog } from "@/components/completion-review-dialog";
 import { ArrowLeft, Trash2 } from "@/components/icons";
 import { ObraEditSheet } from "@/components/obra-edit-sheet";
 import { ObraStatusPicker } from "@/components/obra-status-picker";
@@ -304,7 +305,11 @@ function ObraDetailView({
 	technicalItems: DetailItem[];
 }) {
 	const shouldKeepTechnicalWithCover =
-		Boolean(obra.review) || obra.quotes.length > 0 || obra.tags.length > 0;
+		Boolean(obra.review) ||
+		obra.reviewStatus === "pending" ||
+		Boolean(obra.readingDocumentId) ||
+		obra.quotes.length > 0 ||
+		obra.tags.length > 0;
 
 	return (
 		<div className="grid gap-10 lg:grid-cols-[320px_1fr]">
@@ -345,6 +350,8 @@ function ObraCoverPanel({
 }) {
 	const showProgress =
 		obra.type !== "movie" && obra.status !== "backlog" && obra.progress;
+	const hasIntegratedProgress =
+		obra.readingDocumentId && obra.readingProgressPercent !== undefined;
 	const progressTotal = obra.progress?.total ?? 0;
 	const progressCurrent = obra.progress?.current ?? 0;
 	const progressPercent =
@@ -396,6 +403,28 @@ function ObraCoverPanel({
 					{progressUnitLabel && (
 						<p className="text-xs text-muted-foreground">
 							Avance en {progressUnitLabel}.
+						</p>
+					)}
+				</div>
+			)}
+			{hasIntegratedProgress && (
+				<div className="space-y-2 border border-primary/30 bg-primary/5 p-4">
+					<div className="flex items-baseline justify-between gap-3">
+						<p className="text-[0.65rem] uppercase tracking-[0.2em] text-primary">
+							Progreso KOReader
+						</p>
+						<strong className="font-serif text-2xl">
+							{formatReadingPercent(obra.readingProgressPercent)}
+						</strong>
+					</div>
+					<p className="text-xs text-muted-foreground">
+						Máximo alcanzado. Posición actual:{" "}
+						{formatReadingPercent(obra.readingCurrentPercent)}.
+					</p>
+					{obra.readingRereadSuggestedAt && (
+						<p className="border-l-2 border-amber-500 pl-3 text-xs text-amber-700 dark:text-amber-300">
+							KOReader registra una caída importante del progreso. Revisa si
+							quieres confirmar una relectura.
 						</p>
 					)}
 				</div>
@@ -510,6 +539,10 @@ function TechnicalInfoSection({
 }
 
 function PersonalNotesSection({ obra }: { obra: Obra }) {
+	const saveReview = useMutation(convexApi.obras.saveReview);
+	const snoozeReview = useMutation(convexApi.obras.snoozeReview);
+	const skipReview = useMutation(convexApi.obras.skipReview);
+	const [isReviewOpen, setIsReviewOpen] = useState(false);
 	const dateItems: DetailItem[] = [];
 	if (obra.type === "movie") {
 		const watchedAt = obra.finishedAt ?? obra.startedAt;
@@ -534,6 +567,25 @@ function PersonalNotesSection({ obra }: { obra: Obra }) {
 
 	return (
 		<section className="space-y-8">
+			{obra.reviewStatus === "pending" && (
+				<div className="flex flex-wrap items-center justify-between gap-4 border border-primary/40 bg-primary/5 p-5">
+					<div>
+						<p className="text-xs uppercase tracking-[0.2em] text-primary">
+							Reseña pendiente
+						</p>
+						<p className="mt-1 text-sm text-muted-foreground">
+							La obra está terminada. Puedes escribir una reseña cuando quieras.
+						</p>
+					</div>
+					<Button
+						type="button"
+						className="rounded-none"
+						onClick={() => setIsReviewOpen(true)}
+					>
+						Escribir reseña
+					</Button>
+				</div>
+			)}
 			{obra.review && (
 				<div className="border-l-2 border-primary py-1 pl-6">
 					<p className="mb-2 text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
@@ -544,6 +596,15 @@ function PersonalNotesSection({ obra }: { obra: Obra }) {
 					</p>
 				</div>
 			)}
+			<CompletionReviewDialog
+				open={isReviewOpen}
+				onOpenChange={setIsReviewOpen}
+				title={obra.title}
+				initialReview={obra.review}
+				onSave={(review) => saveReview({ id: obra.id as Id<"obras">, review })}
+				onLater={() => snoozeReview({ id: obra.id as Id<"obras"> })}
+				onSkip={() => skipReview({ id: obra.id as Id<"obras"> })}
+			/>
 			{obra.quotes.length > 0 && (
 				<div className="space-y-3">
 					<p className="mb-3 text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
@@ -599,6 +660,12 @@ function PersonalNotesSection({ obra }: { obra: Obra }) {
 			)}
 		</section>
 	);
+}
+
+function formatReadingPercent(value: number | undefined) {
+	if (value === undefined) return "—";
+	const percent = value <= 1 ? value * 100 : value;
+	return `${Math.round(percent)}%`;
 }
 
 function ObraAuthed({

@@ -152,6 +152,12 @@ export const updateObraPatchFields = {
 	finishedAt: v.optional(v.number()),
 };
 
+export const reviewStatusValidator = v.union(
+	v.literal("pending"),
+	v.literal("completed"),
+	v.literal("skipped"),
+);
+
 export const updateObraPatchValidator = v.object(updateObraPatchFields);
 
 export const notificationStatusValidator = v.union(
@@ -179,15 +185,22 @@ export const readingProgressInputValidator = v.object({
 	filePath: v.optional(v.string()),
 	page: v.optional(v.number()),
 	percent: v.optional(v.number()),
+	maxPercent: v.optional(v.number()),
 	totalPages: v.optional(v.number()),
 	revision: v.optional(v.number()),
 	sourceTimestamp: v.optional(v.number()),
 	locator: v.optional(v.string()),
+	completionStatus: v.optional(
+		v.union(v.literal("complete"), v.literal("in-progress")),
+	),
 });
 
 export const readingAnnotationInputValidator = v.object({
 	sourceKey: v.string(),
 	text: v.string(),
+	sourceFingerprint: v.optional(v.string()),
+	sourceIndex: v.optional(v.number()),
+	sourceCreatedAt: v.optional(v.string()),
 	note: v.optional(v.string()),
 	chapter: v.optional(v.string()),
 	color: v.optional(v.string()),
@@ -206,8 +219,12 @@ export const readingDocumentInputValidator = v.object({
 	sourcePath: v.string(),
 	title: v.string(),
 	format: readingFormatValidator,
+	documentKey: v.optional(v.string()),
+	author: v.optional(v.string()),
 	fileHash: v.optional(v.string()),
 	fileModifiedAt: v.optional(v.number()),
+	sidecarModifiedAt: v.optional(v.number()),
+	annotationsComplete: v.optional(v.boolean()),
 	progress: v.array(readingProgressInputValidator),
 	annotations: v.array(readingAnnotationInputValidator),
 });
