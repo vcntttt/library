@@ -56,6 +56,25 @@ export function createConvexServerClient() {
 	return new ConvexHttpClient(getConvexUrl());
 }
 
+export function createConvexServiceClient(ownerId: string) {
+	const adminKey = process.env.CONVEX_SELF_HOSTED_ADMIN_KEY;
+	if (!adminKey) {
+		throw new Error("Falta configurar CONVEX_SELF_HOSTED_ADMIN_KEY.");
+	}
+	const client = createConvexServerClient();
+	const serviceClient = client as ConvexHttpClient & {
+		setAdminAuth: (
+			token: string,
+			identity: { subject: string; issuer: string },
+		) => void;
+	};
+	serviceClient.setAdminAuth(adminKey, {
+		subject: ownerId,
+		issuer: "library-reading-service",
+	});
+	return serviceClient;
+}
+
 export async function requireConvexSessionFromRequest(request: Request) {
 	const authHeader = request.headers.get("authorization");
 	const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1];

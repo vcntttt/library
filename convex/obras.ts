@@ -109,6 +109,7 @@ export const create = mutation({
 
 		let startedAt = nullableNumber(input.startedAt);
 		let finishedAt = nullableNumber(input.finishedAt);
+		const normalizedReview = normalizeOptionalString(input.review);
 
 		if (input.status === "in-progress" && startedAt == null) {
 			startedAt = now;
@@ -131,7 +132,18 @@ export const create = mutation({
 			type: input.type,
 			format: input.type === "book" ? input.format : undefined,
 			status: input.status,
-			review: normalizeOptionalString(input.review),
+			review: normalizedReview,
+			reviewStatus:
+				normalizedReview !== undefined
+					? "completed"
+					: input.status === "finished"
+						? "pending"
+						: undefined,
+			reviewRequestedAt:
+				input.status === "finished" && normalizedReview === undefined
+					? now
+					: undefined,
+			reviewedAt: normalizedReview !== undefined ? now : undefined,
 			tags: normalizeTags(input.tags),
 			recommendedBy: normalizeOptionalString(input.recommendedBy),
 			readingUrl: normalizeOptionalString(input.readingUrl),
@@ -236,11 +248,21 @@ export const update = mutation({
 			nextPatch.customTitle = normalizeOptionalString(patch.customTitle);
 		}
 		if (hasOwn(patch, "progress")) {
+			if (existing.readingDocumentId) {
+				throw new Error(
+					"El progreso está controlado por la integración de lectura. Desvincula el documento para editarlo manualmente.",
+				);
+			}
 			const progress = sanitizeProgress(patch.progress);
 			nextPatch.progressCurrent = progress?.current;
 			nextPatch.progressTotal = progress?.total;
 		}
 		if (hasOwn(patch, "progressSeasons")) {
+			if (existing.readingDocumentId) {
+				throw new Error(
+					"El progreso está controlado por la integración de lectura. Desvincula el documento para editarlo manualmente.",
+				);
+			}
 			nextPatch.progressSeasons = sanitizeProgressSeasons(patch.progressSeasons);
 		}
 		if (hasOwn(patch, "startedAt")) {
@@ -284,6 +306,8 @@ export const update = mutation({
 			: undefined;
 		const explicitlyFinishing =
 			hasOwn(patch, "status") && patch.status === "finished";
+		const newlyFinished =
+			nextStatus === "finished" && existing.status !== "finished";
 		const completedProgress = completeProgressForStatus(
 			explicitlyFinishing ? "finished" : "in-progress",
 			nextType,
@@ -329,6 +353,13 @@ export const update = mutation({
 			}
 		}
 
+		if (newlyFinished && !hasOwn(patch, "review") && !existing.review) {
+			nextPatch.reviewStatus = "pending";
+			nextPatch.reviewRequestedAt = now;
+			nextPatch.reviewedAt = undefined;
+			nextPatch.reviewSkippedAt = undefined;
+		}
+
 		if (
 			existing.status === "finished" &&
 			nextStatus !== "finished" &&
@@ -345,6 +376,19 @@ export const update = mutation({
 				existing.startedAt;
 			nextPatch.startedAt = watchedAt;
 			nextPatch.finishedAt = watchedAt;
+		}
+
+		if (hasOwn(patch, "review")) {
+			const review = normalizeOptionalString(patch.review);
+			nextPatch.review = review;
+			nextPatch.reviewStatus = review
+				? "completed"
+				: nextStatus === "finished"
+					? "pending"
+					: undefined;
+			nextPatch.reviewedAt = review ? now : undefined;
+			nextPatch.reviewSkippedAt = undefined;
+			if (review) nextPatch.reviewRequestedAt = existing.reviewRequestedAt ?? now;
 		}
 
 		await ctx.db.patch(id, nextPatch);
@@ -384,6 +428,77 @@ export const remove = mutation({
 	},
 });
 
+export const listPendingReviews = query({
+	args: { limit: v.optional(v.number()) },
+	handler: async (ctx, { limit }) => {
+		const userId = await requireUserId(ctx);
+		const rows = await ctx.db
+			.query("obras")
+			.withIndex("by_user_reviewStatus_updatedAt", (q) =>
+				q.eq("userId", userId).eq("reviewStatus", "pending"),
+			)
+			.order("desc")
+			.take(normalizeLimit(limit));
+		return rows.map((row) => toObra(row));
+	},
+});
+
+export const saveReview = mutation({
+	args: { id: v.id("obras"), review: v.string() },
+	handler: async (ctx, { id, review }) => {
+		const userId = await requireUserId(ctx);
+		const obra = await getOwnedObra(ctx, id, userId);
+		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		const normalizedReview = normalizeOptionalString(review);
+		if (!normalizedReview) throw new Error("La reseña no puede estar vacía.");
+		const now = Date.now();
+		await ctx.db.patch(id, {
+			review: normalizedReview,
+			reviewStatus: "completed",
+			reviewRequestedAt: obra.reviewRequestedAt ?? now,
+			reviewedAt: now,
+			reviewSkippedAt: undefined,
+			updatedAt: now,
+		});
+		const row = await ctx.db.get(id);
+		if (!row) throw new Error("Obra no encontrada.");
+		return toObra(row, await listQuotesForObra(ctx, userId, id));
+	},
+});
+
+export const snoozeReview = mutation({
+	args: { id: v.id("obras") },
+	handler: async (ctx, { id }) => {
+		const userId = await requireUserId(ctx);
+		const obra = await getOwnedObra(ctx, id, userId);
+		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		await ctx.db.patch(id, {
+			reviewStatus: "pending",
+			reviewRequestedAt: obra.reviewRequestedAt ?? Date.now(),
+			reviewSkippedAt: undefined,
+			updatedAt: Date.now(),
+		});
+		return id;
+	},
+});
+
+export const skipReview = mutation({
+	args: { id: v.id("obras") },
+	handler: async (ctx, { id }) => {
+		const userId = await requireUserId(ctx);
+		const obra = await getOwnedObra(ctx, id, userId);
+		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		const now = Date.now();
+		await ctx.db.patch(id, {
+			reviewStatus: "skipped",
+			reviewRequestedAt: obra.reviewRequestedAt ?? now,
+			reviewSkippedAt: now,
+			updatedAt: now,
+		});
+		return id;
+	},
+});
+
 function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 	return {
 		id: row._id,
@@ -394,6 +509,10 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		format: row.format,
 		status: row.status,
 		review: row.review,
+		reviewStatus: row.reviewStatus,
+		reviewRequestedAt: row.reviewRequestedAt,
+		reviewedAt: row.reviewedAt,
+		reviewSkippedAt: row.reviewSkippedAt,
 		tags: row.tags,
 		quotes: quoteRows.map((quote) => ({
 			id: quote._id,
@@ -430,6 +549,14 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		progressSeasons: row.progressSeasons,
 		startedAt: row.startedAt,
 		finishedAt: row.finishedAt,
+		readingDocumentId: row.readingDocumentId,
+		readingProgressPercent: row.readingProgressPercent,
+		readingCurrentPercent: row.readingCurrentPercent,
+		readingProgressUpdatedAt: row.readingProgressUpdatedAt,
+		readingProgressSourceTimestamp: row.readingProgressSourceTimestamp,
+		readingProgressRevision: row.readingProgressRevision,
+		readingProgressStatus: row.readingProgressStatus,
+		readingRereadSuggestedAt: row.readingRereadSuggestedAt,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
 	};
@@ -482,6 +609,16 @@ async function requireUserId(ctx: QueryCtx | MutationCtx) {
 	const userId = await getAuthUserId(ctx);
 	if (userId === null) throw new Error("No autorizado.");
 	return userId;
+}
+
+async function getOwnedObra(
+	ctx: MutationCtx,
+	id: Id<"obras">,
+	userId: Id<"users">,
+) {
+	const obra = await ctx.db.get(id);
+	if (!obra || obra.userId !== userId) throw new Error("Obra no encontrada.");
+	return obra;
 }
 
 function normalizeLimit(limit: number | undefined) {

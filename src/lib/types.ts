@@ -16,6 +16,8 @@ export type ObraStatus =
 	| "finished"
 	| "dropped";
 
+export type ObraReviewStatus = "pending" | "completed" | "skipped";
+
 export type ObraFormat = "physical" | "ebook" | "audiobook";
 
 export type ObraId = string;
@@ -97,6 +99,10 @@ export interface Obra {
 	format?: ObraFormat;
 	status: ObraStatus;
 	review?: string;
+	reviewStatus?: ObraReviewStatus;
+	reviewRequestedAt?: number;
+	reviewedAt?: number;
+	reviewSkippedAt?: number;
 	tags: string[];
 	quotes: ObraQuote[];
 	recommendedBy?: string;
@@ -117,6 +123,14 @@ export interface Obra {
 	progressSeasons?: ObraSeason[];
 	startedAt?: number;
 	finishedAt?: number;
+	readingDocumentId?: string;
+	readingProgressPercent?: number;
+	readingCurrentPercent?: number;
+	readingProgressUpdatedAt?: number;
+	readingProgressSourceTimestamp?: number;
+	readingProgressRevision?: number;
+	readingProgressStatus?: "complete" | "in-progress";
+	readingRereadSuggestedAt?: number;
 	createdAt: number;
 	updatedAt: number;
 }

@@ -28,6 +28,16 @@ export default defineSchema({
 		format: v.optional(obraFormatValidator),
 		status: obraStatusValidator,
 		review: v.optional(v.string()),
+		reviewStatus: v.optional(
+			v.union(
+				v.literal("pending"),
+				v.literal("completed"),
+				v.literal("skipped"),
+			),
+		),
+		reviewRequestedAt: v.optional(v.number()),
+		reviewedAt: v.optional(v.number()),
+		reviewSkippedAt: v.optional(v.number()),
 		tags: v.array(v.string()),
 		recommendedBy: v.optional(v.string()),
 		readingUrl: v.optional(v.string()),
@@ -54,13 +64,28 @@ export default defineSchema({
 		),
 		startedAt: v.optional(v.number()),
 		finishedAt: v.optional(v.number()),
+		readingDocumentId: v.optional(v.id("readingDocuments")),
+		readingProgressPercent: v.optional(v.number()),
+		readingCurrentPercent: v.optional(v.number()),
+		readingProgressUpdatedAt: v.optional(v.number()),
+		readingProgressSourceTimestamp: v.optional(v.number()),
+		readingProgressRevision: v.optional(v.number()),
+		readingProgressStatus: v.optional(
+			v.union(v.literal("complete"), v.literal("in-progress")),
+		),
+		readingRereadSuggestedAt: v.optional(v.number()),
 		createdAt: v.number(),
-			updatedAt: v.number(),
+		updatedAt: v.number(),
 		})
 		.index("by_user_updatedAt", ["userId", "updatedAt"])
 		.index("by_user_createdAt", ["userId", "createdAt"])
 		.index("by_user_status_updatedAt", ["userId", "status", "updatedAt"])
 		.index("by_user_type_updatedAt", ["userId", "type", "updatedAt"])
+		.index("by_user_reviewStatus_updatedAt", [
+			"userId",
+			"reviewStatus",
+			"updatedAt",
+		])
 		.index("by_manga_tracking", ["type", "status", "externalSource"]),
 	obraQuotes: defineTable({
 		userId: v.id("users"),
@@ -112,26 +137,60 @@ export default defineSchema({
 		sourcePath: v.string(),
 		title: v.string(),
 		format: v.union(v.literal("epub"), v.literal("pdf"), v.literal("other")),
+		documentKey: v.optional(v.string()),
+		author: v.optional(v.string()),
 		fileHash: v.optional(v.string()),
 		fileModifiedAt: v.optional(v.number()),
+		sidecarModifiedAt: v.optional(v.number()),
+		lastSyncedAt: v.optional(v.number()),
 		obraId: v.optional(v.id("obras")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
 		.index("by_user_sourceKey", ["userId", "sourceKey"])
+		.index("by_user_documentKey", ["userId", "documentKey"])
+		.index("by_user_fileHash", ["userId", "fileHash"])
 		.index("by_user_updatedAt", ["userId", "updatedAt"]),
+	readingSources: defineTable({
+		userId: v.id("users"),
+		documentId: v.id("readingDocuments"),
+		sourceKey: v.string(),
+		sourcePath: v.string(),
+		fileHash: v.optional(v.string()),
+		fileModifiedAt: v.optional(v.number()),
+		sidecarModifiedAt: v.optional(v.number()),
+		status: v.union(
+			v.literal("active"),
+			v.literal("missing"),
+			v.literal("error"),
+		),
+		lastSeenAt: v.optional(v.number()),
+		lastProcessedAt: v.optional(v.number()),
+		lastError: v.optional(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_sourceKey", ["userId", "sourceKey"])
+		.index("by_document_sourceKey", ["documentId", "sourceKey"])
+		.index("by_document_updatedAt", ["documentId", "updatedAt"])
+		.index("by_user_status_updatedAt", ["userId", "status", "updatedAt"]),
 	readingProgress: defineTable({
 		userId: v.id("users"),
 		documentId: v.id("readingDocuments"),
+		sourceId: v.optional(v.id("readingSources")),
 		deviceId: v.string(),
 		deviceLabel: v.optional(v.string()),
 		filePath: v.optional(v.string()),
 		page: v.optional(v.number()),
 		percent: v.optional(v.number()),
+		maxPercent: v.optional(v.number()),
 		totalPages: v.optional(v.number()),
 		revision: v.optional(v.number()),
 		sourceTimestamp: v.optional(v.number()),
 		locator: v.optional(v.string()),
+		completionStatus: v.optional(
+			v.union(v.literal("complete"), v.literal("in-progress")),
+		),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
@@ -140,8 +199,15 @@ export default defineSchema({
 	readingAnnotations: defineTable({
 		userId: v.id("users"),
 		documentId: v.id("readingDocuments"),
+		sourceId: v.optional(v.id("readingSources")),
 		sourceKey: v.string(),
+		sourceFingerprint: v.optional(v.string()),
+		sourceIndex: v.optional(v.number()),
+		sourceCreatedAt: v.optional(v.string()),
 		text: v.string(),
+		originalText: v.optional(v.string()),
+		curatedText: v.optional(v.string()),
+		curatedAt: v.optional(v.number()),
 		note: v.optional(v.string()),
 		comment: v.optional(v.string()),
 		chapter: v.optional(v.string()),
@@ -161,12 +227,39 @@ export default defineSchema({
 			// Estado legado; no se usa desde la interfaz.
 			v.literal("discarded"),
 		),
+		sourceStatus: v.optional(v.union(v.literal("active"), v.literal("missing"))),
+		sourceMissingAt: v.optional(v.number()),
+		possibleDuplicateOf: v.optional(v.id("readingAnnotations")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
 		.index("by_document_sourceKey", ["documentId", "sourceKey"])
+		.index("by_document_sourceFingerprint", ["documentId", "sourceFingerprint"])
 		.index("by_user_status_updatedAt", ["userId", "status", "updatedAt"])
 		.index("by_user_updatedAt", ["userId", "updatedAt"]),
+	readingSyncRuns: defineTable({
+		userId: v.id("users"),
+		trigger: v.union(v.literal("manual"), v.literal("automatic")),
+		status: v.union(
+			v.literal("running"),
+			v.literal("completed"),
+			v.literal("partial"),
+			v.literal("failed"),
+		),
+		startedAt: v.number(),
+		finishedAt: v.optional(v.number()),
+		processedDocuments: v.number(),
+		changedDocuments: v.number(),
+		skippedFiles: v.number(),
+		errors: v.array(
+			v.object({
+				path: v.string(),
+				message: v.string(),
+			}),
+		),
+	})
+		.index("by_user_startedAt", ["userId", "startedAt"])
+		.index("by_user_status_startedAt", ["userId", "status", "startedAt"]),
 	ideas: defineTable({
 		userId: v.id("users"),
 		relativePath: v.string(),

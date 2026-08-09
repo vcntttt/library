@@ -12,6 +12,7 @@ export function ReadingDashboard() {
 		limit: 500,
 	});
 	const documents = useQuery(convexApi.reading.listDocuments, { limit: 500 });
+	const syncRuns = useQuery(convexApi.reading.listSyncRuns, { limit: 1 });
 	const authToken = useAuthToken();
 	const [isSyncing, setIsSyncing] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export function ReadingDashboard() {
 				);
 			}
 			setMessage(
-				`Se procesaron ${payload.importedDocuments ?? 0} documentos y ${payload.importedAnnotations ?? 0} anotaciones.`,
+				`Se procesaron ${payload.importedDocuments ?? 0} documentos, ${payload.importedAnnotations ?? 0} anotaciones y ${payload.errors?.length ?? 0} errores.`,
 			);
 		} catch (error) {
 			setMessage(
@@ -80,6 +81,36 @@ export function ReadingDashboard() {
 					<p className="border border-border bg-card px-4 py-3 text-sm">
 						{message}
 					</p>
+				)}
+
+				{syncRuns?.[0] && (
+					<section className="border border-border bg-card px-4 py-3 text-sm">
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<span>
+								Última sincronización:{" "}
+								{syncRuns[0].status === "completed"
+									? "completa"
+									: syncRuns[0].status === "partial"
+										? "parcial"
+										: syncRuns[0].status === "failed"
+											? "fallida"
+											: "en curso"}
+							</span>
+							<span className="text-muted-foreground">
+								{syncRuns[0].processedDocuments} procesados ·{" "}
+								{syncRuns[0].skippedFiles} sin cambios
+							</span>
+						</div>
+						{syncRuns[0].errors.length > 0 && (
+							<ul className="mt-2 space-y-1 text-xs text-destructive">
+								{syncRuns[0].errors.slice(0, 3).map((error) => (
+									<li key={`${error.path}-${error.message}`}>
+										{error.path || "sync"}: {error.message}
+									</li>
+								))}
+							</ul>
+						)}
+					</section>
 				)}
 
 				<section className="grid gap-4 md:grid-cols-2">

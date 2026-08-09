@@ -19,6 +19,7 @@
     "check": "biome check",
     "convex:dev": "convex dev",
     "convex:push": "convex dev --once",
+    "reading:sync": "bun scripts/reading-sync.ts",
     "secrets:import": "secrets-sync import",
     "secrets:check": "secrets-sync import --check",
     "secrets:audit": "secrets-sync audit dev",

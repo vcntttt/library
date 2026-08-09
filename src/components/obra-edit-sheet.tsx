@@ -209,6 +209,9 @@ export function ObraEditSheet({
 		convexId ? { id: convexId } : "skip",
 	);
 	const updateObra = useMutation(convexApi.obras.update);
+	const saveReview = useMutation(convexApi.obras.saveReview);
+	const snoozeReview = useMutation(convexApi.obras.snoozeReview);
+	const skipReview = useMutation(convexApi.obras.skipReview);
 	const authToken = useAuthToken();
 	const obra = doc ? obraFromDoc(doc) : null;
 	const [values, setValues] = useState<EditValues | null>(null);
@@ -353,7 +356,8 @@ export function ObraEditSheet({
 			saved &&
 			status === "finished" &&
 			obra.status !== "finished" &&
-			!obra.review
+			!obra.review &&
+			obra.reviewStatus !== "skipped"
 		) {
 			setIsCompletionReviewOpen(true);
 		}
@@ -455,7 +459,9 @@ export function ObraEditSheet({
 		);
 		if (saved && shouldFinishObra) {
 			setIsSeasonEditorOpen(false);
-			if (!obra.review) setIsCompletionReviewOpen(true);
+			if (!obra.review && obra.reviewStatus !== "skipped") {
+				setIsCompletionReviewOpen(true);
+			}
 		}
 	};
 
@@ -585,6 +591,7 @@ export function ObraEditSheet({
 	const hasProgress = obra
 		? obra.type !== "movie" && obra.status !== "backlog"
 		: false;
+	const progressControlledByReading = Boolean(obra?.readingDocumentId);
 
 	return (
 		<Sheet open={open} onOpenChange={handleOpenChange}>
@@ -786,6 +793,12 @@ export function ObraEditSheet({
 							{hasProgress && (
 								<section className="flex flex-col gap-4 border border-border bg-card p-5">
 									<p className="text-sm font-medium">Progreso</p>
+									{progressControlledByReading && (
+										<p className="border-l-2 border-primary pl-3 text-xs text-muted-foreground">
+											Este progreso lo controla la integración con KOReader.
+											Desvincula el documento para editarlo manualmente.
+										</p>
+									)}
 									<div className="flex flex-col gap-3">
 										<Label>
 											Progreso
@@ -833,7 +846,10 @@ export function ObraEditSheet({
 												type="button"
 												variant="outline"
 												size="icon"
-												disabled={values.progressTotal <= 0}
+												disabled={
+													progressControlledByReading ||
+													values.progressTotal <= 0
+												}
 												className="rounded-none border-border hover:border-primary hover:text-primary"
 												onClick={() =>
 													handleStepProgressChange(
@@ -848,7 +864,10 @@ export function ObraEditSheet({
 												min={0}
 												max={values.progressTotal || 1}
 												step={1}
-												disabled={values.progressTotal <= 0}
+												disabled={
+													progressControlledByReading ||
+													values.progressTotal <= 0
+												}
 												value={[
 													Math.min(
 														values.progressCurrent,
@@ -872,7 +891,10 @@ export function ObraEditSheet({
 												type="button"
 												variant="outline"
 												size="icon"
-												disabled={values.progressTotal <= 0}
+												disabled={
+													progressControlledByReading ||
+													values.progressTotal <= 0
+												}
 												className="rounded-none border-border hover:border-primary hover:text-primary"
 												onClick={() =>
 													handleStepProgressChange(
@@ -889,6 +911,7 @@ export function ObraEditSheet({
 												type="button"
 												variant="outline"
 												size="sm"
+												disabled={progressControlledByReading}
 												onClick={() => setIsSeasonEditorOpen(true)}
 												className="w-full rounded-none border-border hover:border-primary hover:text-primary"
 											>
@@ -904,6 +927,7 @@ export function ObraEditSheet({
 												type="number"
 												min={0}
 												step={1}
+												disabled={progressControlledByReading}
 												value={String(values.progressTotal)}
 												onChange={(event) => {
 													const nextValue = event.target.value
@@ -1195,8 +1219,14 @@ export function ObraEditSheet({
 					title={obra.title}
 					initialReview={obra.review}
 					onSave={async (review) =>
-						await commitPatch({ review: review || undefined })
+						await saveReview({ id: convexId as Id<"obras">, review })
 					}
+					onLater={async () => {
+						if (convexId) await snoozeReview({ id: convexId });
+					}}
+					onSkip={async () => {
+						if (convexId) await skipReview({ id: convexId });
+					}}
 				/>
 			)}
 		</Sheet>

@@ -124,6 +124,8 @@ Configurar en `.env.local` o copiar desde `.env.example`:
   a las rutas privadas de lectura y al vault)
 - `READING_SYNC_MAX_FILES` (opcional, máximo de libros inspeccionados por
   sincronización; por defecto 500)
+- `READING_SYNC_SECRET` (secreto del job externo que llama al sync automático)
+- `READING_SYNC_URL` (opcional, URL pública de Library para `reading:sync`)
 - `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ## Scripts
@@ -142,11 +144,16 @@ bun run test:e2e:debug
 bun run test:e2e:install
 bun run convex:dev
 bun run convex:push
+bun run reading:sync
 bun run convex:deploy
 bun run deploy
 ```
 
 Convex Auth requiere `JWT_PRIVATE_KEY` y `JWKS` configuradas como variables del deployment Convex. No son variables del frontend ni del contenedor web de Library. Configuralas en tu instancia/deployment Convex self-hosted, por ejemplo con `convex env set` o desde la administración de tu self-host.
+
+El sync automático no usa un temporizador dentro del runtime web. Configura un
+job del host/Dokploy cada cinco minutos que ejecute `bun run reading:sync`; el
+script llama al endpoint interno con `READING_SYNC_SECRET`.
 
 ## Producción
 
@@ -164,6 +171,8 @@ Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime
 - `OBSIDIAN_VAULT_PATH`
 - `READING_INTEGRATION_OWNER_ID`
 - `READING_SYNC_MAX_FILES` (opcional)
+- `READING_SYNC_SECRET`
+- `READING_SYNC_URL` (opcional)
 - `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ### Verificación E2E en navegador

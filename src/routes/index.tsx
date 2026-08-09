@@ -4,6 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { DashboardSection } from "@/components/dashboard-section";
+import { PendingReviewSection } from "@/components/pending-review-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isObraUpToDate } from "@/lib/metadata/format";
 import { obraFromDoc } from "@/lib/obras";
@@ -151,6 +152,8 @@ function DashboardAuthed() {
 						</div>
 					</div>
 				</section>
+
+				<PendingReviewSection />
 
 				<DashboardSection
 					title="Viendo ahora"

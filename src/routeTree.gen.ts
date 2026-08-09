@@ -25,6 +25,7 @@ import { Route as LecturaInboxRouteImport } from './routes/lectura/inbox'
 import { Route as LecturaDocumentosRouteImport } from './routes/lectura/documentos'
 import { Route as ApiIdeasIndexRouteImport } from './routes/api/ideas/index'
 import { Route as ApiReadingSyncRouteImport } from './routes/api/reading/sync'
+import { Route as ApiReadingContextRouteImport } from './routes/api/reading/context'
 import { Route as ApiMetadataSearchRouteImport } from './routes/api/metadata/search'
 import { Route as ApiMetadataImageRouteImport } from './routes/api/metadata/image'
 import { Route as ApiMetadataDetailsRouteImport } from './routes/api/metadata/details'
@@ -33,6 +34,7 @@ import { Route as ApiIdeasContentRouteImport } from './routes/api/ideas/content'
 import { Route as InternalAlfredNotificationsPullRouteImport } from './routes/internal/alfred/notifications/pull'
 import { Route as InternalAlfredNotificationsMarkReadRouteImport } from './routes/internal/alfred/notifications/mark-read'
 import { Route as InternalAlfredNotificationsAckRouteImport } from './routes/internal/alfred/notifications/ack'
+import { Route as ApiInternalReadingSyncRouteImport } from './routes/api/internal/reading/sync'
 
 const VariantCRoute = VariantCRouteImport.update({
   id: '/variant-c',
@@ -114,6 +116,11 @@ const ApiReadingSyncRoute = ApiReadingSyncRouteImport.update({
   path: '/api/reading/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReadingContextRoute = ApiReadingContextRouteImport.update({
+  id: '/api/reading/context',
+  path: '/api/reading/context',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMetadataSearchRoute = ApiMetadataSearchRouteImport.update({
   id: '/api/metadata/search',
   path: '/api/metadata/search',
@@ -157,6 +164,11 @@ const InternalAlfredNotificationsAckRoute =
     path: '/internal/alfred/notifications/ack',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiInternalReadingSyncRoute = ApiInternalReadingSyncRouteImport.update({
+  id: '/api/internal/reading/sync',
+  path: '/api/internal/reading/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -178,8 +190,10 @@ export interface FileRoutesByFullPath {
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/reading/context': typeof ApiReadingContextRoute
   '/api/reading/sync': typeof ApiReadingSyncRoute
   '/api/ideas/': typeof ApiIdeasIndexRoute
+  '/api/internal/reading/sync': typeof ApiInternalReadingSyncRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -203,8 +217,10 @@ export interface FileRoutesByTo {
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/reading/context': typeof ApiReadingContextRoute
   '/api/reading/sync': typeof ApiReadingSyncRoute
   '/api/ideas': typeof ApiIdeasIndexRoute
+  '/api/internal/reading/sync': typeof ApiInternalReadingSyncRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -230,8 +246,10 @@ export interface FileRoutesById {
   '/api/metadata/details': typeof ApiMetadataDetailsRoute
   '/api/metadata/image': typeof ApiMetadataImageRoute
   '/api/metadata/search': typeof ApiMetadataSearchRoute
+  '/api/reading/context': typeof ApiReadingContextRoute
   '/api/reading/sync': typeof ApiReadingSyncRoute
   '/api/ideas/': typeof ApiIdeasIndexRoute
+  '/api/internal/reading/sync': typeof ApiInternalReadingSyncRoute
   '/internal/alfred/notifications/ack': typeof InternalAlfredNotificationsAckRoute
   '/internal/alfred/notifications/mark-read': typeof InternalAlfredNotificationsMarkReadRoute
   '/internal/alfred/notifications/pull': typeof InternalAlfredNotificationsPullRoute
@@ -258,8 +276,10 @@ export interface FileRouteTypes {
     | '/api/metadata/details'
     | '/api/metadata/image'
     | '/api/metadata/search'
+    | '/api/reading/context'
     | '/api/reading/sync'
     | '/api/ideas/'
+    | '/api/internal/reading/sync'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -283,8 +303,10 @@ export interface FileRouteTypes {
     | '/api/metadata/details'
     | '/api/metadata/image'
     | '/api/metadata/search'
+    | '/api/reading/context'
     | '/api/reading/sync'
     | '/api/ideas'
+    | '/api/internal/reading/sync'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -309,8 +331,10 @@ export interface FileRouteTypes {
     | '/api/metadata/details'
     | '/api/metadata/image'
     | '/api/metadata/search'
+    | '/api/reading/context'
     | '/api/reading/sync'
     | '/api/ideas/'
+    | '/api/internal/reading/sync'
     | '/internal/alfred/notifications/ack'
     | '/internal/alfred/notifications/mark-read'
     | '/internal/alfred/notifications/pull'
@@ -333,8 +357,10 @@ export interface RootRouteChildren {
   ApiMetadataDetailsRoute: typeof ApiMetadataDetailsRoute
   ApiMetadataImageRoute: typeof ApiMetadataImageRoute
   ApiMetadataSearchRoute: typeof ApiMetadataSearchRoute
+  ApiReadingContextRoute: typeof ApiReadingContextRoute
   ApiReadingSyncRoute: typeof ApiReadingSyncRoute
   ApiIdeasIndexRoute: typeof ApiIdeasIndexRoute
+  ApiInternalReadingSyncRoute: typeof ApiInternalReadingSyncRoute
   InternalAlfredNotificationsAckRoute: typeof InternalAlfredNotificationsAckRoute
   InternalAlfredNotificationsMarkReadRoute: typeof InternalAlfredNotificationsMarkReadRoute
   InternalAlfredNotificationsPullRoute: typeof InternalAlfredNotificationsPullRoute
@@ -454,6 +480,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReadingSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reading/context': {
+      id: '/api/reading/context'
+      path: '/api/reading/context'
+      fullPath: '/api/reading/context'
+      preLoaderRoute: typeof ApiReadingContextRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/metadata/search': {
       id: '/api/metadata/search'
       path: '/api/metadata/search'
@@ -510,6 +543,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InternalAlfredNotificationsAckRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/internal/reading/sync': {
+      id: '/api/internal/reading/sync'
+      path: '/api/internal/reading/sync'
+      fullPath: '/api/internal/reading/sync'
+      preLoaderRoute: typeof ApiInternalReadingSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -545,8 +585,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMetadataDetailsRoute: ApiMetadataDetailsRoute,
   ApiMetadataImageRoute: ApiMetadataImageRoute,
   ApiMetadataSearchRoute: ApiMetadataSearchRoute,
+  ApiReadingContextRoute: ApiReadingContextRoute,
   ApiReadingSyncRoute: ApiReadingSyncRoute,
   ApiIdeasIndexRoute: ApiIdeasIndexRoute,
+  ApiInternalReadingSyncRoute: ApiInternalReadingSyncRoute,
   InternalAlfredNotificationsAckRoute: InternalAlfredNotificationsAckRoute,
   InternalAlfredNotificationsMarkReadRoute:
     InternalAlfredNotificationsMarkReadRoute,
