@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VariantCRouteImport } from './routes/variant-c'
 import { Route as VariantBRouteImport } from './routes/variant-b'
 import { Route as VariantARouteImport } from './routes/variant-a'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LecturaRouteImport } from './routes/lectura'
 import { Route as IdeasRouteImport } from './routes/ideas'
@@ -49,6 +50,11 @@ const VariantBRoute = VariantBRouteImport.update({
 const VariantARoute = VariantARouteImport.update({
   id: '/variant-a',
   path: '/variant-a',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/ideas': typeof IdeasRoute
   '/lectura': typeof LecturaRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/ideas': typeof IdeasRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/ideas': typeof IdeasRoute
   '/lectura': typeof LecturaRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/variant-a': typeof VariantARoute
   '/variant-b': typeof VariantBRoute
   '/variant-c': typeof VariantCRoute
@@ -264,6 +273,7 @@ export interface FileRouteTypes {
     | '/ideas'
     | '/lectura'
     | '/login'
+    | '/mcp'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/ideas'
     | '/login'
+    | '/mcp'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/ideas'
     | '/lectura'
     | '/login'
+    | '/mcp'
     | '/variant-a'
     | '/variant-b'
     | '/variant-c'
@@ -348,6 +360,7 @@ export interface RootRouteChildren {
   IdeasRoute: typeof IdeasRoute
   LecturaRoute: typeof LecturaRouteWithChildren
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   VariantARoute: typeof VariantARoute
   VariantBRoute: typeof VariantBRoute
   VariantCRoute: typeof VariantCRoute
@@ -387,6 +400,13 @@ declare module '@tanstack/react-router' {
       path: '/variant-a'
       fullPath: '/variant-a'
       preLoaderRoute: typeof VariantARouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -576,6 +596,7 @@ const rootRouteChildren: RootRouteChildren = {
   IdeasRoute: IdeasRoute,
   LecturaRoute: LecturaRouteWithChildren,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   VariantARoute: VariantARoute,
   VariantBRoute: VariantBRoute,
   VariantCRoute: VariantCRoute,

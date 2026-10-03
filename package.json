@@ -33,6 +33,7 @@
     "@base-ui/react": "^1.0.0",
     "@convex-dev/auth": "^0.0.92",
     "@faker-js/faker": "^10.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@t3-oss/env-core": "^0.13.8",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/match-sorter-utils": "^8.19.4",

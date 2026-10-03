@@ -126,6 +126,7 @@ Configurar en `.env.local` o copiar desde `.env.example`:
   sincronización; por defecto 500)
 - `READING_SYNC_SECRET` (secreto del job externo que llama al sync automático)
 - `READING_SYNC_URL` (opcional, URL pública de Library para `reading:sync`)
+- `LIBRARY_MCP_SECRET` (token Bearer del servidor MCP en `/mcp`; sin él la ruta responde 503)
 - `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ## Scripts
@@ -173,6 +174,7 @@ Para deploy en Dokploy necesitás estas variables en el entorno de build/runtime
 - `READING_SYNC_MAX_FILES` (opcional)
 - `READING_SYNC_SECRET`
 - `READING_SYNC_URL` (opcional)
+- `LIBRARY_MCP_SECRET`
 - `ALFRED_NOTIFY_USER_EMAIL` (email del único usuario cuyas obras se envían a Alfred)
 
 ### Verificación E2E en navegador
