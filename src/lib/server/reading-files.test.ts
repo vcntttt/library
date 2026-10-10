@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -15,6 +15,24 @@ afterEach(async () => {
 });
 
 describe("scanReadingBooks", () => {
+	it("no lee libros que enlazan fuera de la biblioteca", async () => {
+		const root = await mkdtemp(join(tmpdir(), "library-reading-root-"));
+		const outside = await mkdtemp(join(tmpdir(), "library-reading-outside-"));
+		temporaryRoots.push(root, outside);
+		await writeFile(join(outside, "Secreto.epub"), "private");
+		await symlink(join(outside, "Secreto.epub"), join(root, "Secreto.epub"));
+		await writeFile(join(root, "Visible.epub"), "book");
+
+		const result = await scanReadingBooksDetailed(root);
+
+		expect(result.files.map((file) => file.sourcePath)).toEqual([
+			"Visible.epub",
+		]);
+		expect(result.errors).toEqual([
+			expect.objectContaining({ path: "Secreto.epub" }),
+		]);
+	});
+
 	it("ignora los sidecars antiguos de Syncery", async () => {
 		const root = await mkdtemp(join(tmpdir(), "library-reading-"));
 		temporaryRoots.push(root);

@@ -3,6 +3,7 @@ import {
 	mkdir,
 	readdir,
 	readFile,
+	realpath,
 	rename,
 	stat,
 	writeFile,
@@ -19,6 +20,13 @@ import {
 
 export const ideasRelativeRoot = "100 - Knowledge/Ideas";
 
+export class InvalidIdeaPathError extends Error {
+	constructor() {
+		super("La ruta de la idea no es válida.");
+		this.name = "InvalidIdeaPathError";
+	}
+}
+
 export interface IdeaFile {
 	relativePath: string;
 	title: string;
@@ -34,6 +42,7 @@ export async function listIdeaFiles(vaultPath: string) {
 
 export async function readIdeaFile(vaultPath: string, relativePath: string) {
 	const filePath = resolveIdeaPath(vaultPath, relativePath);
+	await assertInsideVault(vaultPath, filePath);
 	const [content, fileStats] = await Promise.all([
 		readFile(filePath, "utf8"),
 		stat(filePath),
@@ -63,6 +72,7 @@ export async function writeIdeaFile(
 	}
 
 	await mkdir(dirname(filePath), { recursive: true });
+	await assertInsideVault(vaultPath, dirname(filePath));
 	const temporaryPath = `${filePath}.tmp-${randomUUID()}`;
 	await writeFile(temporaryPath, content, "utf8");
 	await rename(temporaryPath, filePath);
@@ -79,6 +89,7 @@ export async function createIdeaFile(
 ) {
 	const root = getIdeasRoot(vaultPath);
 	await mkdir(root, { recursive: true });
+	await assertInsideVault(vaultPath, root);
 	const slug = slugify(title) || `idea-${randomUUID().slice(0, 8)}`;
 	let counter = 0;
 	let filePath = join(root, `${slug}.md`);
@@ -110,9 +121,18 @@ function resolveIdeaPath(vaultPath: string, relativePath: string) {
 		candidateRelativeToIdeas.includes(`${sep}.${sep}`) ||
 		extname(candidate).toLowerCase() !== ".md"
 	) {
-		throw new Error("La ruta de la idea no es válida.");
+		throw new InvalidIdeaPathError();
 	}
 	return candidate;
+}
+
+// Evita que un enlace simbólico dentro de la bóveda lea o escriba fuera de ella.
+async function assertInsideVault(vaultPath: string, path: string) {
+	const realVault = await realpath(vaultPath);
+	const realPath = await realpath(path);
+	if (realPath !== realVault && !realPath.startsWith(`${realVault}${sep}`)) {
+		throw new InvalidIdeaPathError();
+	}
 }
 
 async function scanDirectory(
