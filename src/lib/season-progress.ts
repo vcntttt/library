@@ -9,19 +9,20 @@ export interface SeasonProgress {
 export function validateSeasons(seasons: ObraSeason[]): ObraSeason[] {
 	const unique = new Map<number, ObraSeason>();
 	for (const season of seasons) {
+		const episodeCount = Math.floor(season.episodeCount);
 		if (
 			season.seasonNumber <= 0 ||
-			season.episodeCount <= 0 ||
+			episodeCount <= 0 ||
 			!Number.isFinite(season.seasonNumber) ||
-			!Number.isFinite(season.episodeCount)
+			!Number.isFinite(episodeCount)
 		) {
 			continue;
 		}
 		const existing = unique.get(season.seasonNumber);
-		if (!existing || season.episodeCount > existing.episodeCount) {
+		if (!existing || episodeCount > existing.episodeCount) {
 			unique.set(season.seasonNumber, {
 				seasonNumber: season.seasonNumber,
-				episodeCount: Math.floor(season.episodeCount),
+				episodeCount,
 			});
 		}
 	}
@@ -34,6 +35,24 @@ export function totalEpisodesForSeasons(seasons: ObraSeason[]): number {
 	return validateSeasons(seasons).reduce(
 		(sum, season) => sum + season.episodeCount,
 		0,
+	);
+}
+
+export function setSeasonEpisodeCount(
+	seasons: ObraSeason[],
+	seasonNumber: number,
+	episodeCount: number,
+): ObraSeason[] {
+	// Un conteo menor a 1 eliminaría la temporada al validar; el input vacío lo deja en 1.
+	const safeCount = Number.isFinite(episodeCount)
+		? Math.max(1, Math.floor(episodeCount))
+		: 1;
+	return validateSeasons(
+		seasons.map((season) =>
+			season.seasonNumber === seasonNumber
+				? { ...season, episodeCount: safeCount }
+				: season,
+		),
 	);
 }
 

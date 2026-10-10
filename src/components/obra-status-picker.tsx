@@ -22,6 +22,7 @@ import {
 	formatProgressValue,
 	getProgressUnitLabel,
 	isAudiobook,
+	isPositiveCount,
 } from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
 import type { Obra, ObraStatus } from "@/lib/types";
@@ -54,6 +55,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		current: number;
 		total: number;
 	} | null>(null);
+	const [progressError, setProgressError] = useState<string | null>(null);
 
 	const hasProgress = obra.type !== "movie";
 	const progressTotal = obra.progress?.total ?? 0;
@@ -72,7 +74,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		obra.type === "manga" || obra.type === "manhwa"
 			? obra.metadata?.latestChapter
 			: obra.metadata?.episodesAired;
-	const canMarkUpToDate = releasedCount && releasedCount > 0;
+	const canMarkUpToDate = isPositiveCount(releasedCount);
 
 	const closePicker = () => {
 		setProgressDraft(null);
@@ -108,19 +110,32 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		const safeTotal = Math.max(Math.round(nextTotal), 0);
 		setProgressDraft({ current: safeCurrent, total: safeTotal });
 
-		const patch: Record<string, unknown> = {
-			progress:
-				safeTotal === 0 ? null : { current: safeCurrent, total: safeTotal },
-		};
+		const patch: Record<string, unknown> = {};
+		if (safeTotal > 0) {
+			patch.progress = { current: safeCurrent, total: safeTotal };
+		} else if (obra.progress) {
+			patch.progress = null;
+		}
 
 		if (obra.status !== "in-progress" && safeCurrent > 0) {
 			patch.status = "in-progress";
 		}
 
-		await updateObra({
-			id: obra.id as Id<"obras">,
-			patch,
-		});
+		setProgressError(null);
+		try {
+			await updateObra({
+				id: obra.id as Id<"obras">,
+				patch,
+			});
+		} catch (error) {
+			// Se descarta el borrador para mostrar el valor guardado, no uno que no llegó al servidor.
+			setProgressDraft(null);
+			setProgressError(
+				error instanceof Error
+					? error.message
+					: "No se pudo guardar el progreso.",
+			);
+		}
 	};
 
 	const handleMarkUpToDate = async () => {
@@ -362,6 +377,9 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 											}
 										}}
 									/>
+								)}
+								{progressError && (
+									<p className="text-xs text-destructive">{progressError}</p>
 								)}
 								{(obra.type === "series" || obra.type === "anime") &&
 									(obra.progressSeasons?.length ?? 0) > 0 && (

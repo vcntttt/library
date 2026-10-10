@@ -268,6 +268,30 @@ export function completeProgressForStatus(
 	};
 }
 
+export function sameProgress(
+	a: ObraProgress | undefined,
+	b: ObraProgress | undefined,
+) {
+	if (!a || !b) return a === b;
+	return a.current === b.current && a.total === b.total;
+}
+
+export function sameProgressSeasons(
+	a: ObraProgressSeason[] | undefined,
+	b: ObraProgressSeason[] | undefined,
+) {
+	const left = a ?? [];
+	const right = b ?? [];
+	return (
+		left.length === right.length &&
+		left.every(
+			(season, index) =>
+				season.seasonNumber === right[index].seasonNumber &&
+				season.episodeCount === right[index].episodeCount,
+		)
+	);
+}
+
 export function shouldReopenFinishedProgress(args: {
 	status: ObraStatus;
 	explicitlyFinishing: boolean;
@@ -283,7 +307,12 @@ export function shouldReopenFinishedProgress(args: {
 }
 
 function assertProgress(progress: ObraProgress) {
-	if (progress.current < 0 || progress.total < 0) {
+	if (
+		!Number.isFinite(progress.current) ||
+		!Number.isFinite(progress.total) ||
+		progress.current < 0 ||
+		progress.total < 0
+	) {
 		throw new Error("Progreso invalido.");
 	}
 }

@@ -6,6 +6,8 @@ import {
 	normalizeTags,
 	sanitizeMetadata,
 	sanitizeProgress,
+	sameProgress,
+	sameProgressSeasons,
 	sanitizeProgressSeasons,
 	shouldReopenFinishedProgress,
 	syncMangaProgressTotal,
@@ -35,6 +37,22 @@ describe("obra domain helpers", () => {
 			current: 10,
 			total: 10,
 		});
+	});
+
+	it("rejects non-finite progress values", () => {
+		expect(() =>
+			assertCreateObraInput({
+				title: "Obra",
+				type: "book",
+				status: "in-progress",
+				progress: { current: Number.NaN, total: 10 },
+			}),
+		).toThrow("Progreso invalido");
+		expect(() =>
+			assertUpdateObraPatch({
+				progress: { current: 1, total: Number.POSITIVE_INFINITY },
+			}),
+		).toThrow("Progreso invalido");
 	});
 
 	it("sanitizes progress seasons by ordering and removing invalid entries", () => {
@@ -125,6 +143,32 @@ describe("obra domain helpers", () => {
 				trackingChanged: true,
 				progress: { current: 12, total: 13 },
 			}),
+		).toBe(false);
+	});
+
+	it("treats progress as unchanged only when the values match", () => {
+		expect(sameProgress(undefined, undefined)).toBe(true);
+		expect(sameProgress({ current: 3, total: 10 }, { current: 3, total: 10 })).toBe(true);
+		expect(sameProgress({ current: 3, total: 10 }, undefined)).toBe(false);
+		expect(sameProgress({ current: 3, total: 10 }, { current: 4, total: 10 })).toBe(false);
+	});
+
+	it("compares progress seasons regardless of absence versus empty", () => {
+		expect(sameProgressSeasons(undefined, undefined)).toBe(true);
+		expect(
+			sameProgressSeasons(
+				[{ seasonNumber: 1, episodeCount: 5 }],
+				[{ seasonNumber: 1, episodeCount: 5 }],
+			),
+		).toBe(true);
+		expect(
+			sameProgressSeasons([{ seasonNumber: 1, episodeCount: 5 }], undefined),
+		).toBe(false);
+		expect(
+			sameProgressSeasons(
+				[{ seasonNumber: 1, episodeCount: 5 }],
+				[{ seasonNumber: 1, episodeCount: 6 }],
+			),
 		).toBe(false);
 	});
 

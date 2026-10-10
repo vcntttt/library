@@ -5,6 +5,7 @@ import {
 	getSeasonEndProgress,
 	getSeasonProgress,
 	mergeSeasons,
+	setSeasonEpisodeCount,
 	setSeasonProgress,
 	totalEpisodesForSeasons,
 	validateSeasons,
@@ -43,6 +44,34 @@ describe("validateSeasons", () => {
 			{ seasonNumber: 1, episodeCount: 8 },
 		]);
 		expect(result).toEqual([{ seasonNumber: 1, episodeCount: 8 }]);
+	});
+
+	it("descarta temporadas que quedan con menos de 1 episodio tras redondear", () => {
+		expect(validateSeasons([{ seasonNumber: 1, episodeCount: 0.5 }])).toEqual(
+			[],
+		);
+		expect(validateSeasons([{ seasonNumber: 1, episodeCount: 10.7 }])).toEqual([
+			{ seasonNumber: 1, episodeCount: 10 },
+		]);
+	});
+});
+
+describe("setSeasonEpisodeCount", () => {
+	it("cambia solo los episodios de la temporada indicada", () => {
+		const result = setSeasonEpisodeCount(himymSeasons, 2, 10);
+		expect(result).toHaveLength(9);
+		expect(result[1]).toEqual({ seasonNumber: 2, episodeCount: 10 });
+		expect(result[0]).toEqual(himymSeasons[0]);
+	});
+
+	it("nunca deja la temporada en 0 episodios, para que no desaparezca", () => {
+		const result = setSeasonEpisodeCount(himymSeasons, 2, 0);
+		expect(result).toHaveLength(9);
+		expect(result[1]).toEqual({ seasonNumber: 2, episodeCount: 1 });
+		expect(setSeasonEpisodeCount(himymSeasons, 2, Number.NaN)[1]).toEqual({
+			seasonNumber: 2,
+			episodeCount: 1,
+		});
 	});
 });
 
