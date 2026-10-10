@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	buildAnnotationIdentity,
+	matchAnnotationRows,
 	normalizeHighlightText,
 	selectCanonicalProgress,
 } from "./reconciliation";
@@ -52,5 +53,46 @@ describe("reading reconciliation", () => {
 		expect(result.currentPercent).toBe(0.41);
 		expect(result.maxPercent).toBe(0.82);
 		expect(result.completionStatus).toBe("complete");
+	});
+
+	it("no asigna dos anotaciones entrantes a la misma fila existente", () => {
+		const rowA = {
+			id: "a",
+			sourceKey: "p1||p2",
+			sourceFingerprint: "position:p1|p2|t1",
+		};
+		const incoming = [
+			{ sourceKey: "p1||p2", sourceFingerprint: "position:p1|p2|t1" },
+			{ sourceKey: "p1||p2", sourceFingerprint: "position:p1|p2|t2" },
+		];
+
+		const matches = matchAnnotationRows([rowA], incoming);
+
+		expect(matches[0]).toBe(rowA);
+		expect(matches[1]).toBeUndefined();
+	});
+
+	it("reconoce una anotación movida por sourceKey sin robar la fila de otra entrada", () => {
+		const moved = {
+			id: "moved",
+			sourceKey: "k",
+			sourceFingerprint: "index:0|text:viejo",
+		};
+		const exact = {
+			id: "exact",
+			sourceKey: "k",
+			sourceFingerprint: "index:1|text:nuevo",
+		};
+
+		const matches = matchAnnotationRows(
+			[moved, exact],
+			[
+				{ sourceKey: "k", sourceFingerprint: "index:1|text:nuevo" },
+				{ sourceKey: "k", sourceFingerprint: "index:0|text:editado" },
+			],
+		);
+
+		expect(matches[0]).toBe(exact);
+		expect(matches[1]).toBe(moved);
 	});
 });

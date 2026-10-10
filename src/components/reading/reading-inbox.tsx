@@ -110,8 +110,8 @@ export function ReadingInbox() {
 										¿Conservar todas las anotaciones?
 									</AlertDialogTitle>
 									<AlertDialogDescription>
-										Se conservarán las {annotations.length} anotaciones
-										pendientes y pasarán a la galería.
+										Se conservarán todas las anotaciones pendientes y pasarán a
+										la galería.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>

@@ -79,7 +79,7 @@ export function parseReadingSidecars(
 
 function parseKoreaderMetadata(
 	input: unknown,
-	sourceTimestamp?: number,
+	sourceTimestampMs?: number,
 ): {
 	progress: ReadingProgressSnapshot[];
 	annotations: ReadingAnnotationSnapshot[];
@@ -114,7 +114,14 @@ function parseKoreaderMetadata(
 		assignString(snapshot, "filePath", root.doc_path);
 		assignNumber(snapshot, "percent", percent);
 		assignNumber(snapshot, "totalPages", root.doc_pages);
-		assignNumber(snapshot, "sourceTimestamp", sourceTimestamp);
+		// Los timestamps de dispositivo van en segundos; el mtime del sidecar llega en ms.
+		assignNumber(
+			snapshot,
+			"sourceTimestamp",
+			sourceTimestampMs === undefined
+				? undefined
+				: Math.floor(sourceTimestampMs / 1000),
+		);
 		assignString(snapshot, "locator", locator);
 		progress.push(snapshot);
 	}
@@ -150,7 +157,11 @@ function parseKoreaderMetadata(
 				assignString(result, "note", annotation.note ?? annotation.notes);
 				assignString(result, "chapter", annotation.chapter);
 				assignString(result, "color", annotation.color);
-				assignString(result, "page", annotation.page);
+				assignString(
+					result,
+					"page",
+					asString(annotation.page) ?? asNumber(annotation.page)?.toString(),
+				);
 				assignNumber(result, "pageNumber", annotation.pageno);
 				assignString(result, "positionStart", positionStart);
 				assignString(result, "positionEnd", positionEnd);

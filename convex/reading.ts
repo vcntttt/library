@@ -18,6 +18,7 @@ import {
 	buildAnnotationIdentity,
 	compareProgressSource,
 	isPossibleDuplicate,
+	matchAnnotationRows,
 	selectCanonicalProgress,
 } from "../src/lib/reading/reconciliation";
 
@@ -515,25 +516,34 @@ async function upsertDocumentForUser(
 		importedProgress += 1;
 	}
 
-	const seenFingerprints = new Set<string>();
+	const matchedAnnotationIds = new Set<Id<"readingAnnotations">>();
 	let importedAnnotations = 0;
 	const existingAnnotations = await ctx.db
 		.query("readingAnnotations")
 		.withIndex("by_document_sourceKey", (q) => q.eq("documentId", documentId))
 		.collect();
-	for (const [index, annotation] of input.annotations.entries()) {
+	const incomingAnnotations = input.annotations.flatMap((annotation, index) => {
 		const text = annotation.text.trim();
-		if (!text) continue;
-		const sourceFingerprint = buildAnnotationIdentity(annotation, index);
-		seenFingerprints.add(sourceFingerprint);
-		const current =
-			(existingAnnotations.find(
-				(candidate) =>
-					candidate.sourceFingerprint === sourceFingerprint ||
-					(candidate.sourceKey === annotation.sourceKey &&
-						candidate.documentId === documentId),
-			) ??
-				(await findAnnotationByFingerprint(ctx, documentId, sourceFingerprint)));
+		if (!text) return [];
+		return [
+			{
+				annotation,
+				text,
+				index,
+				sourceFingerprint: buildAnnotationIdentity(annotation, index),
+			},
+		];
+	});
+	const matches = matchAnnotationRows(
+		existingAnnotations,
+		incomingAnnotations.map(({ annotation, sourceFingerprint }) => ({
+			sourceKey: annotation.sourceKey,
+			sourceFingerprint,
+		})),
+	);
+	for (const [position, { annotation, text, index, sourceFingerprint }] of incomingAnnotations.entries()) {
+		const current = matches[position];
+		if (current) matchedAnnotationIds.add(current._id);
 		const possibleDuplicateOf = current
 			? current.possibleDuplicateOf
 			: existingAnnotations.find(
@@ -583,9 +593,7 @@ async function upsertDocumentForUser(
 	if (input.annotationsComplete) {
 		for (const annotation of existingAnnotations) {
 			if (annotation.sourceId !== source._id) continue;
-			if (annotation.sourceFingerprint && seenFingerprints.has(annotation.sourceFingerprint)) {
-				continue;
-			}
+			if (matchedAnnotationIds.has(annotation._id)) continue;
 			await ctx.db.patch(annotation._id, {
 				sourceStatus: "missing",
 				sourceMissingAt: now,
@@ -650,19 +658,6 @@ async function findProgress(
 		)
 		.collect();
 	return rows.find((row) => row.sourceId === sourceId) ?? rows.find((row) => !row.sourceId);
-}
-
-async function findAnnotationByFingerprint(
-	ctx: MutationCtx,
-	documentId: Id<"readingDocuments">,
-	fingerprint: string,
-) {
-	return await ctx.db
-		.query("readingAnnotations")
-		.withIndex("by_document_sourceFingerprint", (q) =>
-			q.eq("documentId", documentId).eq("sourceFingerprint", fingerprint),
-		)
-		.unique();
 }
 
 async function markMissingSourcesForUser(
@@ -770,7 +765,10 @@ async function projectProgressForDocument(
 	}
 	if (selection.completionStatus === "complete" && obra.status !== "finished") {
 		patch.status = "finished";
-		patch.finishedAt = selection.selected?.sourceTimestamp ?? now;
+		patch.finishedAt =
+			selection.selected?.sourceTimestamp !== undefined
+				? selection.selected.sourceTimestamp * 1000
+				: now;
 		if (!obra.reviewStatus && !obra.review) {
 			patch.reviewStatus = "pending";
 			patch.reviewRequestedAt = now;

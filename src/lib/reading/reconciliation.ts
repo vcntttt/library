@@ -105,3 +105,60 @@ export function isPossibleDuplicate(left: string, right: string) {
 		normalizedRight.includes(normalizedLeft)
 	);
 }
+
+export interface ExistingAnnotationRow {
+	sourceKey: string;
+	sourceFingerprint?: string;
+}
+
+export interface IncomingAnnotationIdentity {
+	sourceKey: string;
+	sourceFingerprint: string;
+}
+
+/**
+ * Empareja cada anotación entrante con una fila existente, sin que dos entradas
+ * reclamen la misma fila. Primero busca coincidencia exacta por huella; después,
+ * por sourceKey, solo en filas que no sean la huella de otra entrada actual.
+ */
+export function matchAnnotationRows<T extends ExistingAnnotationRow>(
+	existing: T[],
+	incoming: IncomingAnnotationIdentity[],
+): Array<T | undefined> {
+	const incomingFingerprints = new Set(
+		incoming.map((annotation) => annotation.sourceFingerprint),
+	);
+	const claimed = new Set<T>();
+	const matches: Array<T | undefined> = incoming.map(() => undefined);
+
+	incoming.forEach((annotation, index) => {
+		const match = existing.find(
+			(candidate) =>
+				!claimed.has(candidate) &&
+				candidate.sourceFingerprint === annotation.sourceFingerprint,
+		);
+		if (match) {
+			matches[index] = match;
+			claimed.add(match);
+		}
+	});
+
+	incoming.forEach((annotation, index) => {
+		if (matches[index]) return;
+		const match = existing.find(
+			(candidate) =>
+				!claimed.has(candidate) &&
+				candidate.sourceKey === annotation.sourceKey &&
+				!(
+					candidate.sourceFingerprint !== undefined &&
+					incomingFingerprints.has(candidate.sourceFingerprint)
+				),
+		);
+		if (match) {
+			matches[index] = match;
+			claimed.add(match);
+		}
+	});
+
+	return matches;
+}
