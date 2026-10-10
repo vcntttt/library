@@ -6,6 +6,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
 });
 
 function jsonResponse(body: unknown, status = 200) {
@@ -517,7 +518,7 @@ describe("metadata providers", () => {
 			expect.stringContaining(
 				"https://www.googleapis.com/books/v1/volumes/google-dokkodo",
 			),
-			undefined,
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
 		);
 	});
 
@@ -551,7 +552,7 @@ describe("metadata providers", () => {
 		});
 		expect(fetchMock).toHaveBeenCalledWith(
 			"https://openlibrary.org/books/OL123M.json",
-			undefined,
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
 		);
 	});
 
@@ -595,11 +596,12 @@ describe("metadata providers", () => {
 		});
 		expect(fetchMock).toHaveBeenCalledWith(
 			expect.stringContaining("https://itunes.apple.com/lookup?"),
-			undefined,
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
 		);
 	});
 
 	it("searches TMDB movie and tv URLs for the matching obra type", async () => {
+		vi.stubEnv("TMDB_API_KEY", "test-key");
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValueOnce(
@@ -999,7 +1001,7 @@ describe("metadata providers", () => {
 		expect(details.latestChapterCheckedAt).toEqual(expect.any(Number));
 		expect(fetchMock).toHaveBeenCalledWith(
 			"https://manhwawebbackend-production.up.railway.app/manhwa/see/magoinfinito_1717625777860",
-			undefined,
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
 		);
 	});
 
@@ -1070,7 +1072,7 @@ describe("metadata providers", () => {
 		expect(details?.latestChapterCheckedAt).toEqual(expect.any(Number));
 		expect(fetchMock).toHaveBeenCalledWith(
 			expect.stringContaining("https://api.mangadex.org/chapter?"),
-			undefined,
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
 		);
 	});
 
@@ -1108,7 +1110,7 @@ describe("metadata providers", () => {
 		);
 		expect(fetchMock).toHaveBeenCalledWith(
 			"https://raw.githubusercontent.com/miguelGlz345/LosMugiwaraScans/main/One%20Piece.json",
-			undefined,
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
 		);
 	});
 
@@ -1136,5 +1138,216 @@ describe("metadata providers", () => {
 		expect(fetchMock.mock.calls[0]?.[0]).toContain(
 			"append_to_response=credits",
 		);
+	});
+
+	it("does not fetch Amazon URLs from look-alike hosts", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const outcome = await searchMetadata(
+			"amazon",
+			"https://evilamazon.com/dp/B012345678",
+			"book",
+		);
+
+		expect(outcome.results).toEqual([]);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("aborts metadata requests after a timeout with a Spanish message", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockRejectedValueOnce(
+				new DOMException("The operation timed out.", "TimeoutError"),
+			);
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails } = await import("./providers");
+
+		await expect(getMetadataDetails("google-books", "abc")).rejects.toThrow(
+			"tardó demasiado",
+		);
+		expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+	});
+
+	it("encodes provider ids placed in URL paths", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				id: "a/b",
+				volumeInfo: { title: "Libro" },
+			}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails } = await import("./providers");
+
+		await getMetadataDetails("google-books", "a/b");
+
+		expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+			"/books/v1/volumes/a%2Fb",
+		);
+	});
+
+	it("reports AniList GraphQL errors without crashing", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonResponse({ data: null, errors: [{ message: "Rate limit" }] }),
+			)
+			.mockResolvedValueOnce(jsonResponse({ data: { Media: null } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails, searchMetadata } = await import("./providers");
+
+		await expect(searchMetadata("anilist", "naruto", "anime")).rejects.toThrow(
+			"No se pudo consultar AniList.",
+		);
+		await expect(getMetadataDetails("anilist", "1")).rejects.toThrow(
+			"No se encontraron metadatos en AniList.",
+		);
+	});
+
+	it("decodes HTML entities without crashing on invalid code points", async () => {
+		const fetchMock = vi.fn().mockResolvedValueOnce(
+			jsonResponse({
+				id: "abc",
+				volumeInfo: {
+					title: "Libro",
+					description: "Caf&eacute; &#99999999; &amp;lt;",
+				},
+			}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails } = await import("./providers");
+
+		const details = await getMetadataDetails("google-books", "abc");
+
+		expect(details.description).toBe("Café � &lt;");
+	});
+
+	it("reads double-quoted Amazon meta values that contain apostrophes", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				htmlResponse(
+					`<html><head><meta name="title" content="Ender's Game"></head><body></body></html>`,
+				),
+			);
+		vi.stubGlobal("fetch", fetchMock);
+		const { getMetadataDetails } = await import("./providers");
+
+		const details = await getMetadataDetails("amazon", "B012345678");
+
+		expect(details.title).toBe("Ender's Game");
+	});
+
+	it("does not treat look-alike ManhwaWeb hosts as direct ids", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [] }));
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		await searchMetadata("manhwaweb", "https://evilmanhwaweb.com/manhwa/x_1");
+
+		expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+			"/manhwa/library",
+		);
+	});
+	describe("image proxy route", () => {
+		async function callImageProxy(url: string) {
+			const { Route } = await import("@/routes/api/metadata/image");
+			const route = Route as unknown as {
+				options: {
+					server: {
+						handlers: {
+							GET: (context: { request: Request }) => Promise<Response>;
+						};
+					};
+				};
+			};
+			return route.options.server.handlers.GET({
+				request: new Request(
+					`http://localhost/api/metadata/image?url=${encodeURIComponent(url)}`,
+				),
+			});
+		}
+
+		const imageUrl = "https://img1mw.xyz/cover.png";
+
+		it("serves raster images from allowed hosts with nosniff", async () => {
+			const fetchMock = vi.fn().mockResolvedValueOnce(
+				new Response("png-bytes", {
+					status: 200,
+					headers: { "content-type": "image/png" },
+				}),
+			);
+			vi.stubGlobal("fetch", fetchMock);
+
+			const response = await callImageProxy(imageUrl);
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+			expect(await response.text()).toBe("png-bytes");
+		});
+
+		it("accepts image/jpg and image/pjpeg from CDNs", async () => {
+			for (const contentType of ["image/jpg", "image/pjpeg"]) {
+				const fetchMock = vi.fn().mockResolvedValueOnce(
+					new Response("jpg-bytes", {
+						status: 200,
+						headers: { "content-type": contentType },
+					}),
+				);
+				vi.stubGlobal("fetch", fetchMock);
+
+				const response = await callImageProxy(imageUrl);
+
+				expect(response.status).toBe(200);
+				expect(response.headers.get("content-type")).toBe(contentType);
+			}
+		});
+
+		it("refuses SVG responses", async () => {
+			const fetchMock = vi.fn().mockResolvedValueOnce(
+				new Response("<svg></svg>", {
+					status: 200,
+					headers: { "content-type": "image/svg+xml" },
+				}),
+			);
+			vi.stubGlobal("fetch", fetchMock);
+
+			const response = await callImageProxy(imageUrl);
+
+			expect(response.status).toBe(502);
+		});
+
+		it("does not follow redirects to hosts outside the allowlist", async () => {
+			const fetchMock = vi.fn().mockResolvedValueOnce(
+				new Response(null, {
+					status: 302,
+					headers: { location: "http://169.254.169.254/latest/meta-data" },
+				}),
+			);
+			vi.stubGlobal("fetch", fetchMock);
+
+			const response = await callImageProxy(imageUrl);
+
+			expect(response.status).toBe(502);
+			expect(fetchMock).toHaveBeenCalledTimes(1);
+		});
+
+		it("rejects images whose declared size exceeds the limit", async () => {
+			const fetchMock = vi.fn().mockResolvedValueOnce(
+				new Response("x", {
+					status: 200,
+					headers: {
+						"content-type": "image/jpeg",
+						"content-length": String(50 * 1024 * 1024),
+					},
+				}),
+			);
+			vi.stubGlobal("fetch", fetchMock);
+
+			const response = await callImageProxy(imageUrl);
+
+			expect(response.status).toBe(502);
+		});
 	});
 });
