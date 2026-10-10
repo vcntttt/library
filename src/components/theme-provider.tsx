@@ -43,20 +43,24 @@ export function ThemeProvider({
 
 	useEffect(() => {
 		const root = window.document.documentElement;
+		const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-		root.classList.remove("light", "dark");
+		const applyTheme = () => {
+			root.classList.remove("light", "dark");
 
-		if (theme === "system") {
-			const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-				.matches
-				? "dark"
-				: "light";
+			if (theme === "system") {
+				root.classList.add(media.matches ? "dark" : "light");
+				return;
+			}
 
-			root.classList.add(systemTheme);
-			return;
-		}
+			root.classList.add(theme);
+		};
 
-		root.classList.add(theme);
+		applyTheme();
+		if (theme !== "system") return;
+
+		media.addEventListener("change", applyTheme);
+		return () => media.removeEventListener("change", applyTheme);
 	}, [theme]);
 
 	const value = {

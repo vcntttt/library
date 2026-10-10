@@ -40,7 +40,9 @@ export default function Header() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const { hasAccess: hasReadingAccess } = useReadingIntegrationAccess();
 	const visibleNavItems = navItems.filter(
-		(item) => !item.requiresReadingAccess || hasReadingAccess,
+		(item) =>
+			!("requiresReadingAccess" in item && item.requiresReadingAccess) ||
+			hasReadingAccess,
 	);
 
 	return (
