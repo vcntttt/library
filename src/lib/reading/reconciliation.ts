@@ -79,12 +79,21 @@ export function selectCanonicalProgress(
 	};
 }
 
+/**
+ * Devuelve el timestamp de origen en segundos epoch. Los dispositivos envían segundos,
+ * pero filas antiguas de sidecars quedaron en ms.
+ */
+export function toEpochSeconds(timestamp: number): number {
+	return timestamp > 1e11 ? Math.floor(timestamp / 1000) : timestamp;
+}
+
 export function compareProgressSource(
 	left: ReadingProgressLike,
 	right: ReadingProgressLike,
 ) {
 	const timestampDifference =
-		(left.sourceTimestamp ?? 0) - (right.sourceTimestamp ?? 0);
+		toEpochSeconds(left.sourceTimestamp ?? 0) -
+		toEpochSeconds(right.sourceTimestamp ?? 0);
 	if (timestampDifference !== 0) return timestampDifference;
 	return (left.revision ?? 0) - (right.revision ?? 0);
 }

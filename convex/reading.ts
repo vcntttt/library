@@ -20,6 +20,7 @@ import {
 	isPossibleDuplicate,
 	matchAnnotationRows,
 	selectCanonicalProgress,
+	toEpochSeconds,
 } from "../src/lib/reading/reconciliation";
 
 const DEFAULT_LIMIT = 100;
@@ -767,7 +768,7 @@ async function projectProgressForDocument(
 		patch.status = "finished";
 		patch.finishedAt =
 			selection.selected?.sourceTimestamp !== undefined
-				? selection.selected.sourceTimestamp * 1000
+				? toEpochSeconds(selection.selected.sourceTimestamp) * 1000
 				: now;
 		if (!obra.reviewStatus && !obra.review) {
 			patch.reviewStatus = "pending";

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
 	buildAnnotationIdentity,
+	compareProgressSource,
 	matchAnnotationRows,
 	normalizeHighlightText,
 	selectCanonicalProgress,
+	toEpochSeconds,
 } from "./reconciliation";
 
 describe("reading reconciliation", () => {
@@ -94,5 +96,44 @@ describe("reading reconciliation", () => {
 
 		expect(matches[0]).toBe(exact);
 		expect(matches[1]).toBe(moved);
+	});
+
+	it("convierte timestamps en ms a segundos y deja los de segundos intactos", () => {
+		expect(toEpochSeconds(1784528020)).toBe(1784528020);
+		expect(toEpochSeconds(1785766138805.2043)).toBe(1785766138);
+	});
+
+	it("compara una fila en ms antigua como más antigua que una en segundos", () => {
+		const oldMilliseconds = { sourceTimestamp: 1785766138805.2043 };
+		const newerSeconds = { sourceTimestamp: 1786000000 };
+
+		expect(compareProgressSource(oldMilliseconds, newerSeconds)).toBeLessThan(
+			0,
+		);
+		expect(
+			compareProgressSource(newerSeconds, oldMilliseconds),
+		).toBeGreaterThan(0);
+	});
+
+	it("selecciona la fila en segundos más reciente frente a una fila en ms antigua", () => {
+		const result = selectCanonicalProgress([
+			{
+				percent: 0.9,
+				maxPercent: 0.9,
+				sourceTimestamp: 1785766138805.2043,
+				revision: 9,
+				completionStatus: "complete",
+			},
+			{
+				percent: 0.3,
+				maxPercent: 0.3,
+				sourceTimestamp: 1786000000,
+				revision: 1,
+				completionStatus: "in-progress",
+			},
+		]);
+
+		expect(result.currentPercent).toBe(0.3);
+		expect(result.completionStatus).toBe("in-progress");
 	});
 });
