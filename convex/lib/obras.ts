@@ -49,6 +49,28 @@ export function normalizeOptionalString(value: string | null | undefined) {
 	return trimmed ? trimmed : undefined;
 }
 
+// Un override "" es un campo vaciado a propósito; `undefined` significa "sin override".
+export function normalizeCustomString(value: string | null | undefined) {
+	if (value == null) return undefined;
+	return value.trim();
+}
+
+// El override gana al original; un override vacío oculta el original.
+export function effectiveString(
+	custom: string | undefined,
+	original: string | undefined,
+) {
+	return custom === undefined ? original : custom || undefined;
+}
+
+// Un override de año 0 significa "sin año"; no existe el año 0 como dato real.
+export function effectiveYear(
+	custom: number | undefined,
+	original: number | undefined,
+) {
+	return custom === undefined ? original : custom === 0 ? undefined : custom;
+}
+
 export function nullableNumber(value: number | null | undefined) {
 	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
@@ -268,6 +290,30 @@ export function completeProgressForStatus(
 	};
 }
 
+export function sameProgress(
+	a: ObraProgress | undefined,
+	b: ObraProgress | undefined,
+) {
+	if (!a || !b) return a === b;
+	return a.current === b.current && a.total === b.total;
+}
+
+export function sameProgressSeasons(
+	a: ObraProgressSeason[] | undefined,
+	b: ObraProgressSeason[] | undefined,
+) {
+	const left = a ?? [];
+	const right = b ?? [];
+	return (
+		left.length === right.length &&
+		left.every(
+			(season, index) =>
+				season.seasonNumber === right[index].seasonNumber &&
+				season.episodeCount === right[index].episodeCount,
+		)
+	);
+}
+
 export function shouldReopenFinishedProgress(args: {
 	status: ObraStatus;
 	explicitlyFinishing: boolean;
@@ -283,7 +329,12 @@ export function shouldReopenFinishedProgress(args: {
 }
 
 function assertProgress(progress: ObraProgress) {
-	if (progress.current < 0 || progress.total < 0) {
+	if (
+		!Number.isFinite(progress.current) ||
+		!Number.isFinite(progress.total) ||
+		progress.current < 0 ||
+		progress.total < 0
+	) {
 		throw new Error("Progreso invalido.");
 	}
 }

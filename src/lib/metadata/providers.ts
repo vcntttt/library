@@ -8,6 +8,7 @@ import type {
 } from "./types";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const METADATA_FETCH_TIMEOUT_MS = 10_000;
 const MANHWA_WEB_IMAGE_HOSTS = new Set(["img1mw.xyz", "img2mw.xyz"]);
 const MANHWA_WEB_IMAGE_PROXY_PATH = "/api/metadata/image";
 
@@ -353,6 +354,10 @@ async function searchAnilist(query: string, obraType?: ObraType) {
 		},
 	);
 
+	if (!response.data?.Page) {
+		throw new Error("No se pudo consultar AniList.");
+	}
+
 	return (
 		response.data.Page.media?.map((media) => ({
 			source: "anilist" as const,
@@ -592,7 +597,9 @@ function buildDirectUrlFallback(input: {
 
 async function getGoogleBookDetails(id: string): Promise<MetadataDetails> {
 	const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-	const url = new URL(`https://www.googleapis.com/books/v1/volumes/${id}`);
+	const url = new URL(
+		`https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(id)}`,
+	);
 	if (apiKey) {
 		url.searchParams.set("key", apiKey);
 	}
@@ -689,7 +696,9 @@ async function getTmdbDetails(
 
 	const isMovie = obraType === "movie";
 	const endpoint = isMovie ? "movie" : "tv";
-	const detailUrl = new URL(`https://api.themoviedb.org/3/${endpoint}/${id}`);
+	const detailUrl = new URL(
+		`https://api.themoviedb.org/3/${endpoint}/${encodeURIComponent(id)}`,
+	);
 	detailUrl.searchParams.set("api_key", apiKey);
 	detailUrl.searchParams.set("language", "es-ES");
 	detailUrl.searchParams.set("append_to_response", "credits");
@@ -818,7 +827,10 @@ async function getAnilistDetails(
 		},
 	);
 
-	const media = response.data.Media;
+	const media = response.data?.Media;
+	if (!media) {
+		throw new Error("No se encontraron metadatos en AniList.");
+	}
 	const nextEpisode = media.nextAiringEpisode;
 	const latestChapterInfo =
 		obraType === "manga" || obraType === "manhwa"
@@ -1235,8 +1247,24 @@ export async function getMetadataDetails(
 	return details;
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit = {}) {
+	try {
+		return await fetch(url, {
+			...init,
+			signal: init.signal ?? AbortSignal.timeout(METADATA_FETCH_TIMEOUT_MS),
+		});
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "TimeoutError") {
+			throw new Error(
+				"El proveedor de metadatos tardó demasiado en responder.",
+			);
+		}
+		throw error;
+	}
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit) {
-	const response = await fetch(url, init);
+	const response = await fetchWithTimeout(url, init);
 	if (!response.ok) {
 		const details = await readMetadataErrorDetails(response);
 		const message = getMetadataErrorMessage(response, url, details);
@@ -1420,7 +1448,9 @@ function extractAmazonAsin(value: string) {
 	try {
 		const url = new URL(value);
 		const hostname = url.hostname.replace(/^www\./, "");
-		if (!hostname.endsWith("amazon.com")) return undefined;
+		if (hostname !== "amazon.com" && !hostname.endsWith(".amazon.com")) {
+			return undefined;
+		}
 
 		const segments = url.pathname.split("/").filter(Boolean);
 		const asinSegmentKeys = ["dp", "product", "d", "asin"] as const;
@@ -1502,7 +1532,8 @@ function extractManhwaWebId(value: string) {
 
 	try {
 		const url = new URL(trimmed);
-		if (!url.hostname.replace(/^www\./, "").includes("manhwaweb.com")) {
+		const hostname = url.hostname.replace(/^www\./, "");
+		if (hostname !== "manhwaweb.com" && !hostname.endsWith(".manhwaweb.com")) {
 			return undefined;
 		}
 		const segments = url.pathname.split("/").filter(Boolean);
@@ -1850,7 +1881,7 @@ async function getAmazonBookDetailsFromUrl(
 }
 
 async function fetchAmazonBookHtml(url: string) {
-	const response = await fetch(url, {
+	const response = await fetchWithTimeout(url, {
 		headers: {
 			Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 			"Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
@@ -2215,9 +2246,9 @@ function extractHtmlSliceById(html: string, id: string, length: number) {
 
 function getHtmlAttribute(tag: string, attribute: string) {
 	const match = tag.match(
-		new RegExp(`\\b${escapeRegExp(attribute)}=["']([^"']*)["']`, "i"),
+		new RegExp(`\\b${escapeRegExp(attribute)}=(?:"([^"]*)"|'([^']*)')`, "i"),
 	);
-	return cleanText(match?.[1]);
+	return cleanText(match?.[1] ?? match?.[2]);
 }
 
 function cleanAmazonMetaTitle(value?: string) {
@@ -2261,7 +2292,6 @@ function cleanText(value?: string) {
 function decodeHtmlEntities(value: string) {
 	return value
 		.replace(/&nbsp;/g, " ")
-		.replace(/&amp;/g, "&")
 		.replace(/&quot;/g, '"')
 		.replace(/&#39;/g, "'")
 		.replace(/&apos;/g, "'")
@@ -2280,11 +2310,16 @@ function decodeHtmlEntities(value: string) {
 		.replace(/&Oacute;/g, "Ó")
 		.replace(/&Uacute;/g, "Ú")
 		.replace(/&#(\d+);/g, (_, codepoint: string) =>
-			String.fromCodePoint(Number(codepoint)),
+			codePointToString(Number(codepoint)),
 		)
 		.replace(/&#x([0-9a-f]+);/gi, (_, codepoint: string) =>
-			String.fromCodePoint(Number.parseInt(codepoint, 16)),
-		);
+			codePointToString(Number.parseInt(codepoint, 16)),
+		)
+		.replace(/&amp;/g, "&");
+}
+
+function codePointToString(codePoint: number) {
+	return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : "�";
 }
 
 function escapeRegExp(value: string) {

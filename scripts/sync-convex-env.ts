@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,12 +24,15 @@ const envContents = convexRuntimeVariables
 writeFileSync(envFile, `${envContents}\n`, { mode: 0o600 });
 
 try {
-	const child = Bun.spawn(
-		["bunx", "convex", "env", "set", "--force", "--from-file", envFile],
-		{ stderr: "inherit", stdout: "inherit" },
+	const child = spawnSync(
+		"bunx",
+		["convex", "env", "set", "--force", "--from-file", envFile],
+		{ stdio: "inherit" },
 	);
-	const exitCode = await child.exited;
-	if (exitCode !== 0) process.exit(exitCode);
+	if (child.error) throw child.error;
+	// No usar process.exit aquí: cortaría el proceso antes del finally y el
+	// archivo temporal con secretos quedaría en disco.
+	process.exitCode = child.status ?? 1;
 } finally {
 	rmSync(directory, { force: true, recursive: true });
 }

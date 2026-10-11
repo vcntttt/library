@@ -54,6 +54,7 @@ const typeOptions: FilterOption<ObraType>[] = [
 	{ value: "series", label: "Serie" },
 	{ value: "anime", label: "Anime" },
 	{ value: "manga", label: "Manga" },
+	{ value: "manhwa", label: "Manhwa" },
 ];
 
 const statusOptions: FilterOption<ObraStatus>[] = [
@@ -305,27 +306,29 @@ export function ExplorarGrid({
 					</div>
 					<div className="flex shrink-0 flex-wrap items-center gap-2">
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									type="button"
-									variant="outline"
-									className={cn(
-										"h-10 gap-1.5 rounded-none border-border bg-background px-3 text-sm font-normal shadow-none",
-										activeFiltersCount > 0 &&
-											"border-foreground text-foreground",
-									)}
-								>
-									<SlidersHorizontal className="size-4" />
-									Filtros
-									{activeFiltersCount > 0 && (
-										<Badge
-											variant="default"
-											className="h-5 min-w-5 rounded-full px-1.5 text-xs"
-										>
-											{activeFiltersCount}
-										</Badge>
-									)}
-								</Button>
+							<DropdownMenuTrigger
+								render={
+									<Button
+										type="button"
+										variant="outline"
+										className={cn(
+											"h-10 gap-1.5 rounded-none border-border bg-background px-3 text-sm font-normal shadow-none",
+											activeFiltersCount > 0 &&
+												"border-foreground text-foreground",
+										)}
+									/>
+								}
+							>
+								<SlidersHorizontal className="size-4" />
+								Filtros
+								{activeFiltersCount > 0 && (
+									<Badge
+										variant="default"
+										className="h-5 min-w-5 rounded-full px-1.5 text-xs"
+									>
+										{activeFiltersCount}
+									</Badge>
+								)}
 							</DropdownMenuTrigger>
 							<DropdownMenuContent
 								className="w-[260px] rounded-none"
@@ -424,6 +427,7 @@ export function ExplorarGrid({
 						<Select
 							value={sortValue}
 							onValueChange={(value) => {
+								if (!value) return;
 								const [key, direction] = value.split(":") as [SortKey, SortDir];
 								setSortKey(key);
 								setSortDir(direction);

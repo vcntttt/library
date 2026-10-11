@@ -3,7 +3,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { MoreHorizontal, Shuffle } from "lucide-react";
-import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -65,14 +65,10 @@ export function ReadingGallery() {
 	const [sortBy, setSortBy] = useState<"shuffle" | "recent" | "oldest">(
 		"shuffle",
 	);
-	const shuffleSeedRef = useRef(Date.now());
-	const handleReshuffle = useCallback(() => {
-		shuffleSeedRef.current = Date.now();
-		// Force re-render by toggling sort briefly
-		setSortBy("recent");
-		queueMicrotask(() => setSortBy("shuffle"));
-	}, []);
+	const [shuffleSeed, setShuffleSeed] = useState(() => Date.now());
+	const handleReshuffle = useCallback(() => setShuffleSeed(Date.now()), []);
 	const [context, setContext] = useState<{
+		annotationId: Id<"readingAnnotations">;
 		status: string;
 		candidates: Array<{
 			id: string;
@@ -124,7 +120,7 @@ export function ReadingGallery() {
 	const sortedAnnotations = useMemo(() => {
 		if (!filteredAnnotations) return undefined;
 		if (sortBy === "shuffle") {
-			return shuffleArray(filteredAnnotations, shuffleSeedRef.current);
+			return shuffleArray(filteredAnnotations, shuffleSeed);
 		}
 		const sorted = [...filteredAnnotations];
 		sorted.sort((a, b) => {
@@ -135,7 +131,7 @@ export function ReadingGallery() {
 				: bTime.localeCompare(aTime);
 		});
 		return sorted;
-	}, [filteredAnnotations, sortBy]);
+	}, [filteredAnnotations, sortBy, shuffleSeed]);
 
 	const annotationGroups = useMemo(() => {
 		if (!sortedAnnotations) return [];
@@ -196,6 +192,7 @@ export function ReadingGallery() {
 
 	const handleLoadContext = async () => {
 		if (!selectedAnnotation || !authToken) return;
+		const annotationId = selectedAnnotation.annotation._id;
 		setIsLoadingContext(true);
 		setCommentMessage(null);
 		try {
@@ -215,7 +212,7 @@ export function ReadingGallery() {
 			const payload = await response.json();
 			if (!response.ok)
 				throw new Error(payload.error ?? "No se pudo buscar contexto.");
-			setContext(payload);
+			setContext({ ...payload, annotationId });
 		} catch (error) {
 			setCommentMessage(
 				error instanceof Error ? error.message : "No se pudo buscar contexto.",
@@ -548,7 +545,7 @@ export function ReadingGallery() {
 												: "Buscar contexto EPUB"}
 										</Button>
 									)}
-									{context && (
+									{context && context.annotationId === selectedAnnotationId && (
 										<div className="space-y-3 border-t border-border pt-3">
 											<p className="text-xs text-muted-foreground">
 												{context.status === "ambiguous"

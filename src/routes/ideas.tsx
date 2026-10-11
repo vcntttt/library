@@ -60,21 +60,18 @@ function IdeasAuthed() {
 	const [isReviewRevealed, setIsReviewRevealed] = useState(false);
 	const [isReviewBusy, setIsReviewBusy] = useState(false);
 
-	const selectedIdea = useMemo(
-		() => ideas?.find((idea) => idea.relativePath === selectedPath) ?? null,
-		[ideas, selectedPath],
-	);
 	const currentReview = useMemo(
 		() => dueIdeas?.find((idea) => idea.relativePath === reviewingPath) ?? null,
 		[dueIdeas, reviewingPath],
 	);
 
 	useEffect(() => {
-		if (!selectedIdea || !authToken) return;
+		if (!selectedPath || !authToken) return;
 		let cancelled = false;
 		setMessage(null);
 		setConflictFile(null);
-		void fetchIdea(authToken, selectedIdea.relativePath)
+		setFile(null);
+		void fetchIdea(authToken, selectedPath)
 			.then((nextFile) => {
 				if (cancelled) return;
 				setFile(nextFile);
@@ -90,7 +87,7 @@ function IdeasAuthed() {
 		return () => {
 			cancelled = true;
 		};
-	}, [authToken, selectedIdea]);
+	}, [authToken, selectedPath]);
 
 	const handleSync = async () => {
 		if (!authToken) return;
@@ -119,7 +116,7 @@ function IdeasAuthed() {
 	};
 
 	const handleCreate = async () => {
-		if (!authToken || !newTitle.trim()) return;
+		if (!authToken || !newTitle.trim() || isBusy) return;
 		setIsBusy(true);
 		setMessage(null);
 		try {
@@ -387,6 +384,7 @@ function IdeasAuthed() {
 									key={idea.relativePath}
 									type="button"
 									onClick={() => setSelectedPath(idea.relativePath)}
+									disabled={isBusy}
 									className={`w-full border-l-2 px-3 py-3 text-left text-sm transition-colors ${selectedPath === idea.relativePath ? "border-primary bg-muted" : "border-transparent hover:bg-muted/60"}`}
 								>
 									{idea.title}

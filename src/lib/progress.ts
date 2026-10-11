@@ -37,6 +37,14 @@ export function formatProgressRemaining(
 	return formatProgressValue(Math.max(Math.round(total - current), 0), obra);
 }
 
+export function clampProgressCurrent(current: number, total: number) {
+	return Math.min(Math.max(current, 0), Math.max(total, 0));
+}
+
+export function isPositiveCount(value: number | undefined): value is number {
+	return value !== undefined && value > 0;
+}
+
 export function getBookFormatLabel(format?: ObraFormat) {
 	if (format === "audiobook") return "Audiolibro";
 	if (format === "ebook") return "Libro";

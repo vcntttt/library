@@ -70,7 +70,8 @@ function deserializeCard(card: StoredReviewCard): CardInput {
 		reps: card.reps,
 		lapses: card.lapses,
 		state: card.state as State,
-		last_review: card.lastReview ? new Date(card.lastReview) : undefined,
+		last_review:
+			card.lastReview === undefined ? undefined : new Date(card.lastReview),
 	};
 }
 

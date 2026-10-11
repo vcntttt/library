@@ -27,10 +27,9 @@ export const Route = createFileRoute("/api/reading/sync")({
 					if (!isUnauthorizedError(error)) {
 						console.error("[reading/sync] session validation failed", error);
 					}
-					return jsonError(
-						"No autorizado.",
-						isUnauthorizedError(error) ? 401 : 500,
-					);
+					if (isUnauthorizedError(error))
+						return jsonError("No autorizado.", 401);
+					return jsonError("No se pudo validar la sesión.", 500);
 				}
 
 				const rootPath = process.env.READING_BOOKS_PATH;

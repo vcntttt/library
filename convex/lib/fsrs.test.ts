@@ -18,4 +18,12 @@ describe("scheduleReview", () => {
 		expect(second.card.stability).toBeGreaterThan(first.card.stability);
 		expect(second.log.rating).toBe(4);
 	});
+
+	it("calcula los días transcurridos desde un repaso en epoch 0", () => {
+		const first = scheduleReview(undefined, "good", 0);
+		const second = scheduleReview(first.card, "good", 2 * 86_400_000);
+
+		expect(first.card.lastReview).toBe(0);
+		expect(second.log.elapsedDays).toBe(2);
+	});
 });

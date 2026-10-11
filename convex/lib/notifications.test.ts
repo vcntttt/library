@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
 	getNewEpisodeRelease,
+	isSameSecret,
 	mergeAcknowledgedEpisodeMetadata,
 	mergeAcknowledgedMangaMetadata,
 	mergeEpisodicMetadata,
 	nextReadProgress,
 } from "./notifications";
+
+describe("isSameSecret", () => {
+	it("acepta solo secretos idénticos", () => {
+		expect(isSameSecret("abc123", "abc123")).toBe(true);
+		expect(isSameSecret("abc124", "abc123")).toBe(false);
+		expect(isSameSecret("abc12", "abc123")).toBe(false);
+		expect(isSameSecret("abc1234", "abc123")).toBe(false);
+		expect(isSameSecret("", "abc123")).toBe(false);
+	});
+});
 
 describe("notification domain helpers", () => {
 	it("keeps manga release metadata in sync when a release is acknowledged", () => {

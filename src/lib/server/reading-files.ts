@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, dirname, extname, relative, resolve } from "node:path";
+import { readdir, readFile, realpath, stat } from "node:fs/promises";
+import { basename, dirname, extname, relative, resolve, sep } from "node:path";
 import {
 	parseReadingSidecars,
 	type ReadingAnnotationSnapshot,
@@ -151,12 +151,14 @@ async function readBookPayload(
 	bookPath: string,
 	options: { stabilityWindowMs?: number },
 ): Promise<ReadingFilePayload> {
+	await assertInsideRoot(root, bookPath);
 	const fileStats = await readStableFile(bookPath, options.stabilityWindowMs);
 	const file = await readFile(bookPath);
 	const sourcePath = relative(root, bookPath).split("\\").join("/");
 	const sourceKey = sourcePath;
 	const sidecarPath = getSidecarPath(bookPath);
 	const metadata = await readSidecarText(
+		root,
 		sidecarPath,
 		options.stabilityWindowMs,
 	);
@@ -189,9 +191,23 @@ function getSidecarPath(bookPath: string) {
 	)}/metadata${extension}.lua`;
 }
 
-async function readSidecarText(path: string, stabilityWindowMs?: number) {
+// Evita que un enlace simbólico dentro de la biblioteca lea archivos fuera de ella.
+async function assertInsideRoot(root: string, path: string) {
+	const realRoot = await realpath(root);
+	const realPath = await realpath(path);
+	if (realPath !== realRoot && !realPath.startsWith(`${realRoot}${sep}`)) {
+		throw new Error("El archivo de lectura está fuera de la biblioteca.");
+	}
+}
+
+async function readSidecarText(
+	root: string,
+	path: string,
+	stabilityWindowMs?: number,
+) {
 	const fileStats = await inspectOptionalFile(path);
 	if (!fileStats) return undefined;
+	await assertInsideRoot(root, path);
 
 	await ensureStable(path, fileStats, stabilityWindowMs);
 	try {

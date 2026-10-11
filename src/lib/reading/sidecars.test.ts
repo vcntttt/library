@@ -150,4 +150,41 @@ expresarte y siendo\
 			completionStatus: "complete",
 		});
 	});
+
+	it("expresa el timestamp de KOReader en segundos, como los demás dispositivos", () => {
+		const result = parseReadingSidecars({
+			sourceKey: "books/koreader.epub",
+			title: "KOReader",
+			format: "epub",
+			metadata: "return { percent_finished = 0.5 }",
+			metadataSourceTimestamp: 1784440638123,
+		});
+
+		expect(result.progress[0]).toMatchObject({
+			deviceId: "koreader",
+			sourceTimestamp: 1784440638,
+		});
+	});
+
+	it("conserva el número de página de una anotación de PDF de KOReader", () => {
+		const result = parseReadingSidecars({
+			sourceKey: "books/paper.pdf",
+			title: "Paper",
+			format: "pdf",
+			metadata: `return {
+	annotations = {
+		[1] = {
+			["text"] = "Idea",
+			["page"] = 12,
+			["pos0"] = "a",
+			["pos1"] = "b",
+		},
+	},
+}`,
+		});
+
+		expect(result.annotations).toEqual([
+			expect.objectContaining({ text: "Idea", page: "12" }),
+		]);
+	});
 });

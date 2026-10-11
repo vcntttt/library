@@ -89,6 +89,7 @@ export function AddObraDialog({
 	const [isLoadingMetadataDetails, setIsLoadingMetadataDetails] =
 		useState(false);
 	const metadataAbortRef = useRef<AbortController | null>(null);
+	const detailsAbortRef = useRef<AbortController | null>(null);
 	const metadataDebounceRef = useRef<number | null>(null);
 	const authToken = useAuthToken();
 	const createObra = useMutation(convexApi.obras.create);
@@ -188,6 +189,12 @@ export function AddObraDialog({
 		};
 	}, [open, metadataQuery, activeType, selectedMetadata, authToken]);
 
+	const cancelMetadataDetails = () => {
+		detailsAbortRef.current?.abort();
+		detailsAbortRef.current = null;
+		setIsLoadingMetadataDetails(false);
+	};
+
 	const handleOpenChange = (nextOpen: boolean) => {
 		setOpen(nextOpen);
 		if (!nextOpen) {
@@ -195,6 +202,7 @@ export function AddObraDialog({
 			if (metadataDebounceRef.current) {
 				window.clearTimeout(metadataDebounceRef.current);
 			}
+			cancelMetadataDetails();
 			setStep(1);
 			setActiveType("");
 			setMetadataQuery("");
@@ -206,7 +214,6 @@ export function AddObraDialog({
 			setInitialSourceUrl("");
 			setMetadataError(null);
 			setIsSearchingMetadata(false);
-			setIsLoadingMetadataDetails(false);
 		}
 	};
 
@@ -228,6 +235,9 @@ export function AddObraDialog({
 	};
 
 	const handleSelectResult = async (result: MetadataSearchResult) => {
+		cancelMetadataDetails();
+		const controller = new AbortController();
+		detailsAbortRef.current = controller;
 		setSelectedMetadata(result);
 		setStep(3);
 		setIsLoadingMetadataDetails(true);
@@ -241,6 +251,7 @@ export function AddObraDialog({
 					headers: authToken
 						? { authorization: `Bearer ${authToken}` }
 						: undefined,
+					signal: controller.signal,
 				},
 			);
 			if (!response.ok) {
@@ -254,13 +265,17 @@ export function AddObraDialog({
 
 			const payload = await response.json();
 			const details = payload?.details as MetadataDetails | undefined;
-			if (details) setMetadataDetails(details);
+			if (details && !controller.signal.aborted) setMetadataDetails(details);
 		} catch (error) {
+			if (controller.signal.aborted) return;
 			setMetadataError(
 				error instanceof Error ? error.message : "No se pudo cargar metadatos.",
 			);
 		} finally {
-			setIsLoadingMetadataDetails(false);
+			if (detailsAbortRef.current === controller) {
+				detailsAbortRef.current = null;
+				setIsLoadingMetadataDetails(false);
+			}
 		}
 	};
 
@@ -334,6 +349,7 @@ export function AddObraDialog({
 							onBack={() => {
 								setStep(1);
 								setActiveType("");
+								setMetadataResults([]);
 								setDirectUrlFallback(null);
 								setInitialReadingUrl("");
 							}}
@@ -350,6 +366,7 @@ export function AddObraDialog({
 							initialReadingUrl={initialReadingUrl}
 							initialSourceUrl={initialSourceUrl}
 							onBack={() => {
+								cancelMetadataDetails();
 								setStep(2);
 								setSelectedMetadata(null);
 								setMetadataDetails(null);

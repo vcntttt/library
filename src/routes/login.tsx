@@ -1,6 +1,6 @@
 import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Navigate, useRouter } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,8 +62,7 @@ function LoginPage() {
 	}
 
 	if (isAuthenticated) {
-		void router.navigate({ to: "/" });
-		return null;
+		return <Navigate to="/" replace />;
 	}
 
 	return (

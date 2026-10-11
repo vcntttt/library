@@ -15,6 +15,7 @@ import {
 } from "../src/lib/metadata/providers";
 import {
 	getNewEpisodeRelease,
+	isSameSecret,
 	mergeAcknowledgedEpisodeMetadata,
 	mergeAcknowledgedMangaMetadata,
 	mergeEpisodicMetadata,
@@ -286,6 +287,11 @@ export const ack = mutation({
 			return { ok: false, reason: "not_found" as const };
 		}
 
+		// Una confirmación tardía o repetida no debe reenviar ni rebobinar un evento ya entregado.
+		if (event.status === "delivered") {
+			return { ok: true, status: "delivered" as const };
+		}
+
 		const now = Date.now();
 		if (status === "failed") {
 			await ctx.db.patch(event._id, {
@@ -362,7 +368,7 @@ export const markRead = mutation({
 			return {
 				ok: false,
 				reason: "not_found" as const,
-				message: "Notificacion no encontrada.",
+				message: "Notificación no encontrada.",
 			};
 		}
 		const notificationUserId = await requireNotificationUserId(ctx);
@@ -370,7 +376,7 @@ export const markRead = mutation({
 			return {
 				ok: false,
 				reason: "not_found" as const,
-				message: "Notificacion no encontrada.",
+				message: "Notificación no encontrada.",
 			};
 		}
 
@@ -742,7 +748,7 @@ function toPayload(row: Doc<"notificationEvents">): ReleasePayload {
 function assertAlfredSecret(secret: string) {
 	const expected = process.env.ALFRED_NOTIFY_SECRET;
 	if (!expected) throw new Error("Falta ALFRED_NOTIFY_SECRET.");
-	if (secret !== expected) throw new Error("No autorizado.");
+	if (!isSameSecret(secret, expected)) throw new Error("No autorizado.");
 }
 
 function getTrackedMetadataSource(

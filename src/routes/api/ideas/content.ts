@@ -6,7 +6,11 @@ import {
 	requireReadingIntegrationOwner,
 } from "@/lib/server/convex";
 import { json, jsonError, readJson } from "@/lib/server/http";
-import { readIdeaFile, writeIdeaFile } from "@/lib/server/idea-files";
+import {
+	InvalidIdeaPathError,
+	readIdeaFile,
+	writeIdeaFile,
+} from "@/lib/server/idea-files";
 
 export const Route = createFileRoute("/api/ideas/content")({
 	server: {
@@ -22,10 +26,10 @@ export const Route = createFileRoute("/api/ideas/content")({
 				try {
 					return json(await readIdeaFile(vaultPath, relativePath));
 				} catch (error) {
-					return jsonError(
-						error instanceof Error ? error.message : "No se pudo leer la idea.",
-						404,
-					);
+					if (error instanceof InvalidIdeaPathError) {
+						return jsonError(error.message, 400);
+					}
+					return jsonError("No se pudo leer la idea.", 404);
 				}
 			},
 			PUT: async ({ request }) => {
@@ -40,6 +44,10 @@ export const Route = createFileRoute("/api/ideas/content")({
 				}>(request);
 				if (!body?.relativePath || typeof body.content !== "string") {
 					return jsonError("La ruta y el contenido son obligatorios.");
+				}
+				// Sin hash esperado la escritura pisaría ediciones hechas en Obsidian.
+				if (!body.expectedHash) {
+					return jsonError("Falta el contentHash esperado de la idea.");
 				}
 
 				try {
@@ -60,12 +68,10 @@ export const Route = createFileRoute("/api/ideas/content")({
 					}
 					return json(result.current);
 				} catch (error) {
-					return jsonError(
-						error instanceof Error
-							? error.message
-							: "No se pudo guardar la idea.",
-						400,
-					);
+					if (error instanceof InvalidIdeaPathError) {
+						return jsonError(error.message, 400);
+					}
+					return jsonError("No se pudo guardar la idea.", 500);
 				}
 			},
 		},
