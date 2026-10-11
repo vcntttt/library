@@ -49,6 +49,28 @@ export function normalizeOptionalString(value: string | null | undefined) {
 	return trimmed ? trimmed : undefined;
 }
 
+// Un override "" es un campo vaciado a propósito; `undefined` significa "sin override".
+export function normalizeCustomString(value: string | null | undefined) {
+	if (value == null) return undefined;
+	return value.trim();
+}
+
+// El override gana al original; un override vacío oculta el original.
+export function effectiveString(
+	custom: string | undefined,
+	original: string | undefined,
+) {
+	return custom === undefined ? original : custom || undefined;
+}
+
+// Un override de año 0 significa "sin año"; no existe el año 0 como dato real.
+export function effectiveYear(
+	custom: number | undefined,
+	original: number | undefined,
+) {
+	return custom === undefined ? original : custom === 0 ? undefined : custom;
+}
+
 export function nullableNumber(value: number | null | undefined) {
 	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }

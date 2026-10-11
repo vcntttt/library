@@ -27,6 +27,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { resolveCustomPatchValue } from "@/lib/custom-fields";
 import { isMetadataFinished } from "@/lib/metadata/format";
 import { buildMetadataPayload } from "@/lib/metadata/payload";
 import type { MetadataDetails } from "@/lib/metadata/types";
@@ -135,18 +136,25 @@ function buildCustomPatch(values: EditValues, obra: Obra) {
 			values.customTitle.trim() || undefined,
 			obra.customTitle,
 		),
-		customCreator: clearedValue(
-			values.customCreator.trim() || undefined,
-			obra.customCreator,
-		),
-		customYear: clearedValue(
-			values.customYear.trim() && Number.isFinite(year) ? year : undefined,
-			obra.customYear,
-		),
-		customCoverUrl: clearedValue(
-			values.customCoverUrl.trim() || undefined,
-			obra.customCoverUrl,
-		),
+		customCreator: resolveCustomPatchValue({
+			next: values.customCreator.trim() || undefined,
+			custom: obra.customCreator,
+			original: obra.originalCreator,
+			blank: "",
+		}),
+		customYear: resolveCustomPatchValue({
+			next:
+				values.customYear.trim() && Number.isFinite(year) ? year : undefined,
+			custom: obra.customYear,
+			original: obra.originalYear,
+			blank: 0,
+		}),
+		customCoverUrl: resolveCustomPatchValue({
+			next: values.customCoverUrl.trim() || undefined,
+			custom: obra.customCoverUrl,
+			original: obra.originalCoverUrl,
+			blank: "",
+		}),
 	};
 }
 

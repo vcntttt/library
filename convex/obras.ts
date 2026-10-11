@@ -11,6 +11,9 @@ import {
 	assertCreateObraInput,
 	assertUpdateObraPatch,
 	completeProgressForStatus,
+	effectiveString,
+	effectiveYear,
+	normalizeCustomString,
 	normalizeOptionalString,
 	normalizeTags,
 	nullableNumber,
@@ -273,13 +276,13 @@ export const update = mutation({
 			nextPatch.coverUrl = normalizeOptionalString(patch.coverUrl);
 		}
 		if (hasOwn(patch, "customCoverUrl")) {
-			nextPatch.customCoverUrl = normalizeOptionalString(patch.customCoverUrl);
+			nextPatch.customCoverUrl = normalizeCustomString(patch.customCoverUrl);
 		}
 		if (hasOwn(patch, "creator")) {
 			nextPatch.creator = normalizeOptionalString(patch.creator);
 		}
 		if (hasOwn(patch, "customCreator")) {
-			nextPatch.customCreator = normalizeOptionalString(patch.customCreator);
+			nextPatch.customCreator = normalizeCustomString(patch.customCreator);
 		}
 		if (hasOwn(patch, "year")) {
 			nextPatch.year = nullableNumber(patch.year);
@@ -568,13 +571,13 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		recommendedBy: row.recommendedBy,
 		readingUrl: row.readingUrl,
 		sourceUrl: row.sourceUrl,
-		coverUrl: row.customCoverUrl ?? row.coverUrl,
+		coverUrl: effectiveString(row.customCoverUrl, row.coverUrl),
 		originalCoverUrl: row.coverUrl,
 		customCoverUrl: row.customCoverUrl,
-		creator: row.customCreator ?? row.creator,
+		creator: effectiveString(row.customCreator, row.creator),
 		originalCreator: row.creator,
 		customCreator: row.customCreator,
-		year: row.customYear ?? row.year,
+		year: effectiveYear(row.customYear, row.year),
 		originalYear: row.year,
 		customYear: row.customYear,
 		external:
