@@ -41,10 +41,33 @@ test.describe("flujos autenticados", () => {
 		await login(page);
 	});
 
-	test("usuario E2E puede crear, ver y eliminar una obra manual", async ({
+	test("usuario E2E conserva y limpia los filtros tras recargar", async ({
 		page,
 	}) => {
-		const title = `${TEST_RUN_PREFIX} Manga smoke`;
+		await page.goto("/biblioteca");
+		await page.getByRole("button", { name: /^Filtros/ }).click();
+		await page.getByRole("menuitemcheckbox", { name: /^Manga/ }).click();
+		await page.keyboard.press("Escape");
+		await page.reload();
+		await page.getByRole("button", { name: /^Filtros/ }).click();
+		await expect(
+			page.getByRole("menuitemcheckbox", { name: /^Manga/ }),
+		).toBeChecked();
+		await page
+			.getByRole("menuitem", { name: "Limpiar todos los filtros" })
+			.click();
+		await page.keyboard.press("Escape");
+		await page.reload();
+		await page.getByRole("button", { name: "Filtros", exact: true }).click();
+		await expect(
+			page.getByRole("menuitemcheckbox", { name: /^Manga/ }),
+		).not.toBeChecked();
+	});
+
+	test("usuario E2E puede crear, ver y eliminar una obra manual", async ({
+		page,
+	}, testInfo) => {
+		const title = `${TEST_RUN_PREFIX} La vida después de la muerte: edición especial con historias y relatos del continente de Dicathen`;
 
 		try {
 			await createManualObra(page, {
@@ -58,6 +81,44 @@ test.describe("flujos autenticados", () => {
 			await openObraDetailByTitle(page, title);
 			await expect(page.getByText("Playwright")).toBeVisible();
 			await expect(page.getByText("Manga", { exact: true })).toBeVisible();
+			await page.getByRole("button", { name: "Editar", exact: true }).click();
+			await page.getByRole("button", { name: "Agregar cita" }).click();
+			await page
+				.getByPlaceholder("Cita", { exact: true })
+				.fill("Una cita que debe sobrevivir al cierre del editor.");
+			await page.getByPlaceholder("Personaje", { exact: true }).fill("Luffy");
+			await expect(page.getByText("Guardado", { exact: true })).toBeVisible();
+			await page.keyboard.press("Escape");
+			await page.reload();
+			await page.getByRole("button", { name: "Editar", exact: true }).click();
+			await expect(page.getByPlaceholder("Cita", { exact: true })).toHaveValue(
+				"Una cita que debe sobrevivir al cierre del editor.",
+			);
+			await expect(
+				page.getByPlaceholder("Personaje", { exact: true }),
+			).toHaveValue("Luffy");
+			await page.screenshot({
+				path: testInfo.outputPath("editor-citas-desktop.png"),
+				fullPage: false,
+			});
+			const desktopViewport = page.viewportSize();
+			await page.setViewportSize({ width: 390, height: 844 });
+			await page.screenshot({
+				path: testInfo.outputPath("editor-citas-mobile.png"),
+				fullPage: false,
+			});
+			if (desktopViewport) await page.setViewportSize(desktopViewport);
+			await page
+				.getByRole("button", { name: "Eliminar cita", exact: true })
+				.click();
+			await expect(page.getByText("Guardado", { exact: true })).toBeVisible();
+			await page.keyboard.press("Escape");
+			await page.reload();
+			await expect(
+				page.getByText("Una cita que debe sobrevivir al cierre del editor.", {
+					exact: true,
+				}),
+			).toHaveCount(0);
 		} finally {
 			await deleteObraByTitle(page, title).catch(() => undefined);
 		}
