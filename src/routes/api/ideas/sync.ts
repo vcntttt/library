@@ -1,5 +1,6 @@
 import { api as convexApi } from "@convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
+import { mapWithConcurrency } from "@/lib/async";
 import {
 	createConvexServerClient,
 	isForbiddenIntegrationError,
@@ -42,10 +43,10 @@ export const Route = createFileRoute("/api/ideas/sync")({
 					const files = await listIdeaFiles(vaultPath);
 					const client = createConvexServerClient();
 					client.setAuth(token);
-					for (const idea of files) {
+					await mapWithConcurrency(files, 1, async (idea) => {
 						const { content: _content, ...ideaIndex } = idea;
 						await client.mutation(convexApi.ideas.upsert, { idea: ideaIndex });
-					}
+					});
 					return json({ syncedIdeas: files.length });
 				} catch (error) {
 					return jsonError(

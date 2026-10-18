@@ -101,10 +101,15 @@ export const create = mutation({
 		const progressSeasons = sanitizeProgressSeasons(input.progressSeasons);
 		const external = sanitizeExternal(input.external);
 		const metadata = sanitizeMetadata(input.metadata, input.type);
-		const knownTotal = syncProgressTotal(progress?.total, metadata, input.type, {
-			format: input.format,
-			progressSeasons,
-		});
+		const knownTotal = syncProgressTotal(
+			progress?.total,
+			metadata,
+			input.type,
+			{
+				format: input.format,
+				progressSeasons,
+			},
+		);
 		progress = completeProgressForStatus(
 			input.status,
 			input.type,
@@ -299,7 +304,9 @@ export const update = mutation({
 			nextPatch.progressTotal = progress?.total;
 		}
 		if (hasOwn(patch, "progressSeasons")) {
-			nextPatch.progressSeasons = sanitizeProgressSeasons(patch.progressSeasons);
+			nextPatch.progressSeasons = sanitizeProgressSeasons(
+				patch.progressSeasons,
+			);
 		}
 		if (hasOwn(patch, "startedAt")) {
 			nextPatch.startedAt = nullableNumber(patch.startedAt);
@@ -432,7 +439,8 @@ export const update = mutation({
 					: undefined;
 			nextPatch.reviewedAt = review ? now : undefined;
 			nextPatch.reviewSkippedAt = undefined;
-			if (review) nextPatch.reviewRequestedAt = existing.reviewRequestedAt ?? now;
+			if (review)
+				nextPatch.reviewRequestedAt = existing.reviewRequestedAt ?? now;
 		}
 
 		await ctx.db.patch(id, nextPatch);
@@ -464,9 +472,11 @@ export const remove = mutation({
 		}
 
 		const quotes = await listQuotesForObra(ctx, userId, id);
-		for (const quote of quotes) {
-			await ctx.db.delete(quote._id);
-		}
+		await Promise.all(
+			quotes.map(async (quote) => {
+				await ctx.db.delete(quote._id);
+			}),
+		);
 		await ctx.db.delete(id);
 		return { id };
 	},
@@ -492,7 +502,8 @@ export const saveReview = mutation({
 	handler: async (ctx, { id, review }) => {
 		const userId = await requireUserId(ctx);
 		const obra = await getOwnedObra(ctx, id, userId);
-		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		if (obra.status !== "finished")
+			throw new Error("La obra aún no está terminada.");
 		const normalizedReview = normalizeOptionalString(review);
 		if (!normalizedReview) throw new Error("La reseña no puede estar vacía.");
 		const now = Date.now();
@@ -515,7 +526,8 @@ export const snoozeReview = mutation({
 	handler: async (ctx, { id }) => {
 		const userId = await requireUserId(ctx);
 		const obra = await getOwnedObra(ctx, id, userId);
-		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		if (obra.status !== "finished")
+			throw new Error("La obra aún no está terminada.");
 		if (obra.review) throw new Error("La obra ya tiene reseña.");
 		await ctx.db.patch(id, {
 			reviewStatus: "pending",
@@ -532,7 +544,8 @@ export const skipReview = mutation({
 	handler: async (ctx, { id }) => {
 		const userId = await requireUserId(ctx);
 		const obra = await getOwnedObra(ctx, id, userId);
-		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		if (obra.status !== "finished")
+			throw new Error("La obra aún no está terminada.");
 		if (obra.review) throw new Error("La obra ya tiene reseña.");
 		const now = Date.now();
 		await ctx.db.patch(id, {
@@ -634,21 +647,25 @@ async function replaceQuotesForObra(
 		existingQuotes.map((quote) => [quote._id, quote.createdAt]),
 	);
 
-	for (const quote of existingQuotes) {
-		await ctx.db.delete(quote._id);
-	}
+	await Promise.all(
+		existingQuotes.map(async (quote) => {
+			await ctx.db.delete(quote._id);
+		}),
+	);
 
-	for (const quote of quotes) {
-		const id = quote.id;
-		await ctx.db.insert("obraQuotes", {
-			userId,
-			obraId,
-			content: quote.content,
-			characterName: quote.characterName,
-			createdAt: id ? (createdAtById.get(id) ?? now) : now,
-			updatedAt: now,
-		});
-	}
+	await Promise.all(
+		quotes.map(async (quote) => {
+			const id = quote.id;
+			await ctx.db.insert("obraQuotes", {
+				userId,
+				obraId,
+				content: quote.content,
+				characterName: quote.characterName,
+				createdAt: id ? (createdAtById.get(id) ?? now) : now,
+				updatedAt: now,
+			});
+		}),
+	);
 }
 
 async function requireUserId(ctx: QueryCtx | MutationCtx) {

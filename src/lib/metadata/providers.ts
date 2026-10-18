@@ -656,8 +656,10 @@ async function getOpenLibraryDetails(id: string): Promise<MetadataDetails> {
 	const data = await fetchJson<OpenLibraryWorkDetails>(
 		`https://openlibrary.org${normalized}.json`,
 	);
-	const creator = await resolveOpenLibraryAuthors(data.authors);
-	const bestEdition = await getBestOpenLibraryEdition(normalized);
+	const [creator, bestEdition] = await Promise.all([
+		resolveOpenLibraryAuthors(data.authors),
+		getBestOpenLibraryEdition(normalized),
+	]);
 
 	return {
 		source: "open-library",

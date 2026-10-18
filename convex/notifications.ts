@@ -1,3 +1,4 @@
+import { mapWithConcurrency } from "../src/lib/async";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -68,9 +69,9 @@ export const checkForNewChapters = internalAction({
 		let updated = 0;
 		let enqueued = 0;
 
-		for (const obra of tracked) {
-			if (!obra.externalId) continue;
-			if (obra.type !== "manga" && obra.type !== "manhwa") continue;
+		await mapWithConcurrency(tracked, 1, async (obra) => {
+			if (!obra.externalId) return;
+			if (obra.type !== "manga" && obra.type !== "manhwa") return;
 			checked += 1;
 
 			try {
@@ -92,13 +93,13 @@ export const checkForNewChapters = internalAction({
 						details,
 					},
 				);
-				if (!recorded.recorded) continue;
+				if (!recorded.recorded) return;
 				updated += 1;
 
 				const latestChapter = recorded.metadata.latestChapter;
 				const lastNotifiedChapter = recorded.lastNotifiedChapter;
-				if (!latestChapter || latestChapter <= lastNotifiedChapter) continue;
-				if (recorded.status === "paused") continue;
+				if (!latestChapter || latestChapter <= lastNotifiedChapter) return;
+				if (recorded.status === "paused") return;
 
 				const result = await ctx.runMutation(
 					internal.notifications.enqueueReleaseNotification,
@@ -130,7 +131,7 @@ export const checkForNewChapters = internalAction({
 					error: error instanceof Error ? error.message : String(error),
 				});
 			}
-		}
+		});
 
 		return { checked, updated, enqueued };
 	},
@@ -151,9 +152,9 @@ export const checkForNewEpisodes = internalAction({
 		let updated = 0;
 		let enqueued = 0;
 
-		for (const obra of tracked) {
-			if (!obra.externalId) continue;
-			if (obra.type !== "series" && obra.type !== "anime") continue;
+		await mapWithConcurrency(tracked, 1, async (obra) => {
+			if (!obra.externalId) return;
+			if (obra.type !== "series" && obra.type !== "anime") return;
 			checked += 1;
 
 			try {
@@ -174,11 +175,11 @@ export const checkForNewEpisodes = internalAction({
 						details,
 					},
 				);
-				if (!recorded.recorded) continue;
+				if (!recorded.recorded) return;
 				updated += 1;
 
 				const releasedEpisode = recorded.releasedEpisode;
-				if (!releasedEpisode || recorded.status === "paused") continue;
+				if (!releasedEpisode || recorded.status === "paused") return;
 				const result = await ctx.runMutation(
 					internal.notifications.enqueueReleaseNotification,
 					{
@@ -206,7 +207,7 @@ export const checkForNewEpisodes = internalAction({
 					error: error instanceof Error ? error.message : String(error),
 				});
 			}
-		}
+		});
 
 		return { checked, updated, enqueued };
 	},
@@ -230,15 +231,17 @@ export const pull = mutation({
 			)
 			.order("asc")
 			.take(MAX_POLL_LIMIT * 4);
-		for (const row of processingRows) {
-			if ((row.leaseExpiresAt ?? 0) <= now) {
-				await ctx.db.patch(row._id, {
-					status: "pending",
-					leaseExpiresAt: undefined,
-					updatedAt: now,
-				});
-			}
-		}
+		await Promise.all(
+			processingRows.map(async (row) => {
+				if ((row.leaseExpiresAt ?? 0) <= now) {
+					await ctx.db.patch(row._id, {
+						status: "pending",
+						leaseExpiresAt: undefined,
+						updatedAt: now,
+					});
+				}
+			}),
+		);
 
 		const candidates = await ctx.db
 			.query("notificationEvents")
@@ -248,24 +251,24 @@ export const pull = mutation({
 			.order("asc")
 			.take(safeLimit);
 
-		const events = [];
-
-		for (const row of candidates) {
-			const attempts = row.attempts + 1;
-			await ctx.db.patch(row._id, {
-				status: "processing",
-				attempts,
-				lastAttemptAt: now,
-				leaseExpiresAt: now + EVENT_LEASE_MS,
-				updatedAt: now,
-			});
-			events.push({
-				eventId: row.eventId,
-				attempts,
-				lastAttemptAt: now,
-				payload: toPayload(row),
-			});
-		}
+		const events = await Promise.all(
+			candidates.map(async (row) => {
+				const attempts = row.attempts + 1;
+				await ctx.db.patch(row._id, {
+					status: "processing",
+					attempts,
+					lastAttemptAt: now,
+					leaseExpiresAt: now + EVENT_LEASE_MS,
+					updatedAt: now,
+				});
+				return {
+					eventId: row.eventId,
+					attempts,
+					lastAttemptAt: now,
+					payload: toPayload(row),
+				};
+			}),
+		);
 
 		return { events };
 	},
@@ -316,11 +319,7 @@ export const ack = mutation({
 			const metadata =
 				event.eventType === "media.episode.release" &&
 				event.episode !== undefined
-					? mergeAcknowledgedEpisodeMetadata(
-							obra.metadata,
-							event.episode,
-							now,
-						)
+					? mergeAcknowledgedEpisodeMetadata(obra.metadata, event.episode, now)
 					: mergeAcknowledgedMangaMetadata(
 							obra.metadata,
 							event.chapter ?? 0,
@@ -328,11 +327,7 @@ export const ack = mutation({
 						);
 			const progressTotal =
 				event.eventType === "manga.release"
-					? syncMangaProgressTotal(
-							obra.progressTotal,
-							metadata,
-							obra.type,
-						)
+					? syncMangaProgressTotal(obra.progressTotal, metadata, obra.type)
 					: obra.progressTotal;
 			const shouldReopen = shouldReopenFinishedProgress({
 				status: obra.status,
@@ -446,9 +441,7 @@ export const takeTrackedBatch = internalMutation({
 			result.isDone ? undefined : result.continueCursor,
 		);
 		return result.page.filter((obra) =>
-			worker === "manga"
-				? isTrackedManga(obra)
-				: isTrackedEpisodic(obra),
+			worker === "manga" ? isTrackedManga(obra) : isTrackedEpisodic(obra),
 		);
 	},
 });
@@ -534,10 +527,7 @@ export const recordEpisodicCheck = internalMutation({
 		obraId: v.id("obras"),
 		expectedExternalId: v.string(),
 		expectedType: v.union(v.literal("series"), v.literal("anime")),
-		expectedExternalSource: v.union(
-			v.literal("tmdb"),
-			v.literal("anilist"),
-		),
+		expectedExternalSource: v.union(v.literal("tmdb"), v.literal("anilist")),
 		details: v.any(),
 	},
 	handler: async (
@@ -643,10 +633,7 @@ export const enqueueReleaseNotification = internalMutation({
 			}),
 		),
 	},
-	handler: async (
-		ctx,
-		{ expectedType, expectedExternalSource, payload },
-	) => {
+	handler: async (ctx, { expectedType, expectedExternalSource, payload }) => {
 		const existing = await findEventByEventId(ctx, payload.eventId);
 		if (existing) return { enqueued: false, eventId: existing.eventId };
 		const obra = await ctx.db.get(payload.obraId);
@@ -677,12 +664,9 @@ export const enqueueReleaseNotification = internalMutation({
 					? payload.externalId
 					: undefined,
 			title: obra.title,
-			chapter:
-				payload.type === "manga.release" ? payload.chapter : undefined,
+			chapter: payload.type === "manga.release" ? payload.chapter : undefined,
 			episode:
-				payload.type === "media.episode.release"
-					? payload.episode
-					: undefined,
+				payload.type === "media.episode.release" ? payload.episode : undefined,
 			seasonNumber:
 				payload.type === "media.episode.release"
 					? payload.seasonNumber
@@ -761,9 +745,7 @@ function isTrackedManga(obra: Doc<"obras">) {
 	return (
 		TRACKED_MANGA_TYPES.some((type) => type === obra.type) &&
 		TRACKED_MANGA_STATUSES.some((status) => status === obra.status) &&
-		TRACKED_METADATA_SOURCES.some(
-			(source) => source === obra.externalSource,
-		)
+		TRACKED_METADATA_SOURCES.some((source) => source === obra.externalSource)
 	);
 }
 
@@ -820,11 +802,13 @@ async function backfillLegacyEventOwners(
 			cursor: state?.cursor ?? null,
 			numItems: LEGACY_BACKFILL_BATCH_SIZE,
 		});
-	for (const event of result.page) {
-		if (event.userId) continue;
-		const obra = await ctx.db.get(event.obraId);
-		if (obra) await ctx.db.patch(event._id, { userId: obra.userId });
-	}
+	await Promise.all(
+		result.page.map(async (event) => {
+			if (event.userId) return;
+			const obra = await ctx.db.get(event.obraId);
+			if (obra) await ctx.db.patch(event._id, { userId: obra.userId });
+		}),
+	);
 	await saveWorkerCursor(
 		ctx,
 		userId,
@@ -860,7 +844,7 @@ async function resolveNotificationUser(ctx: ActionCtx) {
 	const email = process.env.ALFRED_NOTIFY_USER_EMAIL?.trim();
 	if (!email) {
 		console.error(
-			"[release-worker] ALFRED_NOTIFY_USER_EMAIL no está configurado; se omiten notificaciones para proteger datos multiusuario.",
+			"[release-worker] ALFRED_NOTIFY_USER_EMAIL no está configurado; se omiten notificaciones para proteger datos de varios usuarios.",
 		);
 		return null;
 	}

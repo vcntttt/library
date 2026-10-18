@@ -1,3 +1,4 @@
+import { mapWithConcurrency } from "../src/lib/async";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -41,16 +42,17 @@ export const listDocuments = query({
 	args: { limit: v.optional(v.number()) },
 	handler: async (ctx, { limit }) => {
 		const userId = await requireUserId(ctx);
-		const rows = await ctx.db
+		const documentsQuery = ctx.db
 			.query("readingDocuments")
 			.withIndex("by_user_updatedAt", (q) => q.eq("userId", userId))
 			.order("desc")
 			.take(normalizeLimit(limit));
-		const obras = await ctx.db
+		const obrasQuery = ctx.db
 			.query("obras")
 			.withIndex("by_user_updatedAt", (q) => q.eq("userId", userId))
 			.collect();
 
+		const [rows, obras] = await Promise.all([documentsQuery, obrasQuery]);
 		return Promise.all(
 			rows.map(async (document) => {
 				const sources = await ctx.db
@@ -106,11 +108,18 @@ export const getDocument = query({
 
 		return {
 			document: toDocumentView(document, sourceRows, []),
-			progress: progressRows.map(({ userId: _progressUserId, ...progress }) => progress),
-			annotations: annotationRows.map(({ userId: _annotationUserId, ...annotation }) => ({
-				...annotation,
-				text: annotation.curatedText ?? annotation.originalText ?? annotation.text,
-			})),
+			progress: progressRows.map(
+				({ userId: _progressUserId, ...progress }) => progress,
+			),
+			annotations: annotationRows.map(
+				({ userId: _annotationUserId, ...annotation }) => ({
+					...annotation,
+					text:
+						annotation.curatedText ??
+						annotation.originalText ??
+						annotation.text,
+				}),
+			),
 			sources: sourceRows.map(({ userId: _sourceUserId, ...source }) => source),
 		};
 	},
@@ -144,16 +153,19 @@ export const listAnnotations = query({
 				return {
 					annotation: {
 						...annotation,
-						text: annotation.curatedText ?? annotation.originalText ?? annotation.text,
+						text:
+							annotation.curatedText ??
+							annotation.originalText ??
+							annotation.text,
 					},
 					document: document
 						? {
-							id: document._id,
-							title: document.title,
-							obraId: document.obraId,
-							sourceKey: document.sourceKey,
-							format: document.format,
-						}
+								id: document._id,
+								title: document.title,
+								obraId: document.obraId,
+								sourceKey: document.sourceKey,
+								format: document.format,
+							}
 						: null,
 				};
 			}),
@@ -169,7 +181,9 @@ export const getAnnotationContextSource = query({
 		if (!annotation || annotation.userId !== userId) return null;
 		const document = await ctx.db.get(annotation.documentId);
 		if (!document || document.userId !== userId) return null;
-		const source = annotation.sourceId ? await ctx.db.get(annotation.sourceId) : null;
+		const source = annotation.sourceId
+			? await ctx.db.get(annotation.sourceId)
+			: null;
 		return {
 			format: document.format,
 			sourcePath: source?.sourcePath ?? document.sourcePath,
@@ -226,10 +240,14 @@ export const linkDocument = mutation({
 		}
 		if (obraId !== null) {
 			const obra = await ctx.db.get(obraId);
-			if (!obra || obra.userId !== userId) throw new Error("Obra no encontrada.");
+			if (!obra || obra.userId !== userId)
+				throw new Error("Obra no encontrada.");
 		}
 
-		await ctx.db.patch(id, { obraId: obraId ?? undefined, updatedAt: Date.now() });
+		await ctx.db.patch(id, {
+			obraId: obraId ?? undefined,
+			updatedAt: Date.now(),
+		});
 		if (document.obraId && document.obraId !== obraId) {
 			await clearReadingProjection(ctx, document.obraId, id);
 		}
@@ -255,7 +273,8 @@ export const setAnnotationStatus = mutation({
 			updatedAt: now,
 		};
 		if (status === "kept") {
-			patch.curatedText = annotation.curatedText ?? annotation.originalText ?? annotation.text;
+			patch.curatedText =
+				annotation.curatedText ?? annotation.originalText ?? annotation.text;
 			patch.curatedAt ??= annotation.curatedAt ?? now;
 		}
 		await ctx.db.patch(id, patch);
@@ -279,7 +298,10 @@ export const keepAllUnprocessedAnnotations = mutation({
 			annotations.map((annotation) =>
 				ctx.db.patch(annotation._id, {
 					status: "kept",
-					curatedText: annotation.curatedText ?? annotation.originalText ?? annotation.text,
+					curatedText:
+						annotation.curatedText ??
+						annotation.originalText ??
+						annotation.text,
 					curatedAt: annotation.curatedAt ?? updatedAt,
 					updatedAt,
 				}),
@@ -316,7 +338,10 @@ export const updateAnnotationComment = mutation({
 	handler: async (ctx, { id, comment }) => {
 		const userId = await requireUserId(ctx);
 		await getOwnedAnnotation(ctx, id, userId);
-		await ctx.db.patch(id, { comment: comment.trim() || undefined, updatedAt: Date.now() });
+		await ctx.db.patch(id, {
+			comment: comment.trim() || undefined,
+			updatedAt: Date.now(),
+		});
 		return id;
 	},
 });
@@ -358,7 +383,11 @@ export const beginSyncRun = mutation({
 export const finishSyncRun = mutation({
 	args: {
 		id: v.id("readingSyncRuns"),
-		status: v.union(v.literal("completed"), v.literal("partial"), v.literal("failed")),
+		status: v.union(
+			v.literal("completed"),
+			v.literal("partial"),
+			v.literal("failed"),
+		),
 		processedDocuments: v.number(),
 		changedDocuments: v.number(),
 		skippedFiles: v.number(),
@@ -367,7 +396,8 @@ export const finishSyncRun = mutation({
 	handler: async (ctx, input) => {
 		const userId = await requireUserId(ctx);
 		const run = await ctx.db.get(input.id);
-		if (!run || run.userId !== userId) throw new Error("Ejecución de sync no encontrada.");
+		if (!run || run.userId !== userId)
+			throw new Error("Ejecución de sync no encontrada.");
 		const { id: _id, ...patch } = input;
 		await ctx.db.patch(_id, { ...patch, finishedAt: Date.now() });
 		return input.id;
@@ -421,21 +451,23 @@ async function upsertDocumentForUser(
 	const now = Date.now();
 	const documentKey = input.documentKey ?? input.fileHash ?? input.sourceKey;
 	const existing = await findDocument(ctx, userId, documentKey, input);
-	const documentId = existing?._id ?? (await ctx.db.insert("readingDocuments", {
-		userId,
-		sourceKey: input.sourceKey,
-		sourcePath: input.sourcePath,
-		title: input.title.trim(),
-		format: input.format,
-		documentKey,
-		author: input.author?.trim() || undefined,
-		fileHash: input.fileHash,
-		fileModifiedAt: input.fileModifiedAt,
-		sidecarModifiedAt: input.sidecarModifiedAt,
-		lastSyncedAt: now,
-		createdAt: now,
-		updatedAt: now,
-	}));
+	const documentId =
+		existing?._id ??
+		(await ctx.db.insert("readingDocuments", {
+			userId,
+			sourceKey: input.sourceKey,
+			sourcePath: input.sourcePath,
+			title: input.title.trim(),
+			format: input.format,
+			documentKey,
+			author: input.author?.trim() || undefined,
+			fileHash: input.fileHash,
+			fileModifiedAt: input.fileModifiedAt,
+			sidecarModifiedAt: input.sidecarModifiedAt,
+			lastSyncedAt: now,
+			createdAt: now,
+			updatedAt: now,
+		}));
 
 	if (existing) {
 		await ctx.db.patch(existing._id, {
@@ -495,9 +527,14 @@ async function upsertDocumentForUser(
 	if (!source) throw new Error("No se pudo guardar la fuente de lectura.");
 
 	let importedProgress = 0;
-	for (const progress of input.progress) {
-		const current = await findProgress(ctx, documentId, source._id, progress.deviceId);
-		if (current && compareProgressSource(progress, current) < 0) continue;
+	await mapWithConcurrency(input.progress, 1, async (progress) => {
+		const current = await findProgress(
+			ctx,
+			documentId,
+			source._id,
+			progress.deviceId,
+		);
+		if (current && compareProgressSource(progress, current) < 0) return;
 		const maxPercent = Math.max(
 			current?.maxPercent ?? 0,
 			current?.percent ?? 0,
@@ -515,7 +552,7 @@ async function upsertDocumentForUser(
 		if (current) await ctx.db.patch(current._id, fields);
 		else await ctx.db.insert("readingProgress", { ...fields, createdAt: now });
 		importedProgress += 1;
-	}
+	});
 
 	const matchedAnnotationIds = new Set<Id<"readingAnnotations">>();
 	let importedAnnotations = 0;
@@ -542,65 +579,71 @@ async function upsertDocumentForUser(
 			sourceFingerprint,
 		})),
 	);
-	for (const [position, { annotation, text, index, sourceFingerprint }] of incomingAnnotations.entries()) {
-		const current = matches[position];
-		if (current) matchedAnnotationIds.add(current._id);
-		const possibleDuplicateOf = current
-			? current.possibleDuplicateOf
-			: existingAnnotations.find(
-					(candidate) =>
-						isPossibleDuplicate(
-							candidate.originalText ?? candidate.text,
-							text,
-						) && candidate.sourceFingerprint !== sourceFingerprint,
-					)?._id;
-		const fields = {
-			userId,
-			documentId,
-			sourceId: source._id,
-			sourceKey: annotation.sourceKey,
-			sourceFingerprint,
-			sourceIndex: index,
-			sourceCreatedAt: annotation.capturedAt,
-			text,
-			originalText: text,
-			note: annotation.note,
-			chapter: annotation.chapter,
-			color: annotation.color,
-			page: annotation.page,
-			pageNumber: annotation.pageNumber,
-			positionStart: annotation.positionStart,
-			positionEnd: annotation.positionEnd,
-			capturedAt: annotation.capturedAt,
-			updatedAtSource: annotation.updatedAtSource,
-			deviceId: annotation.deviceId,
-			deviceLabel: annotation.deviceLabel,
-			sourceStatus: "active" as const,
-			sourceMissingAt: undefined,
-			possibleDuplicateOf,
-			updatedAt: now,
-		};
-		if (current) await ctx.db.patch(current._id, fields);
-		else {
-			await ctx.db.insert("readingAnnotations", {
-				...fields,
-				status: "unprocessed",
-				createdAt: now,
-			});
-		}
-		importedAnnotations += 1;
-	}
+	await Promise.all(
+		incomingAnnotations.map(
+			async ({ annotation, text, index, sourceFingerprint }, position) => {
+				const current = matches[position];
+				if (current) matchedAnnotationIds.add(current._id);
+				const possibleDuplicateOf = current
+					? current.possibleDuplicateOf
+					: existingAnnotations.find(
+							(candidate) =>
+								isPossibleDuplicate(
+									candidate.originalText ?? candidate.text,
+									text,
+								) && candidate.sourceFingerprint !== sourceFingerprint,
+						)?._id;
+				const fields = {
+					userId,
+					documentId,
+					sourceId: source._id,
+					sourceKey: annotation.sourceKey,
+					sourceFingerprint,
+					sourceIndex: index,
+					sourceCreatedAt: annotation.capturedAt,
+					text,
+					originalText: text,
+					note: annotation.note,
+					chapter: annotation.chapter,
+					color: annotation.color,
+					page: annotation.page,
+					pageNumber: annotation.pageNumber,
+					positionStart: annotation.positionStart,
+					positionEnd: annotation.positionEnd,
+					capturedAt: annotation.capturedAt,
+					updatedAtSource: annotation.updatedAtSource,
+					deviceId: annotation.deviceId,
+					deviceLabel: annotation.deviceLabel,
+					sourceStatus: "active" as const,
+					sourceMissingAt: undefined,
+					possibleDuplicateOf,
+					updatedAt: now,
+				};
+				if (current) await ctx.db.patch(current._id, fields);
+				else {
+					await ctx.db.insert("readingAnnotations", {
+						...fields,
+						status: "unprocessed",
+						createdAt: now,
+					});
+				}
+				importedAnnotations += 1;
+			},
+		),
+	);
 
 	if (input.annotationsComplete) {
-		for (const annotation of existingAnnotations) {
-			if (annotation.sourceId !== source._id) continue;
-			if (matchedAnnotationIds.has(annotation._id)) continue;
-			await ctx.db.patch(annotation._id, {
-				sourceStatus: "missing",
-				sourceMissingAt: now,
-				updatedAt: now,
-			});
-		}
+		await Promise.all(
+			existingAnnotations.map(async (annotation) => {
+				if (annotation.sourceId !== source._id) return;
+				if (matchedAnnotationIds.has(annotation._id)) return;
+				await ctx.db.patch(annotation._id, {
+					sourceStatus: "missing",
+					sourceMissingAt: now,
+					updatedAt: now,
+				});
+			}),
+		);
 	}
 
 	const updatedDocument = await ctx.db.get(documentId);
@@ -658,7 +701,10 @@ async function findProgress(
 			q.eq("documentId", documentId).eq("deviceId", deviceId),
 		)
 		.collect();
-	return rows.find((row) => row.sourceId === sourceId) ?? rows.find((row) => !row.sourceId);
+	return (
+		rows.find((row) => row.sourceId === sourceId) ??
+		rows.find((row) => !row.sourceId)
+	);
 }
 
 async function markMissingSourcesForUser(
@@ -673,27 +719,33 @@ async function markMissingSourcesForUser(
 		.collect();
 	const now = Date.now();
 	let marked = 0;
-	for (const source of sources) {
-		if (source.status === "missing") continue;
-		if (observed.has(source.sourceKey)) continue;
-		await ctx.db.patch(source._id, {
-			status: "missing",
-			updatedAt: now,
-		});
-		const annotations = await ctx.db
-			.query("readingAnnotations")
-			.withIndex("by_document_sourceKey", (q) => q.eq("documentId", source.documentId))
-			.collect();
-		for (const annotation of annotations) {
-			if (annotation.sourceId !== source._id) continue;
-			await ctx.db.patch(annotation._id, {
-				sourceStatus: "missing",
-				sourceMissingAt: now,
+	await Promise.all(
+		sources.map(async (source) => {
+			if (source.status === "missing") return;
+			if (observed.has(source.sourceKey)) return;
+			await ctx.db.patch(source._id, {
+				status: "missing",
 				updatedAt: now,
 			});
-		}
-		marked += 1;
-	}
+			const annotations = await ctx.db
+				.query("readingAnnotations")
+				.withIndex("by_document_sourceKey", (q) =>
+					q.eq("documentId", source.documentId),
+				)
+				.collect();
+			await Promise.all(
+				annotations.map(async (annotation) => {
+					if (annotation.sourceId !== source._id) return;
+					await ctx.db.patch(annotation._id, {
+						sourceStatus: "missing",
+						sourceMissingAt: now,
+						updatedAt: now,
+					});
+				}),
+			);
+			marked += 1;
+		}),
+	);
 	return { marked };
 }
 
@@ -704,22 +756,22 @@ async function markSourceErrorsForUser(
 ) {
 	const now = Date.now();
 	let marked = 0;
-	for (const error of errors) {
-		if (!error.path) continue;
+	await mapWithConcurrency(errors, 1, async (error) => {
+		if (!error.path) return;
 		const source = await ctx.db
 			.query("readingSources")
 			.withIndex("by_user_sourceKey", (q) =>
 				q.eq("userId", userId).eq("sourceKey", error.path),
 			)
 			.unique();
-		if (!source) continue;
+		if (!source) return;
 		await ctx.db.patch(source._id, {
 			status: "error",
 			lastError: error.message,
 			updatedAt: now,
 		});
 		marked += 1;
-	}
+	});
 	return { marked };
 }
 
@@ -760,7 +812,11 @@ async function projectProgressForDocument(
 		updatedAt: now,
 	};
 
-	if (selection.currentPercent !== undefined && selection.currentPercent > 0 && obra.status === "backlog") {
+	if (
+		selection.currentPercent !== undefined &&
+		selection.currentPercent > 0 &&
+		obra.status === "backlog"
+	) {
 		patch.status = "in-progress";
 		patch.startedAt ??= now;
 	}
@@ -829,7 +885,10 @@ function toDocumentView(
 	};
 }
 
-function findSuggestedObra(document: Doc<"readingDocuments">, obras: Doc<"obras">[]) {
+function findSuggestedObra(
+	document: Doc<"readingDocuments">,
+	obras: Doc<"obras">[],
+) {
 	const documentTitle = normalizeMatch(document.title);
 	const documentAuthor = normalizeMatch(document.author);
 	let best: { id: Id<"obras">; score: number; title: string } | undefined;
@@ -837,9 +896,13 @@ function findSuggestedObra(document: Doc<"readingDocuments">, obras: Doc<"obras"
 		if (obra.type !== "book") continue;
 		const title = normalizeMatch(obra.customTitle ?? obra.title);
 		const author = normalizeMatch(obra.customCreator ?? obra.creator);
-		let score = title && (title.includes(documentTitle) || documentTitle.includes(title)) ? 0.7 : 0;
+		let score =
+			title && (title.includes(documentTitle) || documentTitle.includes(title))
+				? 0.7
+				: 0;
 		if (documentAuthor && author && documentAuthor === author) score += 0.3;
-		if (score > (best?.score ?? 0)) best = { id: obra._id, score, title: obra.title };
+		if (score > (best?.score ?? 0))
+			best = { id: obra._id, score, title: obra.title };
 	}
 	return best;
 }

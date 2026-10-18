@@ -128,8 +128,10 @@ function resolveIdeaPath(vaultPath: string, relativePath: string) {
 
 // Evita que un enlace simbólico dentro de la bóveda lea o escriba fuera de ella.
 async function assertInsideVault(vaultPath: string, path: string) {
-	const realVault = await realpath(vaultPath);
-	const realPath = await realpath(path);
+	const [realVault, realPath] = await Promise.all([
+		realpath(vaultPath),
+		realpath(path),
+	]);
 	if (realPath !== realVault && !realPath.startsWith(`${realVault}${sep}`)) {
 		throw new InvalidIdeaPathError();
 	}

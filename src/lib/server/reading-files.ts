@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { basename, dirname, extname, relative, resolve, sep } from "node:path";
+import { mapWithConcurrency } from "@/lib/async";
 import {
 	parseReadingSidecars,
 	type ReadingAnnotationSnapshot,
@@ -130,18 +131,18 @@ async function findBookPaths(root: string): Promise<string[]> {
 	const entries = await readdir(root, { withFileTypes: true });
 	const paths: string[] = [];
 
-	for (const entry of entries) {
-		if (entry.name === ".stfolder" || entry.name.startsWith(".")) continue;
+	await mapWithConcurrency(entries, 4, async (entry) => {
+		if (entry.name === ".stfolder" || entry.name.startsWith(".")) return;
 		const entryPath = resolve(root, entry.name);
 		if (entry.isDirectory()) {
 			paths.push(...(await findBookPaths(entryPath)));
-			continue;
+			return;
 		}
 
 		if (readableExtensions.has(extname(entry.name).toLowerCase())) {
 			paths.push(entryPath);
 		}
-	}
+	});
 
 	return paths.sort((left, right) => left.localeCompare(right));
 }
@@ -153,15 +154,13 @@ async function readBookPayload(
 ): Promise<ReadingFilePayload> {
 	await assertInsideRoot(root, bookPath);
 	const fileStats = await readStableFile(bookPath, options.stabilityWindowMs);
-	const file = await readFile(bookPath);
 	const sourcePath = relative(root, bookPath).split("\\").join("/");
 	const sourceKey = sourcePath;
 	const sidecarPath = getSidecarPath(bookPath);
-	const metadata = await readSidecarText(
-		root,
-		sidecarPath,
-		options.stabilityWindowMs,
-	);
+	const [file, metadata] = await Promise.all([
+		readFile(bookPath),
+		readSidecarText(root, sidecarPath, options.stabilityWindowMs),
+	]);
 	const parsed = parseReadingSidecars({
 		sourceKey,
 		title: basename(bookPath, extname(bookPath)),
@@ -193,8 +192,10 @@ function getSidecarPath(bookPath: string) {
 
 // Evita que un enlace simbólico dentro de la biblioteca lea archivos fuera de ella.
 async function assertInsideRoot(root: string, path: string) {
-	const realRoot = await realpath(root);
-	const realPath = await realpath(path);
+	const [realRoot, realPath] = await Promise.all([
+		realpath(root),
+		realpath(path),
+	]);
 	if (realPath !== realRoot && !realPath.startsWith(`${realRoot}${sep}`)) {
 		throw new Error("El archivo de lectura está fuera de la biblioteca.");
 	}
@@ -237,7 +238,7 @@ async function ensureStable(
 	const current = await stat(path);
 	if (current.size !== initial.size || current.mtimeMs !== initial.mtimeMs) {
 		throw new Error(
-			"El archivo cambió mientras se sincronizaba; se reintentará.",
+			"El archivo cambió mientras se sincronizaba; se volverá a intentar.",
 		);
 	}
 }

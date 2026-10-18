@@ -1,5 +1,6 @@
 import { api as convexApi } from "@convex/_generated/api";
 import type { ConvexHttpClient } from "convex/browser";
+import { mapWithConcurrency } from "@/lib/async";
 import { scanReadingBooksDetailed } from "@/lib/server/reading-files";
 
 export async function runReadingSync(
@@ -21,7 +22,7 @@ export async function runReadingSync(
 		let importedAnnotations = 0;
 		let importedProgress = 0;
 
-		for (const file of scan.files) {
+		await mapWithConcurrency(scan.files, 1, async (file) => {
 			try {
 				const result = await client.mutation(convexApi.reading.upsertDocument, {
 					document: file,
@@ -38,7 +39,7 @@ export async function runReadingSync(
 							: "No se pudo guardar el documento.",
 				});
 			}
-		}
+		});
 		if (errors.length > 0) {
 			await client.mutation(convexApi.reading.markSourceErrors, {
 				errors,
