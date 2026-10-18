@@ -8,6 +8,7 @@ import type {
 } from "./types";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const MANHWA_WEB_API_URL = "https://api.manhwaweb.com";
 const MANHWA_WEB_IMAGE_HOSTS = new Set(["img1mw.xyz", "img2mw.xyz"]);
 const MANHWA_WEB_IMAGE_PROXY_PATH = "/api/metadata/image";
 
@@ -385,9 +386,7 @@ async function searchManhwaWeb(query: string, obraType?: ObraType) {
 		}
 	}
 
-	const url = new URL(
-		"https://manhwawebbackend-production.up.railway.app/manhwa/library",
-	);
+	const url = new URL(`${MANHWA_WEB_API_URL}/manhwa/library`);
 	url.searchParams.set("buscar", query);
 	const response = await fetchJson<ManhwaWebSearchResponse>(url.toString());
 	const results = (response.data ?? [])
@@ -876,11 +875,11 @@ async function getManhwaWebDetails(
 ): Promise<MetadataDetails> {
 	const normalizedId = extractManhwaWebId(id) ?? id.trim();
 	if (!normalizedId) {
-		throw new Error("ID de ManhwaWeb invalido.");
+		throw new Error("ID de ManhwaWeb inválido.");
 	}
 
 	const data = await fetchJson<ManhwaWebDetails>(
-		`https://manhwawebbackend-production.up.railway.app/manhwa/see/${encodeURIComponent(normalizedId)}`,
+		`${MANHWA_WEB_API_URL}/manhwa/see/${encodeURIComponent(normalizedId)}`,
 	);
 	if (!isManhwaWebTypeMatch(data._tipo, obraType)) {
 		throw new Error("La obra encontrada no coincide con el tipo seleccionado.");
@@ -1790,7 +1789,7 @@ async function getAmazonBookDetails(id: string): Promise<MetadataDetails> {
 			? extractAmazonAsin(normalizedUrl)
 			: undefined;
 	if (!asin || !isAmazonAsin(asin)) {
-		throw new Error("ASIN de Amazon invalido.");
+		throw new Error("ASIN de Amazon inválido.");
 	}
 
 	const normalizedAsin = asin.toUpperCase();
@@ -1808,7 +1807,7 @@ async function getAmazonBookDetailsFromUrl(
 ): Promise<MetadataDetails> {
 	const html = await fetchAmazonBookHtml(url);
 	if (isAmazonBlockedHtml(html)) {
-		throw new Error("Amazon bloqueo la consulta publica del producto.");
+		throw new Error("Amazon bloqueó la consulta pública del producto.");
 	}
 
 	const canonicalUrl =

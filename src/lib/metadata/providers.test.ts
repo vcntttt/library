@@ -83,7 +83,7 @@ describe("metadata providers", () => {
 					docs: [
 						{
 							key: "/books/OL123M",
-							title: "Centrate",
+							title: "Céntrate",
 							author_name: ["A. Autor"],
 							first_publish_year: 2004,
 							number_of_pages_median: 250,
@@ -109,14 +109,14 @@ describe("metadata providers", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const { searchMetadata } = await import("./providers");
 
-		const outcome = await searchMetadata("google-books", "centrate", "book");
+		const outcome = await searchMetadata("google-books", "céntrate", "book");
 
 		expect(outcome.provider).toBe("google-books");
 		expect(outcome.results).toHaveLength(1);
 		expect(outcome.results[0]).toMatchObject({
 			source: "open-library",
 			id: "/books/OL123M",
-			title: "Centrate",
+			title: "Céntrate",
 			creator: "A. Autor",
 			year: 2004,
 			pages: 250,
@@ -254,7 +254,7 @@ describe("metadata providers", () => {
 
 		const outcome = await searchMetadata(
 			"google-books",
-			"hay filosofia en tu nevera",
+			"hay filosofía en tu nevera",
 			"book",
 		);
 
@@ -313,7 +313,7 @@ describe("metadata providers", () => {
 
 		const outcome = await searchMetadata(
 			"google-books",
-			"hay filosofia en tu nevera",
+			"hay filosofía en tu nevera",
 			"book",
 		);
 
@@ -870,7 +870,7 @@ describe("metadata providers", () => {
 		const { searchMetadata } = await import("./providers");
 
 		await expect(
-			searchMetadata("google-books", "centrate", "book"),
+			searchMetadata("google-books", "céntrate", "book"),
 		).rejects.toThrow("Something went wrong.");
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 	});
@@ -968,7 +968,7 @@ describe("metadata providers", () => {
 				numero_cap_esp: 173,
 				_tipo: "manhwa",
 				the_real_name: "Mago Infinito",
-				_sinopsis: "Un nino aprende magia.",
+				_sinopsis: "Un niño aprende magia.",
 				_extras: { autores: ["Kim Chiwoo"] },
 				chapters: [{ chapter: 172 }, { chapter: 173 }],
 			}),
@@ -989,7 +989,7 @@ describe("metadata providers", () => {
 			title: "Mago Infinito",
 			creator: "Kim Chiwoo",
 			coverUrl: "/api/metadata/image?url=https%3A%2F%2Fimg2mw.xyz%2Fmago.webp",
-			description: "Un nino aprende magia.",
+			description: "Un niño aprende magia.",
 			canonicalUrl:
 				"https://www.manhwaweb.com/manhwa/magoinfinito_1717625777860",
 			status: "RELEASING",
@@ -998,9 +998,71 @@ describe("metadata providers", () => {
 		});
 		expect(details.latestChapterCheckedAt).toEqual(expect.any(Number));
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://manhwawebbackend-production.up.railway.app/manhwa/see/magoinfinito_1717625777860",
+			"https://api.manhwaweb.com/manhwa/see/magoinfinito_1717625777860",
 			undefined,
 		);
+	});
+
+	it.each([
+		["magoinfinito_1717625777860", 190],
+		["la-vida-despues-de-la-muerte_1696084388227", 268],
+	])(
+		"checks current chapters through the active ManhwaWeb API: %s",
+		async (id, chapter) => {
+			const fetchMock = vi.fn(async (input: string | URL | Request) => {
+				if (String(input) !== `https://api.manhwaweb.com/manhwa/see/${id}`) {
+					return jsonResponse({ message: "Application not found" }, 404);
+				}
+				return jsonResponse({
+					_id: id,
+					real_id: id,
+					_tipo: "manhwa",
+					_status: "publicandose",
+					numero_cap_esp: chapter,
+					_numero_cap: chapter,
+				});
+			});
+			vi.stubGlobal("fetch", fetchMock);
+			const { getMangaReadingUrlDetails } = await import("./providers");
+
+			const details = await getMangaReadingUrlDetails(
+				`https://www.manhwaweb.com/manhwa/${id}`,
+				"manhwa",
+			);
+
+			expect(details?.latestChapter).toBe(chapter);
+		},
+	);
+
+	it("searches titles through the active ManhwaWeb API", async () => {
+		const fetchMock = vi.fn(async (input: string | URL | Request) => {
+			if (
+				String(input) !==
+				"https://api.manhwaweb.com/manhwa/library?buscar=Mago+Infinito"
+			) {
+				return jsonResponse({ message: "Application not found" }, 404);
+			}
+			return jsonResponse({
+				data: [
+					{
+						_id: "magoinfinito_1717625777860",
+						_tipo: "manhwa",
+						the_real_name: "Mago Infinito",
+					},
+				],
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const { searchMetadata } = await import("./providers");
+
+		const result = await searchMetadata("manhwaweb", "Mago Infinito", "manhwa");
+
+		expect(result.results).toEqual([
+			expect.objectContaining({
+				id: "magoinfinito_1717625777860",
+				title: "Mago Infinito",
+			}),
+		]);
 	});
 
 	it("searches ManhwaWeb by pasted URL", async () => {
@@ -1013,7 +1075,7 @@ describe("metadata providers", () => {
 				_numero_cap: 251,
 				numero_cap_esp: 251,
 				_tipo: "manhwa",
-				the_real_name: "La Vida Despues de la Muerte",
+				the_real_name: "La Vida Después de la Muerte",
 			}),
 		);
 
@@ -1031,7 +1093,7 @@ describe("metadata providers", () => {
 		expect(outcome.results[0]).toMatchObject({
 			source: "manhwaweb",
 			id: "la-vida-despues-de-la-muerte_1696084388227",
-			title: "La Vida Despues de la Muerte",
+			title: "La Vida Después de la Muerte",
 			coverUrl: "/api/metadata/image?url=https%3A%2F%2Fimg1mw.xyz%2Ftbate.webp",
 			latestChapter: 251,
 			latestChapterSource: "scraping",

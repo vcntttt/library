@@ -1,0 +1,55 @@
+// cspell:disable
+{
+  "version": "0.2",
+  "language": "en,es",
+  "import": [
+    "@cspell/dict-es-es/cspell-ext.json"
+  ],
+  "words": [
+    "Anilist",
+    "brpi",
+    "Chiwoo",
+    "Cubari",
+    "dailylimitexceeded",
+    "Dani",
+    "DGMDXCCM",
+    "Dokk",
+    "Dokkodo",
+    "Dokkōdō",
+    "Eiichiro",
+    "Enric",
+    "Galindo",
+    "isbn",
+    "Kagurabachi",
+    "KHTML",
+    "magoinfinito",
+    "mangadex",
+    "manhwa",
+    "manhwaweb",
+    "Miyamoto",
+    "Musashi",
+    "openlibrary",
+    "quotaexceeded",
+    "romaji",
+    "Spaihts",
+    "themoviedb",
+    "Tmdb",
+    "unstub",
+    "userratelimitexceeded",
+    "validatecaptcha",
+    "flatrate",
+    "anilist",
+    "cubari",
+    "dokkodo",
+    "tmdb"
+  ],
+  "ignoreRegExpList": [
+    "/https?:[^\\s\"'`<>]+/g",
+    "/&(?:[a-z]+|#\\d+);/gi",
+    "/\\bpublicandose\\b/g",
+    "/la-vida-despues-de-la-muerte_\\d+/g",
+    "/\\b[^\\s<>]*&(?:[a-z]+|#\\d+);[^\\s<>]*/gi",
+    "/\\/api\\/metadata\\/image\\?[^\\s\"\\x27]+/g",
+    "/\"ignoreRegExpList\"\\s*:\\s*\\[[\\s\\S]*?\\]/g"
+  ]
+}
