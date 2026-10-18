@@ -1,3 +1,4 @@
+// cspell:ignore Sousou Kanehito Shingeki Kyojin Hajime Isayama Storer Takeru Hokazono katana
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Obra, ObraStatus, ObraType } from "@/lib/types";
@@ -290,7 +291,7 @@ function Dashboard({
 							type="button"
 							key={obra.id}
 							onClick={() => onSelect(obra)}
-							className="group text-left bg-white border border-[#D6D0C7] p-4 transition-all hover:border-[#B85C38] hover:shadow-sm"
+							className="group text-left bg-white border border-[#D6D0C7] p-4 transition-[border-color,box-shadow] hover:border-[#B85C38] hover:shadow-sm"
 						>
 							<div className="flex gap-4">
 								<div className="h-24 w-16 shrink-0 overflow-hidden bg-[#F5F2EB]">
@@ -394,6 +395,7 @@ function Biblioteca({
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					placeholder="Buscar por título, autor..."
+					aria-label="Buscar por título, autor"
 					className="bg-transparent border-b border-[#D6D0C7] pb-2 text-sm placeholder:text-[#8C8279] focus:outline-none focus:border-[#B85C38] transition-colors w-full max-w-xs"
 				/>
 			</div>
@@ -406,7 +408,7 @@ function Biblioteca({
 							type="button"
 							key={obra.id}
 							onClick={() => onSelect(obra)}
-							className={`group text-left bg-white border border-[#D6D0C7] p-3 transition-all hover:border-[#B85C38] hover:shadow-sm ${
+							className={`group text-left bg-white border border-[#D6D0C7] p-3 transition-[border-color,box-shadow] hover:border-[#B85C38] hover:shadow-sm ${
 								isLarge ? "col-span-2 row-span-2" : ""
 							}`}
 						>

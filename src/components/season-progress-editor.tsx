@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Minus, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,25 +42,43 @@ interface SeasonProgressEditorProps {
 	}) => void;
 }
 
+type SeasonProgressFormProps = Omit<
+	SeasonProgressEditorProps,
+	"open" | "onOpenChange"
+>;
+
 const MAX_VISIBLE_EPISODES = 24;
 
+// El formulario se monta al abrir la hoja: cada apertura parte de los valores actuales de la obra.
 export function SeasonProgressEditor({
 	open,
 	onOpenChange,
+	...formProps
+}: SeasonProgressEditorProps) {
+	return (
+		<Sheet open={open} onOpenChange={onOpenChange}>
+			<SheetContent
+				side="right"
+				overlayProps={{ onClick: () => onOpenChange(false) }}
+				className="h-dvh max-h-dvh w-full max-w-none overflow-y-auto border-l-border bg-card p-0 sm:max-w-xl"
+			>
+				<SeasonProgressForm {...formProps} />
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+function SeasonProgressForm({
 	seasons,
 	current,
 	total,
 	onChange,
 	onFinishSeason,
-}: SeasonProgressEditorProps) {
-	const [localSeasons, setLocalSeasons] = useState<ObraSeason[]>([]);
+}: SeasonProgressFormProps) {
+	const [localSeasons, setLocalSeasons] = useState<ObraSeason[]>(() =>
+		validateSeasons(seasons),
+	);
 	const [localCurrent, setLocalCurrent] = useState(current);
-
-	useEffect(() => {
-		if (!open) return;
-		setLocalSeasons(validateSeasons(seasons));
-		setLocalCurrent(current);
-	}, [open, seasons, current]);
 
 	const sanitized = useMemo(
 		() => validateSeasons(localSeasons),
@@ -119,10 +137,6 @@ export function SeasonProgressEditor({
 		});
 	};
 
-	const handleEpisodeClick = (seasonNumber: number, episode: number) => {
-		setCurrentBySeasonEpisode(seasonNumber, episode);
-	};
-
 	const finishSeason = (seasonNumber: number) => {
 		const nextCurrent = Math.max(
 			localCurrent,
@@ -143,101 +157,96 @@ export function SeasonProgressEditor({
 		onChange(next);
 	};
 
-	const handleCurrentInputChange = (seasonNumber: number, episode: number) => {
-		setCurrentBySeasonEpisode(seasonNumber, episode);
-	};
-
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				side="right"
-				overlayProps={{ onClick: () => onOpenChange(false) }}
-				className="h-dvh max-h-dvh w-full max-w-none overflow-y-auto border-l-border bg-card p-0 sm:max-w-xl"
-			>
-				<SheetHeader className="sticky top-0 z-10 border-b border-border bg-card px-5 py-4">
-					<div className="min-w-0 flex flex-col gap-1">
-						<SheetTitle className="font-serif text-xl">
-							Progreso por temporadas
-						</SheetTitle>
-						<SheetDescription>
-							Marca hasta dónde has visto editando temporada y capítulo.
-						</SheetDescription>
+		<>
+			<SheetHeader className="sticky top-0 z-10 border-b border-border bg-card px-5 py-4">
+				<div className="min-w-0 flex flex-col gap-1">
+					<SheetTitle className="font-serif text-xl">
+						Progreso por temporadas
+					</SheetTitle>
+					<SheetDescription>
+						Marca hasta dónde has visto editando temporada y capítulo.
+					</SheetDescription>
+				</div>
+			</SheetHeader>
+			<div className="px-5 py-5 space-y-8">
+				<section className="flex flex-col gap-4 border border-border bg-card p-5">
+					<p className="text-sm font-medium">Temporada actual</p>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<div className="flex flex-col gap-2">
+							<Label>Temporada</Label>
+							<Input
+								type="number"
+								min={1}
+								value={progress?.seasonNumber ?? 1}
+								onChange={(event) => {
+									setCurrentBySeasonEpisode(
+										Number(event.target.value),
+										progress?.episode ?? 0,
+									);
+								}}
+								className="rounded-none border-border bg-background focus-visible:ring-primary"
+							/>
+						</div>
+						<div className="flex flex-col gap-2">
+							<Label>Capítulo</Label>
+							<Input
+								type="number"
+								min={0}
+								value={progress?.episode ?? 0}
+								onChange={(event) => {
+									setCurrentBySeasonEpisode(
+										progress?.seasonNumber ?? 1,
+										Number(event.target.value),
+									);
+								}}
+								className="rounded-none border-border bg-background focus-visible:ring-primary"
+							/>
+						</div>
 					</div>
-				</SheetHeader>
-				<div className="px-5 py-5 space-y-8">
-					<section className="flex flex-col gap-4 border border-border bg-card p-5">
-						<p className="text-sm font-medium">Temporada actual</p>
-						<div className="grid gap-4 sm:grid-cols-2">
-							<div className="flex flex-col gap-2">
-								<Label>Temporada</Label>
-								<Input
-									type="number"
-									min={1}
-									value={progress?.seasonNumber ?? 1}
-									onChange={(event) => {
-										handleCurrentInputChange(
-											Number(event.target.value),
-											progress?.episode ?? 0,
-										);
-									}}
-									className="rounded-none border-border bg-background focus-visible:ring-primary"
-								/>
-							</div>
-							<div className="flex flex-col gap-2">
-								<Label>Capítulo</Label>
-								<Input
-									type="number"
-									min={0}
-									value={progress?.episode ?? 0}
-									onChange={(event) => {
-										handleCurrentInputChange(
-											progress?.seasonNumber ?? 1,
-											Number(event.target.value),
-										);
-									}}
-									className="rounded-none border-border bg-background focus-visible:ring-primary"
-								/>
-							</div>
-						</div>
-						<p className="text-sm text-muted-foreground">
-							Total: {localCurrent} / {effectiveTotal}
-						</p>
-					</section>
+					<p className="text-sm text-muted-foreground">
+						Total: {localCurrent} / {effectiveTotal}
+					</p>
+				</section>
 
-					<section className="flex flex-col gap-4 border border-border bg-card p-5">
-						<div className="flex items-center justify-between">
-							<p className="text-sm font-medium">Temporadas</p>
-							<div className="flex items-center gap-2">
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									aria-label="Eliminar última temporada"
-									disabled={sanitized.length <= 1}
-									onClick={removeLastSeason}
-									className="rounded-none border-border hover:border-destructive hover:text-destructive"
-								>
-									<Minus />
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									aria-label="Agregar temporada"
-									onClick={addSeason}
-									className="rounded-none border-border hover:border-primary hover:text-primary"
-								>
-									<Plus />
-								</Button>
-							</div>
+				<section className="flex flex-col gap-4 border border-border bg-card p-5">
+					<div className="flex items-center justify-between">
+						<p className="text-sm font-medium">Temporadas</p>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="icon"
+								aria-label="Eliminar última temporada"
+								disabled={sanitized.length <= 1}
+								onClick={removeLastSeason}
+								className="rounded-none border-border hover:border-destructive hover:text-destructive"
+							>
+								<Minus />
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="icon"
+								aria-label="Agregar temporada"
+								onClick={addSeason}
+								className="rounded-none border-border hover:border-primary hover:text-primary"
+							>
+								<Plus />
+							</Button>
 						</div>
-						<div className="flex flex-col gap-3">
-							{sanitized.length === 0 ? (
-								<p className="text-sm text-muted-foreground">
-									No hay temporadas configuradas.
-								</p>
-							) : (
-								sanitized.map((season) => (
+					</div>
+					<div className="flex flex-col gap-3">
+						{sanitized.length === 0 ? (
+							<p className="text-sm text-muted-foreground">
+								No hay temporadas configuradas.
+							</p>
+						) : (
+							sanitized.map((season) => {
+								const isFinished =
+									getSeasonEndProgress(sanitized, season.seasonNumber) <=
+									localCurrent;
+								return (
 									<div
 										key={season.seasonNumber}
 										className="flex flex-col gap-2"
@@ -249,22 +258,12 @@ export function SeasonProgressEditor({
 													type="button"
 													variant="ghost"
 													size="sm"
-													disabled={
-														getSeasonEndProgress(
-															sanitized,
-															season.seasonNumber,
-														) <= localCurrent
-													}
+													disabled={isFinished}
 													onClick={() => finishSeason(season.seasonNumber)}
 													className="rounded-none"
 												>
 													<Check className="size-4" />
-													{getSeasonEndProgress(
-														sanitized,
-														season.seasonNumber,
-													) <= localCurrent
-														? "Terminada"
-														: "Terminar temporada"}
+													{isFinished ? "Terminada" : "Terminar temporada"}
 												</Button>
 												<Input
 													type="number"
@@ -285,16 +284,16 @@ export function SeasonProgressEditor({
 											season={season}
 											current={localCurrent}
 											seasons={sanitized}
-											onClick={handleEpisodeClick}
+											onClick={setCurrentBySeasonEpisode}
 										/>
 									</div>
-								))
-							)}
-						</div>
-					</section>
-				</div>
-			</SheetContent>
-		</Sheet>
+								);
+							})
+						)}
+					</div>
+				</section>
+			</div>
+		</>
 	);
 }
 
@@ -335,7 +334,7 @@ function EpisodeGrid({
 				return (
 					<button
 						type="button"
-						key={episode}
+						key={`${season.seasonNumber}-${episode}`}
 						onClick={() => onClick(season.seasonNumber, episode)}
 						className={[
 							"h-7 w-7 text-xs transition-colors",

@@ -4,7 +4,8 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { Activity, ChevronDown, LogOut } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

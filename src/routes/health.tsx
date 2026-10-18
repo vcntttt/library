@@ -52,12 +52,14 @@ function SanidadAuthed() {
 		(obra) => getMetadataHealth(obra).missing.length > 0,
 	);
 	const selectable = unhealthy.filter((obra) => obra.external);
-	const selectedCount = selected.filter((id) =>
-		selectable.some((obra) => obra.id === id),
+	const selectedIds = useMemo(() => new Set(selected), [selected]);
+	const runningIds = useMemo(() => new Set(running), [running]);
+	const selectedCount = selectable.filter((obra) =>
+		selectedIds.has(obra.id),
 	).length;
 
 	const refresh = async (obra: Obra) => {
-		if (!obra.external || running.includes(obra.id)) return;
+		if (!obra.external || runningIds.has(obra.id)) return;
 		setRunning((current) => [...current, obra.id]);
 		try {
 			const params = new URLSearchParams({
@@ -116,12 +118,12 @@ function SanidadAuthed() {
 
 	const refreshSelected = () => {
 		void Promise.all(
-			selectable.filter((obra) => selected.includes(obra.id)).map(refresh),
+			selectable.filter((obra) => selectedIds.has(obra.id)).map(refresh),
 		);
 	};
 	const allSelected =
 		selectable.length > 0 &&
-		selectable.every((obra) => selected.includes(obra.id));
+		selectable.every((obra) => selectedIds.has(obra.id));
 
 	return (
 		<main className="min-h-[calc(100vh-4rem)]">
@@ -186,7 +188,7 @@ function SanidadAuthed() {
 										{canUpdate && (
 											<input
 												type="checkbox"
-												checked={selected.includes(obra.id)}
+												checked={selectedIds.has(obra.id)}
 												onChange={(event) =>
 													setSelected((current) =>
 														event.target.checked
@@ -231,10 +233,10 @@ function SanidadAuthed() {
 											<Button
 												size="sm"
 												variant="outline"
-												disabled={running.includes(obra.id)}
+												disabled={runningIds.has(obra.id)}
 												onClick={() => void refresh(obra)}
 											>
-												{running.includes(obra.id)
+												{runningIds.has(obra.id)
 													? "Actualizando…"
 													: "Actualizar"}
 											</Button>

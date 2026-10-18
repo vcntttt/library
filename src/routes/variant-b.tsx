@@ -1,3 +1,4 @@
+// cspell:ignore Sousou Kanehito Shingeki Kyojin Hajime Isayama Storer Takeru Hokazono katana
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Obra, ObraStatus, ObraType } from "@/lib/types";
@@ -126,7 +127,7 @@ const statusLabel: Record<ObraStatus, string> = {
 
 const typeLabel: Record<ObraType, string> = {
 	book: "LIBRO",
-	movie: "PELICULA",
+	movie: "PELÍCULA",
 	series: "SERIE",
 	anime: "ANIME",
 	manga: "MANGA",
@@ -145,6 +146,8 @@ function VariantB() {
 	);
 	const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
 	const [search, setSearch] = useState("");
+	// Fecha del pie fijada al montar: evita leer el reloj durante el render.
+	const [footerDate] = useState(() => Date.now());
 
 	const filtered = mockObras.filter((o) =>
 		o.title.toLowerCase().includes(search.toLowerCase()),
@@ -221,7 +224,7 @@ function VariantB() {
 			<footer className="fixed bottom-0 left-0 right-0 border-t border-[#333] bg-[#0D0D0D] px-4 py-1.5 flex items-center justify-between text-[10px] text-[#555]">
 				<span>SYS: OK</span>
 				<span>DB: CONNECTED</span>
-				<span>{formatDateShort(Date.now())}</span>
+				<span>{formatDateShort(footerDate)}</span>
 			</footer>
 		</div>
 	);
@@ -352,10 +355,12 @@ function Biblioteca({
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					placeholder="> BUSCAR..."
+					aria-label="Buscar obras"
 					className="bg-transparent border border-[#333] px-3 py-1.5 text-xs text-[#E8E8E8] placeholder:text-[#444] focus:border-[#FF6B00] focus:outline-none w-full md:w-64"
 				/>
 				<div className="flex gap-2">
 					<select
+						aria-label="Filtrar por estado"
 						value={filterStatus}
 						onChange={(e) =>
 							setFilterStatus(e.target.value as ObraStatus | "ALL")
@@ -371,13 +376,14 @@ function Biblioteca({
 						<option value="dropped">ABANDONADA</option>
 					</select>
 					<select
+						aria-label="Filtrar por tipo"
 						value={filterType}
 						onChange={(e) => setFilterType(e.target.value as ObraType | "ALL")}
 						className="bg-[#0D0D0D] border border-[#333] text-xs text-[#888] px-2 py-1.5 focus:border-[#FF6B00] focus:outline-none"
 					>
 						<option value="ALL">TIPO:_ALL</option>
 						<option value="book">LIBRO</option>
-						<option value="movie">PELICULA</option>
+						<option value="movie">PELÍCULA</option>
 						<option value="series">SERIE</option>
 						<option value="anime">ANIME</option>
 						<option value="manga">MANGA</option>
@@ -393,7 +399,7 @@ function Biblioteca({
 					<span>TIPO</span>
 					<span>ESTADO</span>
 					<span>PROGRESO</span>
-					<span className="text-right">ACCION</span>
+					<span className="text-right">ACCIÓN</span>
 				</div>
 				<div className="divide-y divide-[#222]">
 					{rows.map((obra) => (

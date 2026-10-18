@@ -1,11 +1,11 @@
 import { api as convexApi } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useAuthToken } from "@convex-dev/auth/react";
 import { useMutation } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MetadataSearch } from "@/components/add-obra/metadata-search";
 import { ObraForm } from "@/components/add-obra/obra-form";
 import { TypeSelector } from "@/components/add-obra/type-selector";
+import { useObraMetadata } from "@/components/add-obra/use-obra-metadata";
 import { CompletionReviewDialog } from "@/components/completion-review-dialog";
 import { Plus } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import type {
-	MetadataDetails,
-	MetadataDirectUrlFallback,
-	MetadataSearchResult,
-} from "@/lib/metadata/types";
+import type { MetadataSearchResult } from "@/lib/metadata/types";
 import type { CreateObraInput, ObraType } from "@/lib/types";
 
 const metadataSourceLabels = {
@@ -45,21 +41,6 @@ const metadataSourceByType: Record<
 	manhwa: "manhwaweb",
 };
 
-function isMetadataDirectUrlFallback(
-	value: unknown,
-): value is MetadataDirectUrlFallback {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"url" in value &&
-		typeof value.url === "string" &&
-		"label" in value &&
-		typeof value.label === "string" &&
-		"reason" in value &&
-		typeof value.reason === "string"
-	);
-}
-
 interface AddObraDialogProps {
 	triggerMode?: "default" | "fab";
 	className?: string;
@@ -72,26 +53,9 @@ export function AddObraDialog({
 	const [open, setOpen] = useState(false);
 	const [step, setStep] = useState<1 | 2 | 3>(1);
 	const [activeType, setActiveType] = useState<ObraType | "">("");
-	const [metadataQuery, setMetadataQuery] = useState("");
-	const [metadataResults, setMetadataResults] = useState<
-		MetadataSearchResult[]
-	>([]);
-	const [selectedMetadata, setSelectedMetadata] =
-		useState<MetadataSearchResult | null>(null);
-	const [metadataDetails, setMetadataDetails] =
-		useState<MetadataDetails | null>(null);
-	const [directUrlFallback, setDirectUrlFallback] =
-		useState<MetadataDirectUrlFallback | null>(null);
 	const [initialReadingUrl, setInitialReadingUrl] = useState("");
 	const [initialSourceUrl, setInitialSourceUrl] = useState("");
-	const [metadataError, setMetadataError] = useState<string | null>(null);
-	const [isSearchingMetadata, setIsSearchingMetadata] = useState(false);
-	const [isLoadingMetadataDetails, setIsLoadingMetadataDetails] =
-		useState(false);
-	const metadataAbortRef = useRef<AbortController | null>(null);
-	const detailsAbortRef = useRef<AbortController | null>(null);
-	const metadataDebounceRef = useRef<number | null>(null);
-	const authToken = useAuthToken();
+	const metadata = useObraMetadata({ open, activeType });
 	const createObra = useMutation(convexApi.obras.create);
 	const saveReview = useMutation(convexApi.obras.saveReview);
 	const snoozeReview = useMutation(convexApi.obras.snoozeReview);
@@ -105,178 +69,35 @@ export function AddObraDialog({
 		? metadataSourceLabels[metadataSourceByType[activeType]]
 		: "";
 
-	useEffect(() => {
-		if (!open || selectedMetadata || !activeType) return;
-
-		const query = metadataQuery.trim();
-		if (query.length < 3) {
-			setMetadataResults([]);
-			setDirectUrlFallback(null);
-			setMetadataError(null);
-			setIsSearchingMetadata(false);
-			return;
-		}
-
-		if (metadataDebounceRef.current) {
-			window.clearTimeout(metadataDebounceRef.current);
-		}
-		metadataAbortRef.current?.abort();
-
-		const controller = new AbortController();
-		metadataAbortRef.current = controller;
-
-		metadataDebounceRef.current = window.setTimeout(async () => {
-			setIsSearchingMetadata(true);
-			setMetadataError(null);
-			setDirectUrlFallback(null);
-			try {
-				const response = await fetch(
-					`/api/metadata/search?type=${encodeURIComponent(activeType)}&q=${encodeURIComponent(query)}`,
-					{
-						headers: authToken
-							? { authorization: `Bearer ${authToken}` }
-							: undefined,
-						signal: controller.signal,
-					},
-				);
-				if (!response.ok) {
-					const payload = await response.json().catch(() => ({}));
-					console.error("[metadata/search] request failed", {
-						status: response.status,
-						statusText: response.statusText,
-						payload,
-						url: response.url,
-					});
-					const message =
-						payload && typeof payload.error === "string"
-							? payload.error
-							: "No se pudo buscar metadatos.";
-					throw new Error(message);
-				}
-
-				const payload = await response.json();
-				const results = Array.isArray(payload?.results)
-					? (payload.results as MetadataSearchResult[])
-					: [];
-				const fallback = isMetadataDirectUrlFallback(payload?.directUrlFallback)
-					? payload.directUrlFallback
-					: null;
-				setMetadataResults(results);
-				setDirectUrlFallback(fallback);
-				if (results.length === 0 && !fallback) {
-					setMetadataError("No hay resultados.");
-				}
-			} catch (error) {
-				if (error instanceof Error && error.name === "AbortError") {
-					return;
-				}
-				setDirectUrlFallback(null);
-				setMetadataError(
-					error instanceof Error
-						? error.message
-						: "No se pudo buscar metadatos.",
-				);
-			} finally {
-				setIsSearchingMetadata(false);
-			}
-		}, 350);
-
-		return () => {
-			controller.abort();
-			if (metadataDebounceRef.current) {
-				window.clearTimeout(metadataDebounceRef.current);
-			}
-		};
-	}, [open, metadataQuery, activeType, selectedMetadata, authToken]);
-
-	const cancelMetadataDetails = () => {
-		detailsAbortRef.current?.abort();
-		detailsAbortRef.current = null;
-		setIsLoadingMetadataDetails(false);
-	};
-
 	const handleOpenChange = (nextOpen: boolean) => {
 		setOpen(nextOpen);
 		if (!nextOpen) {
-			metadataAbortRef.current?.abort();
-			if (metadataDebounceRef.current) {
-				window.clearTimeout(metadataDebounceRef.current);
-			}
-			cancelMetadataDetails();
+			metadata.reset();
 			setStep(1);
 			setActiveType("");
-			setMetadataQuery("");
-			setMetadataResults([]);
-			setSelectedMetadata(null);
-			setMetadataDetails(null);
-			setDirectUrlFallback(null);
 			setInitialReadingUrl("");
 			setInitialSourceUrl("");
-			setMetadataError(null);
-			setIsSearchingMetadata(false);
 		}
 	};
 
 	const handleSelectType = (type: ObraType) => {
 		setActiveType(type);
-		setDirectUrlFallback(null);
+		metadata.clearResults();
 		setInitialReadingUrl("");
 		setInitialSourceUrl("");
 		setStep(2);
 	};
 
 	const handleSkipMetadataSearch = () => {
-		setSelectedMetadata(null);
-		setMetadataDetails(null);
-		setMetadataError(null);
+		metadata.clearSelection();
 		setInitialReadingUrl("");
-		setInitialSourceUrl(directUrlFallback?.url ?? "");
+		setInitialSourceUrl(metadata.directUrlFallback?.url ?? "");
 		setStep(3);
 	};
 
-	const handleSelectResult = async (result: MetadataSearchResult) => {
-		cancelMetadataDetails();
-		const controller = new AbortController();
-		detailsAbortRef.current = controller;
-		setSelectedMetadata(result);
+	const handleSelectResult = (result: MetadataSearchResult) => {
+		void metadata.selectResult(result);
 		setStep(3);
-		setIsLoadingMetadataDetails(true);
-		setMetadataDetails(null);
-		setMetadataError(null);
-
-		try {
-			const response = await fetch(
-				`/api/metadata/details?source=${encodeURIComponent(result.source)}&id=${encodeURIComponent(result.id)}&type=${encodeURIComponent(activeType)}`,
-				{
-					headers: authToken
-						? { authorization: `Bearer ${authToken}` }
-						: undefined,
-					signal: controller.signal,
-				},
-			);
-			if (!response.ok) {
-				const payload = await response.json().catch(() => ({}));
-				const message =
-					payload && typeof payload.error === "string"
-						? payload.error
-						: "No se pudo cargar metadatos.";
-				throw new Error(message);
-			}
-
-			const payload = await response.json();
-			const details = payload?.details as MetadataDetails | undefined;
-			if (details && !controller.signal.aborted) setMetadataDetails(details);
-		} catch (error) {
-			if (controller.signal.aborted) return;
-			setMetadataError(
-				error instanceof Error ? error.message : "No se pudo cargar metadatos.",
-			);
-		} finally {
-			if (detailsAbortRef.current === controller) {
-				detailsAbortRef.current = null;
-				setIsLoadingMetadataDetails(false);
-			}
-		}
 	};
 
 	const handleFormSubmit = async (input: CreateObraInput) => {
@@ -338,19 +159,18 @@ export function AddObraDialog({
 					{step === 2 && activeType && (
 						<MetadataSearch
 							type={activeType}
-							query={metadataQuery}
-							onQueryChange={setMetadataQuery}
-							results={metadataResults}
-							isSearching={isSearchingMetadata}
-							error={metadataError}
-							directUrlFallback={directUrlFallback}
+							query={metadata.query}
+							onQueryChange={metadata.setQuery}
+							results={metadata.results}
+							isSearching={metadata.isSearching}
+							error={metadata.error}
+							directUrlFallback={metadata.directUrlFallback}
 							onSelectResult={handleSelectResult}
 							onSkip={handleSkipMetadataSearch}
 							onBack={() => {
 								setStep(1);
 								setActiveType("");
-								setMetadataResults([]);
-								setDirectUrlFallback(null);
+								metadata.clearResults();
 								setInitialReadingUrl("");
 							}}
 							sourceLabel={metadataSourceLabel}
@@ -360,17 +180,14 @@ export function AddObraDialog({
 					{step === 3 && activeType && (
 						<ObraForm
 							type={activeType}
-							selectedMetadata={selectedMetadata}
-							metadataDetails={metadataDetails}
-							isLoadingDetails={isLoadingMetadataDetails}
+							selectedMetadata={metadata.selected}
+							metadataDetails={metadata.details}
+							isLoadingDetails={metadata.isLoadingDetails}
 							initialReadingUrl={initialReadingUrl}
 							initialSourceUrl={initialSourceUrl}
 							onBack={() => {
-								cancelMetadataDetails();
+								metadata.clearSelection();
 								setStep(2);
-								setSelectedMetadata(null);
-								setMetadataDetails(null);
-								setMetadataError(null);
 								setInitialReadingUrl("");
 							}}
 							onCancel={() => handleOpenChange(false)}

@@ -63,13 +63,16 @@ export function ThemeProvider({
 		return () => media.removeEventListener("change", applyTheme);
 	}, [theme]);
 
-	const value = {
-		theme,
-		setTheme: (theme: Theme) => {
-			storage?.setItem(storageKey, theme);
-			setTheme(theme);
-		},
-	};
+	const value = useMemo<ThemeProviderState>(
+		() => ({
+			theme,
+			setTheme: (nextTheme: Theme) => {
+				storage?.setItem(storageKey, nextTheme);
+				setTheme(nextTheme);
+			},
+		}),
+		[theme, storage, storageKey],
+	);
 
 	return (
 		<ThemeProviderContext.Provider {...props} value={value}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -12,15 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-export function CompletionReviewDialog({
-	open,
-	onOpenChange,
-	title,
-	initialReview,
-	onSave,
-	onLater,
-	onSkip,
-}: {
+interface CompletionReviewDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	title: string;
@@ -28,16 +20,30 @@ export function CompletionReviewDialog({
 	onSave: (review: string) => Promise<unknown>;
 	onLater?: () => Promise<unknown>;
 	onSkip?: () => Promise<unknown>;
-}) {
-	const [draft, setDraft] = useState("");
+}
+
+// El contenido del diálogo se desmonta al cerrar; cada apertura parte del borrador guardado.
+export function CompletionReviewDialog(props: CompletionReviewDialogProps) {
+	return (
+		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
+			<DialogContent className="rounded-none sm:max-w-md">
+				<CompletionReviewForm {...props} />
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+function CompletionReviewForm({
+	onOpenChange,
+	title,
+	initialReview,
+	onSave,
+	onLater,
+	onSkip,
+}: CompletionReviewDialogProps) {
+	const [draft, setDraft] = useState(initialReview ?? "");
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		if (!open) return;
-		setDraft(initialReview ?? "");
-		setError(null);
-	}, [initialReview, open]);
 
 	const handleSave = async () => {
 		setIsSaving(true);
@@ -80,50 +86,48 @@ export function CompletionReviewDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="rounded-none sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-					<DialogDescription>
-						Terminaste esta obra. ¿Quieres dejar una reseña ahora?
-					</DialogDescription>
-				</DialogHeader>
-				<Textarea
-					placeholder="Escribe tu reseña..."
-					value={draft}
-					onChange={(event) => setDraft(event.target.value)}
-					className="min-h-[120px] rounded-none"
-				/>
-				{error && <p className="text-sm text-destructive">{error}</p>}
-				<DialogFooter className="gap-2 sm:gap-0">
-					<Button
-						type="button"
-						variant="ghost"
-						disabled={isSaving}
-						onClick={() => void handleDecision(onLater)}
-						className="rounded-none"
-					>
-						Más tarde
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						disabled={isSaving}
-						onClick={() => void handleDecision(onSkip)}
-						className="rounded-none"
-					>
-						No escribir reseña
-					</Button>
-					<Button
-						type="button"
-						disabled={isSaving}
-						onClick={() => void handleSave()}
-						className="rounded-none"
-					>
-						{isSaving ? "Guardando..." : "Guardar reseña"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+		<>
+			<DialogHeader>
+				<DialogTitle>{title}</DialogTitle>
+				<DialogDescription>
+					Terminaste esta obra. ¿Quieres dejar una reseña ahora?
+				</DialogDescription>
+			</DialogHeader>
+			<Textarea
+				placeholder="Escribe tu reseña..."
+				value={draft}
+				onChange={(event) => setDraft(event.target.value)}
+				className="min-h-[120px] rounded-none"
+			/>
+			{error && <p className="text-sm text-destructive">{error}</p>}
+			<DialogFooter className="gap-2 sm:gap-0">
+				<Button
+					type="button"
+					variant="ghost"
+					disabled={isSaving}
+					onClick={() => void handleDecision(onLater)}
+					className="rounded-none"
+				>
+					Más tarde
+				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					disabled={isSaving}
+					onClick={() => void handleDecision(onSkip)}
+					className="rounded-none"
+				>
+					No escribir reseña
+				</Button>
+				<Button
+					type="button"
+					disabled={isSaving}
+					onClick={() => void handleSave()}
+					className="rounded-none"
+				>
+					{isSaving ? "Guardando..." : "Guardar reseña"}
+				</Button>
+			</DialogFooter>
+		</>
 	);
 }

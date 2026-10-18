@@ -3,10 +3,12 @@
 import { api as convexApi } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { CompletionReviewDialog } from "@/components/completion-review-dialog";
+import { ObraStatusProgress } from "@/components/obra-status-progress";
 import { SeasonProgressEditor } from "@/components/season-progress-editor";
+import { statusDots } from "@/components/status-tokens";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,20 +16,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { isMetadataFinished } from "@/lib/metadata/format";
-import {
-	formatProgressRemaining,
-	formatProgressValue,
-	getProgressUnitLabel,
-	isAudiobook,
-	isPositiveCount,
-} from "@/lib/progress";
+import { isPositiveCount } from "@/lib/progress";
 import { getStatusLabel } from "@/lib/status";
-import type { Obra, ObraStatus } from "@/lib/types";
+import type { Obra, ObraSeason, ObraStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { statusDots } from "./status-badge";
 
 const allStatuses: ObraStatus[] = [
 	"backlog",
@@ -37,6 +30,18 @@ const allStatuses: ObraStatus[] = [
 	"finished",
 	"dropped",
 ];
+
+// Avanzar progreso con capítulos o episodios vistos pasa a "en progreso" salvo que la obra ya lo esté.
+function startedStatusPatch(status: ObraStatus, current: number) {
+	return status !== "in-progress" && current > 0
+		? { status: "in-progress" as const }
+		: {};
+}
+
+// La reseña se ofrece al terminar una obra salvo que ya tenga una o el usuario la haya omitido.
+function shouldOfferReview(obra: Obra) {
+	return !obra.review && obra.reviewStatus !== "skipped";
+}
 
 interface ObraStatusPickerProps {
 	obra: Obra;
@@ -57,10 +62,10 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	} | null>(null);
 	const [progressError, setProgressError] = useState<string | null>(null);
 
+	const obraId = obra.id as Id<"obras">;
 	const hasProgress = obra.type !== "movie";
 	const progressTotal = obra.progress?.total ?? 0;
 	const progressCurrent = obra.progress?.current ?? 0;
-	const progressUnitLabel = getProgressUnitLabel(obra);
 	const displayedProgressCurrent = progressDraft?.current ?? progressCurrent;
 	const displayedProgressTotal = progressDraft?.total ?? progressTotal;
 	const showProgress =
@@ -82,17 +87,10 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	};
 
 	const handleStatusChange = async (nextStatus: ObraStatus) => {
-		await updateObra({
-			id: obra.id as Id<"obras">,
-			patch: { status: nextStatus },
-		});
+		await updateObra({ id: obraId, patch: { status: nextStatus } });
 		closePicker();
 
-		if (
-			nextStatus === "finished" &&
-			!obra.review &&
-			obra.reviewStatus !== "skipped"
-		) {
+		if (nextStatus === "finished" && shouldOfferReview(obra)) {
 			setTimeout(() => {
 				setIsReviewOpen(true);
 			}, 15);
@@ -110,23 +108,18 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		const safeTotal = Math.max(Math.round(nextTotal), 0);
 		setProgressDraft({ current: safeCurrent, total: safeTotal });
 
-		const patch: Record<string, unknown> = {};
+		const patch: Record<string, unknown> = {
+			...startedStatusPatch(obra.status, safeCurrent),
+		};
 		if (safeTotal > 0) {
 			patch.progress = { current: safeCurrent, total: safeTotal };
 		} else if (obra.progress) {
 			patch.progress = null;
 		}
 
-		if (obra.status !== "in-progress" && safeCurrent > 0) {
-			patch.status = "in-progress";
-		}
-
 		setProgressError(null);
 		try {
-			await updateObra({
-				id: obra.id as Id<"obras">,
-				patch,
-			});
+			await updateObra({ id: obraId, patch });
 		} catch (error) {
 			// Se descarta el borrador para mostrar el valor guardado, no uno que no llegó al servidor.
 			setProgressDraft(null);
@@ -147,33 +140,27 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 		if (obra.status !== "in-progress") {
 			patch.status = "in-progress";
 		}
-		await updateObra({
-			id: obra.id as Id<"obras">,
-			patch,
-		});
+		await updateObra({ id: obraId, patch });
 		closePicker();
 	};
 
 	const handleSeasonProgressChange = async (next: {
-		seasons: NonNullable<Obra["progressSeasons"]>;
+		seasons: ObraSeason[];
 		current: number;
 		total: number;
 	}) => {
-		const patch: Record<string, unknown> = {
-			progress: { current: next.current, total: next.total },
-			progressSeasons: next.seasons,
-		};
-		if (obra.status !== "in-progress" && next.current > 0) {
-			patch.status = "in-progress";
-		}
 		await updateObra({
-			id: obra.id as Id<"obras">,
-			patch,
+			id: obraId,
+			patch: {
+				progress: { current: next.current, total: next.total },
+				progressSeasons: next.seasons,
+				...startedStatusPatch(obra.status, next.current),
+			},
 		});
 	};
 
 	const handleFinishSeason = async (next: {
-		seasons: NonNullable<Obra["progressSeasons"]>;
+		seasons: ObraSeason[];
 		current: number;
 		total: number;
 		isLastSeason: boolean;
@@ -182,7 +169,7 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 			next.isLastSeason && isMetadataFinished(obra.metadata?.status);
 		const completedTotal = Math.max(next.total, progressTotal);
 		await updateObra({
-			id: obra.id as Id<"obras">,
+			id: obraId,
 			patch: {
 				progress: {
 					current: shouldFinishObra ? completedTotal : next.current,
@@ -191,15 +178,13 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 				progressSeasons: next.seasons,
 				...(shouldFinishObra
 					? { status: "finished" as const }
-					: obra.status !== "in-progress" && next.current > 0
-						? { status: "in-progress" as const }
-						: {}),
+					: startedStatusPatch(obra.status, next.current)),
 			},
 		});
 		if (!shouldFinishObra) return;
 		setIsSeasonEditorOpen(false);
 		closePicker();
-		if (!obra.review && obra.reviewStatus !== "skipped") setIsReviewOpen(true);
+		if (shouldOfferReview(obra)) setIsReviewOpen(true);
 	};
 
 	const handlePickerOpenChange = (open: boolean) => {
@@ -211,39 +196,30 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 	};
 
 	const handleSaveReview = async (review: string) => {
-		await saveReview({ id: obra.id as Id<"obras">, review });
+		await saveReview({ id: obraId, review });
 	};
 
 	const handleLaterReview = async () => {
-		await snoozeReview({ id: obra.id as Id<"obras"> });
+		await snoozeReview({ id: obraId });
 	};
 
 	const handleSkipReview = async () => {
-		await skipReview({ id: obra.id as Id<"obras"> });
+		await skipReview({ id: obraId });
 	};
 
 	return (
 		<>
-			{/* biome-ignore lint/a11y/useSemanticElements: cannot nest button inside anchor links used by ObraCard */}
-			<span
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
 				className="inline-flex cursor-pointer"
 				onClick={(e) => {
 					e.stopPropagation();
 					e.preventDefault();
 					setIsPickerOpen(true);
 				}}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.stopPropagation();
-						e.preventDefault();
-						setIsPickerOpen(true);
-					}
-				}}
 			>
 				{children}
-			</span>
+			</button>
 
 			<Dialog open={isPickerOpen} onOpenChange={handlePickerOpenChange}>
 				<DialogContent
@@ -283,116 +259,14 @@ export function ObraStatusPicker({ obra, children }: ObraStatusPickerProps) {
 					{showProgress && (
 						<>
 							<div className="border-t border-border" />
-							<div className="px-4 py-3 space-y-3">
-								<p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-									Progreso
-								</p>
-								{progressUnitLabel && (
-									<p className="text-xs text-muted-foreground">
-										{formatProgressValue(displayedProgressCurrent, obra)} /{" "}
-										{formatProgressValue(displayedProgressTotal, obra)}{" "}
-										{progressUnitLabel}
-									</p>
-								)}
-								{isAudiobook(obra) && (
-									<p className="text-xs text-muted-foreground">
-										Restante:{" "}
-										{formatProgressRemaining(
-											displayedProgressCurrent,
-											displayedProgressTotal,
-											obra,
-										)}
-									</p>
-								)}
-								<div className="flex items-center gap-2">
-									<Button
-										variant="outline"
-										size="icon"
-										className="h-7 w-7 rounded-none"
-										onClick={() =>
-											handleProgressChange(
-												displayedProgressCurrent - 1,
-												displayedProgressTotal,
-											)
-										}
-									>
-										<Minus className="size-3" />
-									</Button>
-									<Input
-										type="number"
-										min={0}
-										value={displayedProgressCurrent}
-										onChange={(e) =>
-											handleProgressChange(
-												Number(e.target.value),
-												displayedProgressTotal,
-											)
-										}
-										className="h-7 w-16 rounded-none text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-									/>
-									<span className="text-sm text-muted-foreground">/</span>
-									<Input
-										type="number"
-										min={0}
-										value={displayedProgressTotal}
-										onChange={(e) =>
-											handleProgressChange(
-												displayedProgressCurrent,
-												Number(e.target.value),
-											)
-										}
-										className="h-7 w-16 rounded-none text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-									/>
-									<Button
-										variant="outline"
-										size="icon"
-										className="h-7 w-7 rounded-none"
-										onClick={() =>
-											handleProgressChange(
-												displayedProgressCurrent + 1,
-												displayedProgressTotal,
-											)
-										}
-									>
-										<Plus className="size-3" />
-									</Button>
-								</div>
-								{displayedProgressTotal > 0 && (
-									<Slider
-										min={0}
-										max={displayedProgressTotal}
-										step={1}
-										value={[
-											Math.min(
-												displayedProgressCurrent,
-												displayedProgressTotal,
-											),
-										]}
-										onValueChange={(nextValue) => {
-											const value = Array.isArray(nextValue)
-												? nextValue[0]
-												: nextValue;
-											if (value !== undefined) {
-												handleProgressChange(value, displayedProgressTotal);
-											}
-										}}
-									/>
-								)}
-								{progressError && (
-									<p className="text-xs text-destructive">{progressError}</p>
-								)}
-								{(obra.type === "series" || obra.type === "anime") &&
-									(obra.progressSeasons?.length ?? 0) > 0 && (
-										<Button
-											type="button"
-											variant="outline"
-											className="w-full rounded-none"
-											onClick={() => setIsSeasonEditorOpen(true)}
-										>
-											Progreso por temporadas
-										</Button>
-									)}
-							</div>
+							<ObraStatusProgress
+								obra={obra}
+								current={displayedProgressCurrent}
+								total={displayedProgressTotal}
+								error={progressError}
+								onProgressChange={handleProgressChange}
+								onOpenSeasonEditor={() => setIsSeasonEditorOpen(true)}
+							/>
 						</>
 					)}
 

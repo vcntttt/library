@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { getBookFormatLabel } from "@/lib/progress";
 import type { ObraFormat, ObraType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { TypeIcons } from "./icons";
+import { TypeIcons } from "./icon-maps";
 
 const typeColors: Record<ObraType, string> = {
 	book: "border-emerald-700/40 text-emerald-700 dark:text-emerald-200",

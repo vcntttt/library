@@ -2,6 +2,7 @@ import { api as convexApi } from "@convex/_generated/api";
 import { useConvexAuth } from "@convex-dev/auth/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import type { ReactNode } from "react";
 import { AddObraDialog } from "@/components/add-obra-dialog";
 import { BibliotecaTable } from "@/components/biblioteca-table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,33 +45,40 @@ function BibliotecaPage() {
 
 function BibliotecaPageSkeleton() {
 	return (
-		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-border pb-4">
-					<div className="space-y-3">
-						<Skeleton className="h-3 w-28 rounded-none" />
-						<Skeleton className="h-10 w-56 sm:w-72 rounded-none" />
-						<Skeleton className="h-4 w-72 max-w-full rounded-none" />
-					</div>
-					<Skeleton className="h-10 w-36 rounded-none" />
-				</div>
-
-				<BibliotecaTable obras={[]} isLoading />
-			</div>
-		</div>
+		<BibliotecaLayout>
+			<BibliotecaHeader isLoading />
+			<BibliotecaTable obras={[]} isLoading />
+		</BibliotecaLayout>
 	);
 }
-
 function BibliotecaAuthed() {
 	const docs = useQuery(convexApi.obras.list, {});
 	const isLoading = docs === undefined;
 	const obras = (docs ?? []).map(obraFromDoc);
-
 	return (
-		<div className="min-h-[calc(100vh-4rem)]">
-			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-				<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-[#D6D0C7] pb-4">
-					<div className="space-y-3">
+		<BibliotecaLayout>
+			<BibliotecaHeader />
+			<BibliotecaTable obras={obras} isLoading={isLoading} />
+			<div className="fixed bottom-5 right-4 z-40 sm:hidden">
+				<AddObraDialog triggerMode="fab" />
+			</div>
+		</BibliotecaLayout>
+	);
+}
+function BibliotecaHeader({ isLoading = false }: { isLoading?: boolean }) {
+	return (
+		<div
+			className={`flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b ${isLoading ? "border-border" : "border-[#D6D0C7]"} pb-4`}
+		>
+			<div className="space-y-3">
+				{isLoading ? (
+					<>
+						<Skeleton className="h-3 w-28 rounded-none" />
+						<Skeleton className="h-10 w-56 sm:w-72 rounded-none" />
+						<Skeleton className="h-4 w-72 max-w-full rounded-none" />
+					</>
+				) : (
+					<>
 						<p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
 							Colección completa
 						</p>
@@ -80,17 +88,25 @@ function BibliotecaAuthed() {
 						<p className="text-base text-muted-foreground sm:text-sm">
 							Busca, filtra y ordena todas tus obras.
 						</p>
-					</div>
-					<div className="hidden sm:block">
-						<AddObraDialog />
-					</div>
+					</>
+				)}
+			</div>
+			{isLoading ? (
+				<Skeleton className="h-10 w-36 rounded-none" />
+			) : (
+				<div className="hidden sm:block">
+					<AddObraDialog />
 				</div>
+			)}
+		</div>
+	);
+}
 
-				<BibliotecaTable obras={obras} isLoading={isLoading} />
-
-				<div className="fixed bottom-5 right-4 z-40 sm:hidden">
-					<AddObraDialog triggerMode="fab" />
-				</div>
+function BibliotecaLayout({ children }: { children: ReactNode }) {
+	return (
+		<div className="min-h-[calc(100vh-4rem)]">
+			<div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+				{children}
 			</div>
 		</div>
 	);

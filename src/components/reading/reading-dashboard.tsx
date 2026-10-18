@@ -32,14 +32,15 @@ export function ReadingDashboard() {
 				method: "POST",
 				headers: { authorization: `Bearer ${authToken}` },
 			});
-			const payload = await response.json().catch(() => ({}));
 			if (!response.ok) {
+				const errorPayload = await response.json().catch(() => null);
 				throw new Error(
-					typeof payload?.error === "string"
-						? payload.error
+					typeof errorPayload?.error === "string"
+						? errorPayload.error
 						: "No se pudo sincronizar la lectura.",
 				);
 			}
+			const payload = await response.json();
 			setMessage(
 				`Se procesaron ${payload.importedDocuments ?? 0} documentos, ${payload.importedAnnotations ?? 0} anotaciones y ${payload.errors?.length ?? 0} errores.`,
 			);

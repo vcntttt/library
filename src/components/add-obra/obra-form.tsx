@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useId, useState } from "react";
-import { TypeIcons } from "@/components/icons";
+import { TypeIcons } from "@/components/icon-maps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -254,30 +254,18 @@ interface ObraFormProps {
 	onSubmit: (input: CreateObraInput) => Promise<void>;
 }
 
-export function ObraForm({
-	type,
-	selectedMetadata,
-	metadataDetails,
-	isLoadingDetails,
-	initialReadingUrl,
-	initialSourceUrl,
-	onBack,
-	onCancel,
-	onSubmit,
-}: ObraFormProps) {
-	const [submitError, setSubmitError] = useState<string | null>(null);
-	const titleId = useId();
-	const statusId = useId();
-	const formatId = useId();
-	const creatorId = useId();
-	const yearId = useId();
-	const startedAtId = useId();
-	const finishedAtId = useId();
-	const recommendedById = useId();
-	const readingUrlId = useId();
-	const totalId = useId();
-	const tagsId = useId();
-
+// Crea el formulario con los datos del proveedor; las secciones reciben esta instancia para compartir el mismo estado.
+function useObraFormInstance(
+	{
+		type,
+		selectedMetadata,
+		metadataDetails,
+		initialReadingUrl,
+		initialSourceUrl,
+		onSubmit,
+	}: ObraFormProps,
+	setSubmitError: (message: string | null) => void,
+) {
 	const form = useForm({
 		defaultValues: {
 			title: selectedMetadata?.title ?? "",
@@ -383,12 +371,390 @@ export function ObraForm({
 		}
 	}, [metadataDetails, form, type]);
 
+	return form;
+}
+
+type ObraFormApi = ReturnType<typeof useObraFormInstance>;
+
+// Muestra lo que devolvió el proveedor; las filas que aún no llegan se ven como esqueleto mientras carga.
+function ProviderInfo({
+	selectedMetadata,
+	metadataDetails,
+	metadataRows,
+	isLoadingDetails,
+}: {
+	selectedMetadata: MetadataSearchResult;
+	metadataDetails: MetadataDetails | null;
+	metadataRows: ReturnType<typeof getMetadataRows>;
+	isLoadingDetails: boolean;
+}) {
+	const coverUrl = metadataDetails?.coverUrl ?? selectedMetadata.coverUrl;
+
+	return (
+		<div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-3">
+			<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
+				Información del proveedor
+			</p>
+			<div className="flex items-start gap-4">
+				{coverUrl ? (
+					<img
+						src={coverUrl}
+						alt={`Portada de ${selectedMetadata.title}`}
+						className="h-40 w-28 rounded-lg object-cover flex-shrink-0"
+						loading="lazy"
+					/>
+				) : (
+					<div className="h-40 w-28 rounded-lg bg-border/40 flex-shrink-0" />
+				)}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 flex-1 min-w-0">
+					{metadataRows.map((row) => (
+						<div key={row.label} className="text-sm">
+							<span className="text-muted-foreground">{row.label}:</span>{" "}
+							{row.value ? (
+								<span>{row.value}</span>
+							) : isLoadingDetails && row.showLoading ? (
+								<Skeleton className="inline-block h-3.5 w-24" />
+							) : null}
+						</div>
+					))}
+				</div>
+			</div>
+			{metadataDetails?.description && (
+				<details className="text-sm">
+					<summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+						Sinopsis
+					</summary>
+					<p className="mt-2 text-muted-foreground leading-relaxed">
+						{metadataDetails.description}
+					</p>
+				</details>
+			)}
+		</div>
+	);
+}
+
+// Campos básicos de la obra. El formato solo aplica a libros; el total se vuelve a calcular desde los metadatos.
+function ObraDataFields({
+	form,
+	type,
+	selectedMetadata,
+	metadataDetails,
+}: {
+	form: ObraFormApi;
+	type: ObraType;
+	selectedMetadata: MetadataSearchResult | null;
+	metadataDetails: MetadataDetails | null;
+}) {
+	const titleId = useId();
+	const creatorId = useId();
+	const yearId = useId();
+	const formatId = useId();
+
+	return (
+		<div className="space-y-3">
+			<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
+				Datos de la obra
+			</p>
+
+			<form.Field name="title">
+				{(field) => (
+					<div className="space-y-2">
+						<Label htmlFor={titleId}>Título</Label>
+						<Input
+							id={titleId}
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+							placeholder="Título de la obra"
+						/>
+					</div>
+				)}
+			</form.Field>
+
+			<form.Field name="creator">
+				{(field) => (
+					<div className="space-y-2">
+						<Label htmlFor={creatorId}>Autor / Director / Estudio</Label>
+						<Input
+							id={creatorId}
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+							placeholder="Ej: Christopher Nolan"
+						/>
+					</div>
+				)}
+			</form.Field>
+
+			<div className="grid gap-3 sm:grid-cols-2">
+				<form.Field name="year">
+					{(field) => (
+						<div className="space-y-2">
+							<Label htmlFor={yearId}>Año</Label>
+							<Input
+								id={yearId}
+								type="number"
+								value={field.state.value}
+								onChange={(e) => field.handleChange(e.target.value)}
+								placeholder="Ej: 2024"
+							/>
+						</div>
+					)}
+				</form.Field>
+				<form.Subscribe selector={(state) => state.values.type}>
+					{(formType) =>
+						formType === "book" && (
+							<form.Field name="format">
+								{(field) => (
+									<div className="space-y-2">
+										<Label htmlFor={formatId}>Formato</Label>
+										<Select
+											value={field.state.value}
+											onValueChange={(v) => {
+												const nextFormat = v as ObraFormat;
+												field.handleChange(nextFormat);
+												const total = getTotalFromMetadata(
+													metadataDetails ?? selectedMetadata,
+													type,
+													nextFormat,
+												);
+												form.setFieldValue(
+													"totalProgress",
+													total ? String(total) : "",
+												);
+											}}
+										>
+											<SelectTrigger id={formatId}>
+												<span className="truncate">
+													{bookFormats.find(
+														(format) => format.value === field.state.value,
+													)?.label ?? "Ebook"}
+												</span>
+											</SelectTrigger>
+											<SelectContent>
+												{bookFormats.map((format) => (
+													<SelectItem key={format.value} value={format.value}>
+														{format.label}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+								)}
+							</form.Field>
+						)
+					}
+				</form.Subscribe>
+			</div>
+		</div>
+	);
+}
+
+// Datos personales: estado, fechas, recomendación, progreso, etiquetas y enlace de lectura.
+function ObraPersonalFields({ form }: { form: ObraFormApi }) {
+	const statusId = useId();
+	const startedAtId = useId();
+	const finishedAtId = useId();
+	const recommendedById = useId();
+	const totalId = useId();
+	const tagsId = useId();
+	const readingUrlId = useId();
+
+	return (
+		<div className="space-y-3 border-t border-border/60 pt-4">
+			<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
+				Datos personales
+			</p>
+
+			<form.Field name="status">
+				{(field) => (
+					<div className="space-y-2">
+						<Label htmlFor={statusId}>Estado</Label>
+						<Select
+							value={field.state.value}
+							onValueChange={(v) => field.handleChange(v as ObraStatus)}
+						>
+							<SelectTrigger id={statusId}>
+								<span className="truncate">
+									{obraStatusLabels[field.state.value]}
+								</span>
+							</SelectTrigger>
+							<SelectContent>
+								{obraStatuses.map((s) => (
+									<SelectItem key={s.value} value={s.value}>
+										{s.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				)}
+			</form.Field>
+
+			<form.Subscribe
+				selector={(state) => ({
+					status: state.values.status,
+					type: state.values.type,
+				})}
+			>
+				{({ status, type: formType }) => {
+					if (status !== "in-progress" && status !== "finished") {
+						return null;
+					}
+
+					if (formType === "movie") {
+						return (
+							<div className="grid gap-3 sm:grid-cols-2">
+								<form.Field name="finishedAt">
+									{(field) => (
+										<div className="space-y-2">
+											<Label htmlFor={finishedAtId}>Fecha</Label>
+											<Input
+												id={finishedAtId}
+												type="date"
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</div>
+									)}
+								</form.Field>
+							</div>
+						);
+					}
+
+					return (
+						<div className="grid gap-3 sm:grid-cols-2">
+							<form.Field name="startedAt">
+								{(field) => (
+									<div className="space-y-2">
+										<Label htmlFor={startedAtId}>Fecha de inicio</Label>
+										<Input
+											id={startedAtId}
+											type="date"
+											value={field.state.value}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+									</div>
+								)}
+							</form.Field>
+							{status === "finished" && (
+								<form.Field name="finishedAt">
+									{(field) => (
+										<div className="space-y-2">
+											<Label htmlFor={finishedAtId}>Fecha de término</Label>
+											<Input
+												id={finishedAtId}
+												type="date"
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</div>
+									)}
+								</form.Field>
+							)}
+						</div>
+					);
+				}}
+			</form.Subscribe>
+
+			<form.Field name="recommendedBy">
+				{(field) => (
+					<div className="space-y-2">
+						<Label htmlFor={recommendedById}>Recomendado por</Label>
+						<Input
+							id={recommendedById}
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+							placeholder=""
+						/>
+					</div>
+				)}
+			</form.Field>
+
+			<form.Subscribe selector={(state) => state.values.type}>
+				{(formType) =>
+					formType &&
+					formType !== "movie" && (
+						<form.Field name="totalProgress">
+							{(field) => (
+								<div className="space-y-2">
+									<form.Subscribe selector={(state) => state.values.format}>
+										{(format) => (
+											<>
+												<Label htmlFor={totalId}>
+													Total {getProgressTotalLabel(formType, format)}
+												</Label>
+												<Input
+													id={totalId}
+													type="number"
+													value={field.state.value}
+													onChange={(e) => field.handleChange(e.target.value)}
+													placeholder={
+														formType === "book" && format === "audiobook"
+															? "Ej: 750"
+															: "Ej: 320"
+													}
+												/>
+											</>
+										)}
+									</form.Subscribe>
+								</div>
+							)}
+						</form.Field>
+					)
+				}
+			</form.Subscribe>
+
+			<form.Field name="tags">
+				{(field) => (
+					<div className="space-y-2">
+						<Label htmlFor={tagsId}>Etiquetas (separadas por coma)</Label>
+						<Textarea
+							id={tagsId}
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+							placeholder="Ej: sci-fi, filosofía, drama"
+							rows={2}
+						/>
+					</div>
+				)}
+			</form.Field>
+
+			<form.Field name="readingUrl">
+				{(field) => (
+					<div className="space-y-2">
+						<Label htmlFor={readingUrlId}>Link personal para leer</Label>
+						<Input
+							id={readingUrlId}
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+							placeholder="https://cubari.moe/..."
+						/>
+						<p className="text-xs text-muted-foreground">
+							Se abre tal cual para que sigas leyendo donde prefieras.
+						</p>
+					</div>
+				)}
+			</form.Field>
+		</div>
+	);
+}
+
+export function ObraForm(props: ObraFormProps) {
+	const {
+		type,
+		selectedMetadata,
+		metadataDetails,
+		isLoadingDetails,
+		onBack,
+		onCancel,
+	} = props;
+	const [submitError, setSubmitError] = useState<string | null>(null);
+	const form = useObraFormInstance(props, setSubmitError);
+
 	const metadataRows = getMetadataRows(
 		type,
 		metadataDetails ?? selectedMetadata,
 		isLoadingDetails,
 	);
-	const coverUrl = metadataDetails?.coverUrl ?? selectedMetadata?.coverUrl;
 	const Icon = TypeIcons[type];
 
 	return (
@@ -411,331 +777,27 @@ export function ObraForm({
 			</div>
 
 			<form
-				onSubmit={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-					void form.handleSubmit();
+				action={async () => {
+					await form.handleSubmit();
 				}}
 				className="space-y-4"
 			>
 				{selectedMetadata && (
-					<div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-3">
-						<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
-							Información del proveedor
-						</p>
-						<div className="flex items-start gap-4">
-							{coverUrl ? (
-								<img
-									src={coverUrl}
-									alt={`Portada de ${selectedMetadata.title}`}
-									className="h-40 w-28 rounded-lg object-cover flex-shrink-0"
-									loading="lazy"
-								/>
-							) : (
-								<div className="h-40 w-28 rounded-lg bg-border/40 flex-shrink-0" />
-							)}
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 flex-1 min-w-0">
-								{metadataRows.map((row) => (
-									<div key={row.label} className="text-sm">
-										<span className="text-muted-foreground">{row.label}:</span>{" "}
-										{row.value ? (
-											<span>{row.value}</span>
-										) : isLoadingDetails && row.showLoading ? (
-											<Skeleton className="inline-block h-3.5 w-24" />
-										) : null}
-									</div>
-								))}
-							</div>
-						</div>
-						{metadataDetails?.description && (
-							<details className="text-sm">
-								<summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-									Sinopsis
-								</summary>
-								<p className="mt-2 text-muted-foreground leading-relaxed">
-									{metadataDetails.description}
-								</p>
-							</details>
-						)}
-					</div>
+					<ProviderInfo
+						selectedMetadata={selectedMetadata}
+						metadataDetails={metadataDetails}
+						metadataRows={metadataRows}
+						isLoadingDetails={isLoadingDetails}
+					/>
 				)}
 
-				<div className="space-y-3">
-					<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
-						Datos de la obra
-					</p>
-
-					<form.Field name="title">
-						{(field) => (
-							<div className="space-y-2">
-								<Label htmlFor={titleId}>Título</Label>
-								<Input
-									id={titleId}
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-									placeholder="Título de la obra"
-								/>
-							</div>
-						)}
-					</form.Field>
-
-					<form.Field name="creator">
-						{(field) => (
-							<div className="space-y-2">
-								<Label htmlFor={creatorId}>Autor / Director / Estudio</Label>
-								<Input
-									id={creatorId}
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-									placeholder="Ej: Christopher Nolan"
-								/>
-							</div>
-						)}
-					</form.Field>
-
-					<div className="grid gap-3 sm:grid-cols-2">
-						<form.Field name="year">
-							{(field) => (
-								<div className="space-y-2">
-									<Label htmlFor={yearId}>Año</Label>
-									<Input
-										id={yearId}
-										type="number"
-										value={field.state.value}
-										onChange={(e) => field.handleChange(e.target.value)}
-										placeholder="Ej: 2024"
-									/>
-								</div>
-							)}
-						</form.Field>
-						<form.Subscribe selector={(state) => state.values.type}>
-							{(formType) =>
-								formType === "book" && (
-									<form.Field name="format">
-										{(field) => (
-											<div className="space-y-2">
-												<Label htmlFor={formatId}>Formato</Label>
-												<Select
-													value={field.state.value}
-													onValueChange={(v) => {
-														const nextFormat = v as ObraFormat;
-														field.handleChange(nextFormat);
-														const total = getTotalFromMetadata(
-															metadataDetails ?? selectedMetadata,
-															type,
-															nextFormat,
-														);
-														form.setFieldValue(
-															"totalProgress",
-															total ? String(total) : "",
-														);
-													}}
-												>
-													<SelectTrigger id={formatId}>
-														<span className="truncate">
-															{bookFormats.find(
-																(format) => format.value === field.state.value,
-															)?.label ?? "Ebook"}
-														</span>
-													</SelectTrigger>
-													<SelectContent>
-														{bookFormats.map((format) => (
-															<SelectItem
-																key={format.value}
-																value={format.value}
-															>
-																{format.label}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-											</div>
-										)}
-									</form.Field>
-								)
-							}
-						</form.Subscribe>
-					</div>
-				</div>
-
-				<div className="space-y-3 border-t border-border/60 pt-4">
-					<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
-						Datos personales
-					</p>
-
-					<form.Field name="status">
-						{(field) => (
-							<div className="space-y-2">
-								<Label htmlFor={statusId}>Estado</Label>
-								<Select
-									value={field.state.value}
-									onValueChange={(v) => field.handleChange(v as ObraStatus)}
-								>
-									<SelectTrigger id={statusId}>
-										<span className="truncate">
-											{obraStatusLabels[field.state.value]}
-										</span>
-									</SelectTrigger>
-									<SelectContent>
-										{obraStatuses.map((s) => (
-											<SelectItem key={s.value} value={s.value}>
-												{s.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						)}
-					</form.Field>
-
-					<form.Subscribe
-						selector={(state) => ({
-							status: state.values.status,
-							type: state.values.type,
-						})}
-					>
-						{({ status, type: formType }) => {
-							if (status !== "in-progress" && status !== "finished") {
-								return null;
-							}
-
-							if (formType === "movie") {
-								return (
-									<div className="grid gap-3 sm:grid-cols-2">
-										<form.Field name="finishedAt">
-											{(field) => (
-												<div className="space-y-2">
-													<Label htmlFor={finishedAtId}>Fecha</Label>
-													<Input
-														id={finishedAtId}
-														type="date"
-														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
-													/>
-												</div>
-											)}
-										</form.Field>
-									</div>
-								);
-							}
-
-							return (
-								<div className="grid gap-3 sm:grid-cols-2">
-									<form.Field name="startedAt">
-										{(field) => (
-											<div className="space-y-2">
-												<Label htmlFor={startedAtId}>Fecha de inicio</Label>
-												<Input
-													id={startedAtId}
-													type="date"
-													value={field.state.value}
-													onChange={(e) => field.handleChange(e.target.value)}
-												/>
-											</div>
-										)}
-									</form.Field>
-									{status === "finished" && (
-										<form.Field name="finishedAt">
-											{(field) => (
-												<div className="space-y-2">
-													<Label htmlFor={finishedAtId}>Fecha de término</Label>
-													<Input
-														id={finishedAtId}
-														type="date"
-														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
-													/>
-												</div>
-											)}
-										</form.Field>
-									)}
-								</div>
-							);
-						}}
-					</form.Subscribe>
-
-					<form.Field name="recommendedBy">
-						{(field) => (
-							<div className="space-y-2">
-								<Label htmlFor={recommendedById}>Recomendado por</Label>
-								<Input
-									id={recommendedById}
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-									placeholder=""
-								/>
-							</div>
-						)}
-					</form.Field>
-
-					<form.Subscribe selector={(state) => state.values.type}>
-						{(formType) =>
-							formType &&
-							formType !== "movie" && (
-								<form.Field name="totalProgress">
-									{(field) => (
-										<div className="space-y-2">
-											<form.Subscribe selector={(state) => state.values.format}>
-												{(format) => (
-													<>
-														<Label htmlFor={totalId}>
-															Total {getProgressTotalLabel(formType, format)}
-														</Label>
-														<Input
-															id={totalId}
-															type="number"
-															value={field.state.value}
-															onChange={(e) =>
-																field.handleChange(e.target.value)
-															}
-															placeholder={
-																formType === "book" && format === "audiobook"
-																	? "Ej: 750"
-																	: "Ej: 320"
-															}
-														/>
-													</>
-												)}
-											</form.Subscribe>
-										</div>
-									)}
-								</form.Field>
-							)
-						}
-					</form.Subscribe>
-
-					<form.Field name="tags">
-						{(field) => (
-							<div className="space-y-2">
-								<Label htmlFor={tagsId}>Etiquetas (separadas por coma)</Label>
-								<Textarea
-									id={tagsId}
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-									placeholder="Ej: sci-fi, filosofía, drama"
-									rows={2}
-								/>
-							</div>
-						)}
-					</form.Field>
-
-					<form.Field name="readingUrl">
-						{(field) => (
-							<div className="space-y-2">
-								<Label htmlFor={readingUrlId}>Link personal para leer</Label>
-								<Input
-									id={readingUrlId}
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-									placeholder="https://cubari.moe/..."
-								/>
-								<p className="text-xs text-muted-foreground">
-									Se abre tal cual para que sigas leyendo donde prefieras.
-								</p>
-							</div>
-						)}
-					</form.Field>
-				</div>
+				<ObraDataFields
+					form={form}
+					type={type}
+					selectedMetadata={selectedMetadata}
+					metadataDetails={metadataDetails}
+				/>
+				<ObraPersonalFields form={form} />
 
 				{submitError && (
 					<p className="text-sm text-destructive" role="alert">

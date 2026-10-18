@@ -25,151 +25,172 @@ const normalizeReadingUrl = (value?: string) => {
 	return `https://${trimmed}`;
 };
 
-export function ObraCard({
+interface CardViewProps extends ObraCardProps {
+	showProgress: boolean;
+	metaLine?: string;
+	readingUrl?: string;
+}
+export function ObraCard(props: ObraCardProps) {
+	const { obra, variant = "default" } = props;
+	const viewProps = {
+		...props,
+		showProgress: Boolean(
+			obra.progress &&
+				obra.type !== "movie" &&
+				obra.status !== "backlog" &&
+				obra.status !== "finished",
+		),
+		metaLine: getObraMetaLine(obra),
+		readingUrl: normalizeReadingUrl(obra.readingUrl),
+	};
+	if (variant === "grid") return <GridObraCard {...viewProps} />;
+	if (variant === "compact") return <CompactObraCard {...viewProps} />;
+	return <DefaultObraCard {...viewProps} />;
+}
+function GridObraCard({
 	obra,
-	variant = "default",
+	className,
+	metaLine,
+	readingUrl,
+}: CardViewProps) {
+	return (
+		<article
+			className={cn(
+				"group relative flex h-full flex-col overflow-hidden border border-border bg-card transition-[border-color,box-shadow] duration-200 hover:border-primary hover:shadow-sm focus-within:border-primary focus-within:shadow-sm",
+				className,
+			)}
+		>
+			<Link
+				to="/obra/$obraId"
+				params={{ obraId: obra.id }}
+				className="flex h-full flex-col"
+			>
+				<div className="relative aspect-[4/5] w-full max-h-60 overflow-hidden bg-background sm:aspect-[2/3] sm:max-h-none">
+					{obra.coverUrl ? (
+						<img
+							src={obra.coverUrl}
+							alt={`Portada de ${obra.title}`}
+							className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+							loading="lazy"
+						/>
+					) : (
+						<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+							Sin portada
+						</div>
+					)}
+					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
+				</div>
+				<div className="space-y-2 p-4 pt-3.5">
+					<div className="flex flex-wrap items-center gap-1.5">
+						<TypeBadge type={obra.type} format={obra.format} />
+						<ObraStatusPicker obra={obra}>
+							<StatusBadge
+								status={obra.status}
+								className="cursor-pointer hover:opacity-80 transition-opacity"
+							/>
+						</ObraStatusPicker>
+						{obra.recommendedBy && (
+							<RecommendationBadge
+								variant="icon"
+								recommendedBy={obra.recommendedBy}
+							/>
+						)}
+					</div>
+					<h3 className="truncate font-serif text-base font-semibold text-card-foreground transition-colors group-hover:text-primary">
+						{obra.title}
+					</h3>
+					{obra.creator && (
+						<p className="truncate text-sm text-muted-foreground">
+							{obra.creator}
+						</p>
+					)}
+					{metaLine && (
+						<p className="truncate text-sm text-muted-foreground">{metaLine}</p>
+					)}
+				</div>
+			</Link>
+			{readingUrl && (
+				<a
+					href={readingUrl}
+					target="_blank"
+					rel="noreferrer"
+					className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 border border-white/15 bg-black/55 px-2.5 text-xs uppercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-[border-color,background-color,color,opacity,transform] duration-200 hover:border-white/30 hover:bg-black/72 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:focus-visible:translate-y-0 sm:focus-visible:opacity-100"
+				>
+					<ExternalLink className="size-3.5" />
+					Ir a leer
+				</a>
+			)}
+		</article>
+	);
+}
+function CompactObraCard({
+	obra,
 	secondaryText,
 	className,
-}: ObraCardProps) {
-	const showProgress =
-		obra.progress &&
-		obra.type !== "movie" &&
-		obra.status !== "backlog" &&
-		obra.status !== "finished";
-	const metaLine = getObraMetaLine(obra);
-	const readingUrl = normalizeReadingUrl(obra.readingUrl);
-
-	if (variant === "grid") {
-		return (
-			<article
-				className={cn(
-					"group relative flex h-full flex-col overflow-hidden border border-border bg-card transition-all duration-300 hover:border-primary hover:shadow-sm focus-within:border-primary focus-within:shadow-sm",
-					className,
-				)}
-			>
-				<Link
-					to="/obra/$obraId"
-					params={{ obraId: obra.id }}
-					className="flex h-full flex-col"
-				>
-					<div className="relative aspect-[4/5] w-full max-h-60 overflow-hidden bg-background sm:aspect-[2/3] sm:max-h-none">
-						{obra.coverUrl ? (
-							<img
-								src={obra.coverUrl}
-								alt={`Portada de ${obra.title}`}
-								className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-								loading="lazy"
-							/>
-						) : (
-							<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-								Sin portada
-							</div>
-						)}
-						<div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
+	metaLine,
+}: CardViewProps) {
+	return (
+		<Link
+			to="/obra/$obraId"
+			params={{ obraId: obra.id }}
+			className={cn(
+				"group flex w-full items-center justify-between border-b border-border py-3 transition-colors hover:border-primary",
+				className,
+			)}
+		>
+			<div className="flex flex-1 items-center gap-3 min-w-0">
+				{obra.coverUrl && (
+					<div className="h-10 w-7 shrink-0 overflow-hidden bg-background">
+						<img
+							src={obra.coverUrl}
+							alt={`Portada de ${obra.title}`}
+							className="h-full w-full object-cover"
+							loading="lazy"
+						/>
 					</div>
-					<div className="space-y-2 p-4 pt-3.5">
-						<div className="flex flex-wrap items-center gap-1.5">
-							<TypeBadge type={obra.type} format={obra.format} />
-							<ObraStatusPicker obra={obra}>
-								<StatusBadge
-									status={obra.status}
-									className="cursor-pointer hover:opacity-80 transition-opacity"
-								/>
-							</ObraStatusPicker>
+				)}
+				<div className="min-w-0 flex-1">
+					<div className="flex items-start justify-between gap-2">
+						<span className="min-w-0 flex-1 truncate font-medium text-card-foreground transition-colors group-hover:text-primary">
+							{obra.title}
+						</span>
+						<div className="flex shrink-0 items-center gap-1.5">
 							{obra.recommendedBy && (
 								<RecommendationBadge
 									variant="icon"
 									recommendedBy={obra.recommendedBy}
 								/>
 							)}
-						</div>
-						<h3 className="truncate font-serif text-base font-semibold text-card-foreground transition-colors group-hover:text-primary">
-							{obra.title}
-						</h3>
-						{obra.creator && (
-							<p className="truncate text-sm text-muted-foreground">
-								{obra.creator}
-							</p>
-						)}
-						{metaLine && (
-							<p className="truncate text-sm text-muted-foreground">
-								{metaLine}
-							</p>
-						)}
-					</div>
-				</Link>
-				{readingUrl && (
-					<a
-						href={readingUrl}
-						target="_blank"
-						rel="noreferrer"
-						className="absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 border border-white/15 bg-black/55 px-2.5 text-xs uppercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-all duration-300 hover:border-white/30 hover:bg-black/72 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:focus-visible:translate-y-0 sm:focus-visible:opacity-100"
-					>
-						<ExternalLink className="size-3.5" />
-						Ir a leer
-					</a>
-				)}
-			</article>
-		);
-	}
-
-	if (variant === "compact") {
-		return (
-			<Link
-				to="/obra/$obraId"
-				params={{ obraId: obra.id }}
-				className={cn(
-					"group flex w-full items-center justify-between border-b border-border py-3 transition-colors hover:border-primary",
-					className,
-				)}
-			>
-				<div className="flex flex-1 items-center gap-3 min-w-0">
-					{obra.coverUrl && (
-						<div className="h-10 w-7 shrink-0 overflow-hidden bg-background">
-							<img
-								src={obra.coverUrl}
-								alt={`Portada de ${obra.title}`}
-								className="h-full w-full object-cover"
-								loading="lazy"
+							<TypeBadge
+								type={obra.type}
+								format={obra.format}
+								showIcon={false}
+								className="shrink-0"
 							/>
 						</div>
-					)}
-					<div className="min-w-0 flex-1">
-						<div className="flex items-start justify-between gap-2">
-							<span className="min-w-0 flex-1 truncate font-medium text-card-foreground transition-colors group-hover:text-primary">
-								{obra.title}
-							</span>
-							<div className="flex shrink-0 items-center gap-1.5">
-								{obra.recommendedBy && (
-									<RecommendationBadge
-										variant="icon"
-										recommendedBy={obra.recommendedBy}
-									/>
-								)}
-								<TypeBadge
-									type={obra.type}
-									format={obra.format}
-									showIcon={false}
-									className="shrink-0"
-								/>
-							</div>
-						</div>
-						{(secondaryText ?? metaLine) && (
-							<span className="block text-sm text-muted-foreground">
-								{secondaryText ?? metaLine}
-							</span>
-						)}
 					</div>
+					{(secondaryText ?? metaLine) && (
+						<span className="block text-sm text-muted-foreground">
+							{secondaryText ?? metaLine}
+						</span>
+					)}
 				</div>
-				<ChevronRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-			</Link>
-		);
-	}
-
+			</div>
+			<ChevronRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+		</Link>
+	);
+}
+function DefaultObraCard({
+	obra,
+	className,
+	showProgress,
+	metaLine,
+	readingUrl,
+}: CardViewProps) {
 	return (
 		<article
 			className={cn(
-				"group flex flex-col border border-border bg-card transition-all duration-300 hover:border-primary hover:shadow-sm",
+				"group flex flex-col border border-border bg-card transition-[border-color,box-shadow] duration-200 hover:border-primary hover:shadow-sm",
 				className,
 			)}
 		>

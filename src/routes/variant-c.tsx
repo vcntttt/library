@@ -1,3 +1,4 @@
+// cspell:ignore Sousou Kanehito Shingeki Kyojin Hajime Isayama Storer Takeru Hokazono katana Csvg Crect
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Obra, ObraStatus, ObraType } from "@/lib/types";
@@ -302,7 +303,7 @@ function Dashboard({
 							type="button"
 							key={obra.id}
 							onClick={() => onSelect(obra)}
-							className="text-left bg-[#F5F2EB] rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-[#E5E1D6]"
+							className="text-left bg-[#F5F2EB] rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[box-shadow,translate] border border-[#E5E1D6]"
 						>
 							<div className="flex gap-4">
 								<div className="h-20 w-14 shrink-0 rounded-lg overflow-hidden bg-[#E5E1D6]">
@@ -401,6 +402,7 @@ function Biblioteca({
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder="Buscar..."
+						aria-label="Buscar obras"
 						className="bg-[#F5F2EB] border border-[#E5E1D6] rounded-xl pl-4 pr-4 py-2 text-sm placeholder:text-[#B5B1A4] focus:outline-none focus:border-[#3A5A40] transition-colors w-full md:w-64"
 					/>
 				</div>
@@ -412,7 +414,7 @@ function Biblioteca({
 						type="button"
 						key={obra.id}
 						onClick={() => onSelect(obra)}
-						className="text-left bg-[#F5F2EB] rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all border border-[#E5E1D6] group"
+						className="text-left bg-[#F5F2EB] rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-[box-shadow,translate] border border-[#E5E1D6] group"
 					>
 						<div className="aspect-[4/5] w-full bg-[#E5E1D6] overflow-hidden">
 							{obra.coverUrl ? (

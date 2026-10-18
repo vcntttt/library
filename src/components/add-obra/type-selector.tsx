@@ -1,4 +1,4 @@
-import { TypeIcons } from "@/components/icons";
+import { TypeIcons } from "@/components/icon-maps";
 import type { ObraType } from "@/lib/types";
 
 const obraTypes: {

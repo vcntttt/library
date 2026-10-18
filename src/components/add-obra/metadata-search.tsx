@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2, Search } from "lucide-react";
-import { TypeIcons } from "@/components/icons";
+import { TypeIcons } from "@/components/icon-maps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
@@ -45,6 +45,13 @@ export function MetadataSearch({
 	sourceLabel,
 }: MetadataSearchProps) {
 	const Icon = TypeIcons[type];
+	const visibility = getSearchVisibility({
+		query,
+		isSearching,
+		error,
+		directUrlFallback,
+		resultCount: results.length,
+	});
 
 	return (
 		<div className="space-y-4 py-2">
@@ -81,7 +88,7 @@ export function MetadataSearch({
 				)}
 			</div>
 
-			{!isSearching && query.trim().length > 0 && query.trim().length < 3 && (
+			{visibility.shortQuery && (
 				<p className="text-sm text-muted-foreground">
 					Escribe al menos 3 caracteres para buscar.
 				</p>
@@ -89,7 +96,7 @@ export function MetadataSearch({
 
 			{error && <p className="text-sm text-destructive">{error}</p>}
 
-			{!isSearching && !error && directUrlFallback && (
+			{visibility.fallback && directUrlFallback && (
 				<div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
 					<div className="space-y-1">
 						<p className="text-sm font-medium">
@@ -113,71 +120,99 @@ export function MetadataSearch({
 			{results.length > 0 && (
 				<div className="space-y-2 max-h-64 overflow-y-auto pr-1">
 					{results.map((result) => (
-						<button
-							type="button"
+						<MetadataResult
 							key={`${result.source}-${result.id}`}
-							className="w-full text-left rounded-xl border border-border/60 bg-muted/40 px-3 py-3 transition hover:bg-muted/60 flex items-center gap-3 group"
-							onClick={() => onSelectResult(result)}
-						>
-							{result.coverUrl ? (
-								<img
-									src={result.coverUrl}
-									alt={`Portada de ${result.title}`}
-									className="h-16 w-11 rounded-md object-cover flex-shrink-0"
-									loading="lazy"
-								/>
-							) : (
-								<div className="h-16 w-11 rounded-md bg-border/40 flex-shrink-0" />
-							)}
-							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-									{result.title}
-								</p>
-								{(result.creator || result.year) && (
-									<p className="text-xs text-muted-foreground truncate">
-										{[result.creator, result.year].filter(Boolean).join(" • ")}
-									</p>
-								)}
-								<p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
-									{result.source}
-								</p>
-							</div>
-						</button>
+							result={result}
+							onSelectResult={onSelectResult}
+						/>
 					))}
 				</div>
 			)}
 
-			{!isSearching &&
-				query.trim().length >= 3 &&
-				results.length === 0 &&
-				!error &&
-				!directUrlFallback && (
-					<div className="text-center py-6 space-y-3">
-						<p className="text-sm text-muted-foreground">
-							No se encontraron resultados.
-						</p>
-						<Button type="button" variant="outline" size="sm" onClick={onSkip}>
-							Crear manualmente
-						</Button>
-					</div>
-				)}
+			{visibility.empty && (
+				<div className="text-center py-6 space-y-3">
+					<p className="text-sm text-muted-foreground">
+						No se encontraron resultados.
+					</p>
+					<Button type="button" variant="outline" size="sm" onClick={onSkip}>
+						Crear manualmente
+					</Button>
+				</div>
+			)}
 
-			{!isSearching &&
-				!error &&
-				!directUrlFallback &&
-				(query.trim().length < 3 || results.length === 0) && (
-					<div className="flex justify-center pt-2">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={onSkip}
-							className="text-muted-foreground"
-						>
-							Saltar búsqueda y crear manualmente
-						</Button>
-					</div>
-				)}
+			{visibility.manualSkip && (
+				<div className="flex justify-center pt-2">
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={onSkip}
+						className="text-muted-foreground"
+					>
+						Saltar búsqueda y crear manualmente
+					</Button>
+				</div>
+			)}
 		</div>
 	);
+}
+
+function MetadataResult({
+	result,
+	onSelectResult,
+}: {
+	result: MetadataSearchResult;
+	onSelectResult: (result: MetadataSearchResult) => void;
+}) {
+	return (
+		<button
+			type="button"
+			className="w-full text-left rounded-xl border border-border/60 bg-muted/40 px-3 py-3 transition hover:bg-muted/60 flex items-center gap-3 group"
+			onClick={() => onSelectResult(result)}
+		>
+			{result.coverUrl ? (
+				<img
+					src={result.coverUrl}
+					alt={`Portada de ${result.title}`}
+					className="h-16 w-11 rounded-md object-cover flex-shrink-0"
+					loading="lazy"
+				/>
+			) : (
+				<div className="h-16 w-11 rounded-md bg-border/40 flex-shrink-0" />
+			)}
+			<div className="min-w-0 flex-1">
+				<p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+					{result.title}
+				</p>
+				{(result.creator || result.year) && (
+					<p className="text-xs text-muted-foreground truncate">
+						{[result.creator, result.year].filter(Boolean).join(" • ")}
+					</p>
+				)}
+				<p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+					{result.source}
+				</p>
+			</div>
+		</button>
+	);
+}
+
+function getSearchVisibility({
+	query,
+	isSearching,
+	error,
+	directUrlFallback,
+	resultCount,
+}: Pick<
+	MetadataSearchProps,
+	"query" | "isSearching" | "error" | "directUrlFallback"
+> & { resultCount: number }) {
+	const length = query.trim().length;
+	const ready = !isSearching && !error && !directUrlFallback;
+	return {
+		shortQuery: !isSearching && length > 0 && length < 3,
+		fallback: !isSearching && !error,
+		empty: ready && length >= 3 && resultCount === 0,
+		manualSkip: ready && (length < 3 || resultCount === 0),
+	};
 }
