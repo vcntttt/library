@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+	clampProgressCurrent,
 	formatProgressRemaining,
 	formatProgressValue,
 	getInitialProgressTotal,
 	getProgressTotalFromMetadata,
 	getProgressUnitLabel,
 	isAudiobook,
+	isPositiveCount,
 } from "./progress";
 import type { Obra } from "./types";
 
@@ -109,5 +111,18 @@ describe("progress helpers", () => {
 			"12 h 26 min",
 		);
 		expect(formatProgressRemaining(2000, 1622, audiobooks[0])).toBe("0 min");
+	});
+
+	it("clamps current progress into the range of the new total", () => {
+		expect(clampProgressCurrent(15, 10)).toBe(10);
+		expect(clampProgressCurrent(5, 0)).toBe(0);
+		expect(clampProgressCurrent(-2, 10)).toBe(0);
+		expect(clampProgressCurrent(4, 10)).toBe(4);
+	});
+
+	it("only treats positive counts as usable (0 must not render as text)", () => {
+		expect(isPositiveCount(undefined)).toBe(false);
+		expect(isPositiveCount(0)).toBe(false);
+		expect(isPositiveCount(12)).toBe(true);
 	});
 });

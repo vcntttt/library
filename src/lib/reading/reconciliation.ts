@@ -79,12 +79,21 @@ export function selectCanonicalProgress(
 	};
 }
 
+/**
+ * Devuelve el timestamp de origen en segundos epoch. Los dispositivos envían segundos,
+ * pero filas antiguas de sidecars quedaron en ms.
+ */
+export function toEpochSeconds(timestamp: number): number {
+	return timestamp > 1e11 ? Math.floor(timestamp / 1000) : timestamp;
+}
+
 export function compareProgressSource(
 	left: ReadingProgressLike,
 	right: ReadingProgressLike,
 ) {
 	const timestampDifference =
-		(left.sourceTimestamp ?? 0) - (right.sourceTimestamp ?? 0);
+		toEpochSeconds(left.sourceTimestamp ?? 0) -
+		toEpochSeconds(right.sourceTimestamp ?? 0);
 	if (timestampDifference !== 0) return timestampDifference;
 	return (left.revision ?? 0) - (right.revision ?? 0);
 }
@@ -104,4 +113,61 @@ export function isPossibleDuplicate(left: string, right: string) {
 		normalizedLeft.includes(normalizedRight) ||
 		normalizedRight.includes(normalizedLeft)
 	);
+}
+
+export interface ExistingAnnotationRow {
+	sourceKey: string;
+	sourceFingerprint?: string;
+}
+
+export interface IncomingAnnotationIdentity {
+	sourceKey: string;
+	sourceFingerprint: string;
+}
+
+/**
+ * Empareja cada anotación entrante con una fila existente, sin que dos entradas
+ * reclamen la misma fila. Primero busca coincidencia exacta por huella; después,
+ * por sourceKey, solo en filas que no sean la huella de otra entrada actual.
+ */
+export function matchAnnotationRows<T extends ExistingAnnotationRow>(
+	existing: T[],
+	incoming: IncomingAnnotationIdentity[],
+): Array<T | undefined> {
+	const incomingFingerprints = new Set(
+		incoming.map((annotation) => annotation.sourceFingerprint),
+	);
+	const claimed = new Set<T>();
+	const matches: Array<T | undefined> = incoming.map(() => undefined);
+
+	incoming.forEach((annotation, index) => {
+		const match = existing.find(
+			(candidate) =>
+				!claimed.has(candidate) &&
+				candidate.sourceFingerprint === annotation.sourceFingerprint,
+		);
+		if (match) {
+			matches[index] = match;
+			claimed.add(match);
+		}
+	});
+
+	incoming.forEach((annotation, index) => {
+		if (matches[index]) return;
+		const match = existing.find(
+			(candidate) =>
+				!claimed.has(candidate) &&
+				candidate.sourceKey === annotation.sourceKey &&
+				!(
+					candidate.sourceFingerprint !== undefined &&
+					incomingFingerprints.has(candidate.sourceFingerprint)
+				),
+		);
+		if (match) {
+			matches[index] = match;
+			claimed.add(match);
+		}
+	});
+
+	return matches;
 }

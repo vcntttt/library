@@ -15,6 +15,7 @@ import {
 import {
 	getSeasonEndProgress,
 	getSeasonProgress,
+	setSeasonEpisodeCount,
 	setSeasonProgress,
 	totalEpisodesForSeasons,
 	validateSeasons,
@@ -90,13 +91,7 @@ export function SeasonProgressEditor({
 	};
 
 	const updateSeasonEpisodeCount = (seasonNumber: number, count: number) => {
-		applySeasons(
-			sanitized.map((season) =>
-				season.seasonNumber === seasonNumber
-					? { ...season, episodeCount: Math.max(0, count) }
-					: season,
-			),
-		);
+		applySeasons(setSeasonEpisodeCount(sanitized, seasonNumber, count));
 	};
 
 	const addSeason = () => {

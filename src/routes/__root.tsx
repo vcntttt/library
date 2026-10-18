@@ -1,7 +1,13 @@
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+	createRootRoute,
+	HeadContent,
+	Link,
+	Scripts,
+} from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "../components/Header";
 import appCss from "../styles.css?url";
@@ -44,7 +50,24 @@ export const Route = createRootRoute({
 	}),
 
 	shellComponent: RootDocument,
+	notFoundComponent: NotFoundPage,
 });
+
+function NotFoundPage() {
+	return (
+		<main className="min-h-[calc(100vh-4rem)]">
+			<div className="container mx-auto flex max-w-md flex-col items-center gap-4 p-4 py-16 text-center md:p-6">
+				<h1 className="font-serif text-2xl font-semibold tracking-tight">
+					Página no encontrada
+				</h1>
+				<p className="text-sm text-muted-foreground">
+					La dirección no existe o fue movida.
+				</p>
+				<Button render={<Link to="/" />}>Volver al inicio</Button>
+			</div>
+		</main>
+	);
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (

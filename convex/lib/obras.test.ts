@@ -3,9 +3,14 @@ import {
 	assertCreateObraInput,
 	assertUpdateObraPatch,
 	completeProgressForStatus,
+	effectiveString,
+	effectiveYear,
+	normalizeCustomString,
 	normalizeTags,
 	sanitizeMetadata,
 	sanitizeProgress,
+	sameProgress,
+	sameProgressSeasons,
 	sanitizeProgressSeasons,
 	shouldReopenFinishedProgress,
 	syncMangaProgressTotal,
@@ -35,6 +40,22 @@ describe("obra domain helpers", () => {
 			current: 10,
 			total: 10,
 		});
+	});
+
+	it("rejects non-finite progress values", () => {
+		expect(() =>
+			assertCreateObraInput({
+				title: "Obra",
+				type: "book",
+				status: "in-progress",
+				progress: { current: Number.NaN, total: 10 },
+			}),
+		).toThrow("Progreso invalido");
+		expect(() =>
+			assertUpdateObraPatch({
+				progress: { current: 1, total: Number.POSITIVE_INFINITY },
+			}),
+		).toThrow("Progreso invalido");
 	});
 
 	it("sanitizes progress seasons by ordering and removing invalid entries", () => {
@@ -128,6 +149,32 @@ describe("obra domain helpers", () => {
 		).toBe(false);
 	});
 
+	it("treats progress as unchanged only when the values match", () => {
+		expect(sameProgress(undefined, undefined)).toBe(true);
+		expect(sameProgress({ current: 3, total: 10 }, { current: 3, total: 10 })).toBe(true);
+		expect(sameProgress({ current: 3, total: 10 }, undefined)).toBe(false);
+		expect(sameProgress({ current: 3, total: 10 }, { current: 4, total: 10 })).toBe(false);
+	});
+
+	it("compares progress seasons regardless of absence versus empty", () => {
+		expect(sameProgressSeasons(undefined, undefined)).toBe(true);
+		expect(
+			sameProgressSeasons(
+				[{ seasonNumber: 1, episodeCount: 5 }],
+				[{ seasonNumber: 1, episodeCount: 5 }],
+			),
+		).toBe(true);
+		expect(
+			sameProgressSeasons([{ seasonNumber: 1, episodeCount: 5 }], undefined),
+		).toBe(false);
+		expect(
+			sameProgressSeasons(
+				[{ seasonNumber: 1, episodeCount: 5 }],
+				[{ seasonNumber: 1, episodeCount: 6 }],
+			),
+		).toBe(false);
+	});
+
 	it("accepts valid quote patches and rejects empty quote content", () => {
 		expect(() =>
 			assertUpdateObraPatch({
@@ -138,5 +185,29 @@ describe("obra domain helpers", () => {
 		expect(() =>
 			assertUpdateObraPatch({ quotes: [{ content: "   " }] }),
 		).toThrow("cita");
+	});
+});
+
+describe("overrides personalizados", () => {
+	it("normaliza el override conservando el blanco explícito", () => {
+		expect(normalizeCustomString(null)).toBeUndefined();
+		expect(normalizeCustomString(undefined)).toBeUndefined();
+		expect(normalizeCustomString("  ")).toBe("");
+		expect(normalizeCustomString(" x ")).toBe("x");
+	});
+
+	it("usa el valor original cuando no hay override", () => {
+		expect(effectiveString(undefined, "Original")).toBe("Original");
+		expect(effectiveYear(undefined, 1990)).toBe(1990);
+	});
+
+	it("un override en blanco oculta el valor original", () => {
+		expect(effectiveString("", "Original")).toBeUndefined();
+		expect(effectiveYear(0, 1990)).toBeUndefined();
+	});
+
+	it("un valor real del override gana al original", () => {
+		expect(effectiveString("Nuevo", "Original")).toBe("Nuevo");
+		expect(effectiveYear(2001, 1990)).toBe(2001);
 	});
 });

@@ -1,4 +1,5 @@
 import { api as convexApi } from "@convex/_generated/api";
+import { isSameSecret } from "@convex/lib/notifications";
 import { createFileRoute } from "@tanstack/react-router";
 import { createConvexServerClient } from "@/lib/server/convex";
 import { json, jsonError, readJson } from "@/lib/server/http";
@@ -9,7 +10,8 @@ function assertAlfredSecret(request: Request) {
 		throw new Error("Falta ALFRED_NOTIFY_SECRET.");
 	}
 
-	if (request.headers.get("x-library-secret") !== expected) {
+	const received = request.headers.get("x-library-secret");
+	if (!received || !isSameSecret(received, expected)) {
 		throw new Error("No autorizado.");
 	}
 }
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/internal/alfred/notifications/pull")({
 				return json(
 					await client.mutation(convexApi.notifications.pull, {
 						secret: request.headers.get("x-library-secret") ?? "",
-						limit: body?.limit,
+						limit: typeof body?.limit === "number" ? body.limit : undefined,
 					}),
 				);
 			},

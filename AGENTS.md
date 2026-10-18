@@ -87,6 +87,7 @@ Generated files (do not edit): `src/routeTree.gen.ts`, `convex/_generated/*`.
   - `OBSIDIAN_VAULT_PATH`
   - `READING_BOOKS_PATH`
   - `READING_INTEGRATION_OWNER_ID`
+  - `LIBRARY_MCP_SECRET`
   - `TMDB_API_KEY`
 - `ALFRED_NOTIFY_SECRET`
 - `ALFRED_NOTIFY_URL`

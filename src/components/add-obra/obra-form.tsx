@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { TypeIcons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -265,6 +265,7 @@ export function ObraForm({
 	onCancel,
 	onSubmit,
 }: ObraFormProps) {
+	const [submitError, setSubmitError] = useState<string | null>(null);
 	const titleId = useId();
 	const statusId = useId();
 	const formatId = useId();
@@ -295,6 +296,7 @@ export function ObraForm({
 		},
 		onSubmit: async ({ value }) => {
 			if (!value.title.trim()) return;
+			setSubmitError(null);
 
 			const parsedTotalProgress = Math.max(
 				0,
@@ -352,7 +354,15 @@ export function ObraForm({
 						: undefined,
 			};
 
-			await onSubmit(input);
+			try {
+				await onSubmit(input);
+			} catch (error) {
+				setSubmitError(
+					error instanceof Error
+						? error.message
+						: "No se pudo agregar la obra.",
+				);
+			}
 		},
 	});
 
@@ -727,6 +737,11 @@ export function ObraForm({
 					</form.Field>
 				</div>
 
+				{submitError && (
+					<p className="text-sm text-destructive" role="alert">
+						{submitError}
+					</p>
+				)}
 				<div className="flex justify-end gap-2 pt-2">
 					<Button type="button" variant="outline" onClick={onCancel}>
 						Cancelar

@@ -134,6 +134,16 @@ export function mergeAcknowledgedEpisodeMetadata(
 	};
 }
 
+export function isSameSecret(received: string, expected: string) {
+	const length = Math.max(received.length, expected.length);
+	let mismatch = received.length ^ expected.length;
+	for (let index = 0; index < length; index += 1) {
+		mismatch |=
+			(received.charCodeAt(index) || 0) ^ (expected.charCodeAt(index) || 0);
+	}
+	return mismatch === 0;
+}
+
 export function nextReadProgress(args: {
 	currentProgress: number | undefined;
 	currentTotal: number | undefined;

@@ -27,11 +27,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { resolveCustomPatchValue } from "@/lib/custom-fields";
 import { isMetadataFinished } from "@/lib/metadata/format";
 import { buildMetadataPayload } from "@/lib/metadata/payload";
 import type { MetadataDetails } from "@/lib/metadata/types";
 import { obraFromDoc } from "@/lib/obras";
 import {
+	clampProgressCurrent,
 	formatProgressRemaining,
 	formatProgressValue,
 	getBookFormatLabel,
@@ -117,40 +119,75 @@ function getEditValues(obra: Obra): EditValues {
 	};
 }
 
-function buildCustomPatch(values: EditValues) {
+// Convex ignora `undefined`, pero `null` limpia un valor. Solo se manda `null` si el obra
+// tenía un valor que ahora se borra; si no, la clave se omite para que el servidor no lo toque.
+function clearedValue<T>(
+	next: T | undefined,
+	current: unknown,
+): T | null | undefined {
+	if (next !== undefined) return next;
+	return current != null && current !== "" ? null : undefined;
+}
+
+function buildCustomPatch(values: EditValues, obra: Obra) {
 	const year = Number(values.customYear);
 	return {
-		customTitle: values.customTitle.trim() || undefined,
-		customCreator: values.customCreator.trim() || undefined,
-		customYear:
-			values.customYear.trim() && Number.isFinite(year) ? year : undefined,
-		customCoverUrl: values.customCoverUrl.trim() || undefined,
+		customTitle: clearedValue(
+			values.customTitle.trim() || undefined,
+			obra.customTitle,
+		),
+		customCreator: resolveCustomPatchValue({
+			next: values.customCreator.trim() || undefined,
+			custom: obra.customCreator,
+			original: obra.originalCreator,
+			blank: "",
+		}),
+		customYear: resolveCustomPatchValue({
+			next:
+				values.customYear.trim() && Number.isFinite(year) ? year : undefined,
+			custom: obra.customYear,
+			original: obra.originalYear,
+			blank: 0,
+		}),
+		customCoverUrl: resolveCustomPatchValue({
+			next: values.customCoverUrl.trim() || undefined,
+			custom: obra.customCoverUrl,
+			original: obra.originalCoverUrl,
+			blank: "",
+		}),
 	};
 }
 
-function buildFormatPatch(values: Pick<EditValues, "format">) {
+function buildFormatPatch(values: Pick<EditValues, "format">, obra: Obra) {
 	return {
-		format: values.format || undefined,
+		format: clearedValue(values.format || undefined, obra.format),
 	};
 }
 
 function buildPersonalPatch(values: EditValues, obra: Obra) {
-	const movieWatchedAt =
-		obra.type === "movie"
-			? (parseDateInput(values.finishedAt) ?? parseDateInput(values.startedAt))
-			: undefined;
+	const isMovie = obra.type === "movie";
+	const movieWatchedAt = isMovie
+		? (parseDateInput(values.finishedAt) ?? parseDateInput(values.startedAt))
+		: undefined;
+	const currentMovieWatchedAt = obra.finishedAt ?? obra.startedAt;
 
 	return {
-		readingUrl: values.readingUrl.trim() || undefined,
-		sourceUrl: values.sourceUrl.trim() || undefined,
+		readingUrl: clearedValue(
+			values.readingUrl.trim() || undefined,
+			obra.readingUrl,
+		),
+		sourceUrl: clearedValue(
+			values.sourceUrl.trim() || undefined,
+			obra.sourceUrl,
+		),
 		recommendedBy: values.recommendedBy.trim(),
-		startedAt:
-			obra.type === "movie" ? movieWatchedAt : parseDateInput(values.startedAt),
-		finishedAt:
-			obra.type === "movie"
-				? movieWatchedAt
-				: parseDateInput(values.finishedAt),
-		review: values.review.trim() || undefined,
+		startedAt: isMovie
+			? clearedValue(movieWatchedAt, currentMovieWatchedAt)
+			: clearedValue(parseDateInput(values.startedAt), obra.startedAt),
+		finishedAt: isMovie
+			? clearedValue(movieWatchedAt, currentMovieWatchedAt)
+			: clearedValue(parseDateInput(values.finishedAt), obra.finishedAt),
+		review: clearedValue(values.review.trim() || undefined, obra.review),
 	};
 }
 
@@ -163,16 +200,18 @@ function buildProgressPatch(
 	status?: ObraStatus,
 ) {
 	if (obra.type === "movie") return null;
+	const patch: Record<string, unknown> = { ...(status ? { status } : {}) };
+	// El servidor rechaza cualquier progreso de un obra ligada a un documento de lectura.
+	if (obra.readingDocumentId) return patch;
 	const total = Math.max(0, Math.floor(values.progressTotal || 0));
 	const current = Math.min(
 		Math.max(0, Math.floor(values.progressCurrent || 0)),
 		total,
 	);
 	const seasons = validateSeasons(values.progressSeasons);
-	const patch: Record<string, unknown> = { ...(status ? { status } : {}) };
 	if (total <= 0) {
-		patch.progress = undefined;
-		patch.progressSeasons = undefined;
+		if (obra.progress) patch.progress = null;
+		if (obra.progressSeasons?.length) patch.progressSeasons = null;
 		return patch;
 	}
 	patch.progress = { current, total };
@@ -258,16 +297,6 @@ export function ObraEditSheet({
 		setAutoSaveError(null);
 	}, [obra, open, resetFromObra]);
 
-	useEffect(() => {
-		return () => {
-			for (const timer of saveTimers.current.values()) {
-				clearTimeout(timer);
-			}
-			saveTimers.current.clear();
-			pendingSavePatches.current.clear();
-		};
-	}, []);
-
 	const commitPatch = useCallback(
 		async (patch: Record<string, unknown>) => {
 			if (!convexId) return false;
@@ -327,6 +356,9 @@ export function ObraEditSheet({
 		saveTimers.current.clear();
 	}, [commitPatch]);
 
+	// Al desmontar (p. ej. al salir de la ruta) se guardan los cambios pendientes en vez de perderlos.
+	useEffect(() => () => flushPendingSaves(), [flushPendingSaves]);
+
 	const handleOpenChange = (nextOpen: boolean) => {
 		if (!nextOpen) flushPendingSaves();
 		onOpenChange(nextOpen);
@@ -349,6 +381,8 @@ export function ObraEditSheet({
 				? { ...values, progressCurrent: values.progressTotal }
 				: values;
 		setValues(nextValues);
+		// Un guardado de progreso pendiente puede llevar un estado automático; se envía antes para que no pise el elegido.
+		flushPendingSaves();
 		const saved = await commitPatch(
 			buildProgressPatch(nextValues, obra, status) ?? { status },
 		);
@@ -390,7 +424,10 @@ export function ObraEditSheet({
 
 	const handleProgressTotalChange = (nextTotal: number) => {
 		if (!obra || !values) return;
-		const progressCurrent = nextTotal === 0 ? 0 : values.progressCurrent;
+		const progressCurrent = clampProgressCurrent(
+			values.progressCurrent,
+			nextTotal,
+		);
 		const nextValues = {
 			...values,
 			progressCurrent,
@@ -691,7 +728,7 @@ export function ObraEditSheet({
 											};
 											updateValues(
 												nextValues,
-												buildCustomPatch(nextValues),
+												buildCustomPatch(nextValues, obra),
 												"customTitle",
 											);
 										}}
@@ -709,7 +746,7 @@ export function ObraEditSheet({
 											};
 											updateValues(
 												nextValues,
-												buildCustomPatch(nextValues),
+												buildCustomPatch(nextValues, obra),
 												"customCreator",
 											);
 										}}
@@ -729,7 +766,7 @@ export function ObraEditSheet({
 												};
 												updateValues(
 													nextValues,
-													buildCustomPatch(nextValues),
+													buildCustomPatch(nextValues, obra),
 													"customYear",
 												);
 											}}
@@ -748,7 +785,7 @@ export function ObraEditSheet({
 													};
 													updateValues(
 														nextValues,
-														buildFormatPatch(nextValues),
+														buildFormatPatch(nextValues, obra),
 														"format",
 														200,
 													);
@@ -780,7 +817,7 @@ export function ObraEditSheet({
 												};
 												updateValues(
 													nextValues,
-													buildCustomPatch(nextValues),
+													buildCustomPatch(nextValues, obra),
 													"customCoverUrl",
 												);
 											}}

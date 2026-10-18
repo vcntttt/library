@@ -11,9 +11,14 @@ import {
 	assertCreateObraInput,
 	assertUpdateObraPatch,
 	completeProgressForStatus,
+	effectiveString,
+	effectiveYear,
+	normalizeCustomString,
 	normalizeOptionalString,
 	normalizeTags,
 	nullableNumber,
+	sameProgress,
+	sameProgressSeasons,
 	sanitizeExternal,
 	sanitizeMetadata,
 	sanitizeProgress,
@@ -21,6 +26,7 @@ import {
 	sanitizeQuotes,
 	shouldReopenFinishedProgress,
 	syncProgressTotal,
+	type UpdateObraPatch,
 } from "./lib/obras";
 import {
 	createObraFields,
@@ -44,11 +50,14 @@ export const list = query({
 		let rows: Doc<"obras">[];
 
 		if (input.status) {
+			const status = input.status;
+			const type = input.type;
 			rows = await ctx.db
 				.query("obras")
 				.withIndex("by_user_status_updatedAt", (q) =>
-					(q as any).eq("userId", userId).eq("status", input.status),
+					(q as any).eq("userId", userId).eq("status", status),
 				)
+				.filter((q) => (type ? q.eq(q.field("type"), type) : true))
 				.order("desc")
 				.take(limit);
 		} else if (input.type) {
@@ -67,11 +76,7 @@ export const list = query({
 				.take(limit);
 		}
 
-		const filtered = input.status && input.type
-			? rows.filter((row) => row.type === input.type)
-			: rows;
-
-		return filtered.map((row) => toObra(row));
+		return rows.map((row) => toObra(row));
 	},
 });
 
@@ -177,10 +182,51 @@ export const update = mutation({
 	args: { id: v.id("obras"), patch: updateObraPatchValidator },
 	handler: async (ctx, { id, patch: rawPatch }) => {
 		const userId = await requireUserId(ctx);
-		const patch = assertUpdateObraPatch(rawPatch);
+		const patch: UpdateObraPatch = { ...assertUpdateObraPatch(rawPatch) };
 		const existing = await ctx.db.get(id);
 		if (!existing || existing.userId !== userId) {
 			throw new Error("Obra no encontrada.");
+		}
+
+		// Las claves que no cambian nada se quitan para que no activen ramas de cambio.
+		const existingProgress =
+			existing.progressCurrent != null && existing.progressTotal != null
+				? { current: existing.progressCurrent, total: existing.progressTotal }
+				: undefined;
+		if (hasOwn(patch, "progress")) {
+			if (sameProgress(sanitizeProgress(patch.progress), existingProgress)) {
+				delete patch.progress;
+			} else if (existing.readingDocumentId) {
+				throw new Error(
+					"El progreso está controlado por la integración de lectura. Desvincula el documento para editarlo manualmente.",
+				);
+			}
+		}
+		if (hasOwn(patch, "progressSeasons")) {
+			if (
+				sameProgressSeasons(
+					sanitizeProgressSeasons(patch.progressSeasons),
+					sanitizeProgressSeasons(existing.progressSeasons),
+				)
+			) {
+				delete patch.progressSeasons;
+			} else if (existing.readingDocumentId) {
+				throw new Error(
+					"El progreso está controlado por la integración de lectura. Desvincula el documento para editarlo manualmente.",
+				);
+			}
+		}
+		if (
+			hasOwn(patch, "review") &&
+			normalizeOptionalString(patch.review) ===
+				normalizeOptionalString(existing.review)
+		) {
+			delete patch.review;
+		}
+		for (const key of ["startedAt", "finishedAt"] as const) {
+			if (hasOwn(patch, key) && patch[key] == null && existing[key] == null) {
+				delete patch[key];
+			}
 		}
 
 		const now = Date.now();
@@ -230,13 +276,13 @@ export const update = mutation({
 			nextPatch.coverUrl = normalizeOptionalString(patch.coverUrl);
 		}
 		if (hasOwn(patch, "customCoverUrl")) {
-			nextPatch.customCoverUrl = normalizeOptionalString(patch.customCoverUrl);
+			nextPatch.customCoverUrl = normalizeCustomString(patch.customCoverUrl);
 		}
 		if (hasOwn(patch, "creator")) {
 			nextPatch.creator = normalizeOptionalString(patch.creator);
 		}
 		if (hasOwn(patch, "customCreator")) {
-			nextPatch.customCreator = normalizeOptionalString(patch.customCreator);
+			nextPatch.customCreator = normalizeCustomString(patch.customCreator);
 		}
 		if (hasOwn(patch, "year")) {
 			nextPatch.year = nullableNumber(patch.year);
@@ -248,21 +294,11 @@ export const update = mutation({
 			nextPatch.customTitle = normalizeOptionalString(patch.customTitle);
 		}
 		if (hasOwn(patch, "progress")) {
-			if (existing.readingDocumentId) {
-				throw new Error(
-					"El progreso está controlado por la integración de lectura. Desvincula el documento para editarlo manualmente.",
-				);
-			}
 			const progress = sanitizeProgress(patch.progress);
 			nextPatch.progressCurrent = progress?.current;
 			nextPatch.progressTotal = progress?.total;
 		}
 		if (hasOwn(patch, "progressSeasons")) {
-			if (existing.readingDocumentId) {
-				throw new Error(
-					"El progreso está controlado por la integración de lectura. Desvincula el documento para editarlo manualmente.",
-				);
-			}
 			nextPatch.progressSeasons = sanitizeProgressSeasons(patch.progressSeasons);
 		}
 		if (hasOwn(patch, "startedAt")) {
@@ -366,6 +402,14 @@ export const update = mutation({
 			!hasOwn(patch, "finishedAt")
 		) {
 			nextPatch.finishedAt = undefined;
+		}
+		if (
+			existing.status === "finished" &&
+			nextStatus !== "finished" &&
+			existing.reviewStatus === "pending"
+		) {
+			// Una obra que deja de estar terminada no debe quedar en la cola de reseñas.
+			nextPatch.reviewStatus = undefined;
 		}
 
 		if (nextType === "movie") {
@@ -472,6 +516,7 @@ export const snoozeReview = mutation({
 		const userId = await requireUserId(ctx);
 		const obra = await getOwnedObra(ctx, id, userId);
 		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		if (obra.review) throw new Error("La obra ya tiene reseña.");
 		await ctx.db.patch(id, {
 			reviewStatus: "pending",
 			reviewRequestedAt: obra.reviewRequestedAt ?? Date.now(),
@@ -488,6 +533,7 @@ export const skipReview = mutation({
 		const userId = await requireUserId(ctx);
 		const obra = await getOwnedObra(ctx, id, userId);
 		if (obra.status !== "finished") throw new Error("La obra aún no está terminada.");
+		if (obra.review) throw new Error("La obra ya tiene reseña.");
 		const now = Date.now();
 		await ctx.db.patch(id, {
 			reviewStatus: "skipped",
@@ -525,13 +571,13 @@ function toObra(row: Doc<"obras">, quoteRows: Doc<"obraQuotes">[] = []) {
 		recommendedBy: row.recommendedBy,
 		readingUrl: row.readingUrl,
 		sourceUrl: row.sourceUrl,
-		coverUrl: row.customCoverUrl ?? row.coverUrl,
+		coverUrl: effectiveString(row.customCoverUrl, row.coverUrl),
 		originalCoverUrl: row.coverUrl,
 		customCoverUrl: row.customCoverUrl,
-		creator: row.customCreator ?? row.creator,
+		creator: effectiveString(row.customCreator, row.creator),
 		originalCreator: row.creator,
 		customCreator: row.customCreator,
-		year: row.customYear ?? row.year,
+		year: effectiveYear(row.customYear, row.year),
 		originalYear: row.year,
 		customYear: row.customYear,
 		external:
