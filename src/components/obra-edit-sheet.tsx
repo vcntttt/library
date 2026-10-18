@@ -593,11 +593,9 @@ export function ObraEditSheet({
 	};
 
 	const handleRemoveQuote = (clientId: string) => {
-		setQuotes((current) => {
-			const nextQuotes = current.filter((quote) => quote.clientId !== clientId);
-			savePatch(buildQuotesPatch(nextQuotes), { debounceKey: "quotes" });
-			return nextQuotes;
-		});
+		const nextQuotes = quotes.filter((quote) => quote.clientId !== clientId);
+		setQuotes(nextQuotes);
+		savePatch(buildQuotesPatch(nextQuotes), { debounceKey: "quotes" });
 	};
 
 	const handleQuoteChange = (
@@ -605,13 +603,11 @@ export function ObraEditSheet({
 		field: "content" | "characterName",
 		value: string,
 	) => {
-		setQuotes((current) => {
-			const nextQuotes = current.map((quote) =>
-				quote.clientId === clientId ? { ...quote, [field]: value } : quote,
-			);
-			savePatch(buildQuotesPatch(nextQuotes), { debounceKey: "quotes" });
-			return nextQuotes;
-		});
+		const nextQuotes = quotes.map((quote) =>
+			quote.clientId === clientId ? { ...quote, [field]: value } : quote,
+		);
+		setQuotes(nextQuotes);
+		savePatch(buildQuotesPatch(nextQuotes), { debounceKey: "quotes" });
 	};
 
 	const autoSaveLabel = useMemo(() => {
