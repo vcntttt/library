@@ -674,8 +674,11 @@ export const syncDue = internalAction({
 			),
 			{},
 		);
-		for (const userId of userIds)
-			await ctx.scheduler.runAfter(0, syncUserRef, { userId, force: false });
+		await Promise.all(
+			userIds.map((userId) =>
+				ctx.scheduler.runAfter(0, syncUserRef, { userId, force: false }),
+			),
+		);
 		return null;
 	},
 });

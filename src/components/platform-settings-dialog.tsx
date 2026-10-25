@@ -1,6 +1,7 @@
 import { api } from "@convex/_generated/api";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useId, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -65,6 +66,7 @@ function PlatformSettings() {
 			});
 		}
 	};
+	const selected = new Set(preferences.providers);
 	const options = [
 		...new Set([...streamingPlatforms, ...preferences.providers]),
 	].sort((a, b) => a.localeCompare(b, "es"));
@@ -80,7 +82,7 @@ function PlatformSettings() {
 						<input
 							type="checkbox"
 							className="size-4 shrink-0 accent-primary"
-							checked={preferences.providers.includes(name)}
+							checked={selected.has(name)}
 							onChange={(event) =>
 								void update(
 									event.target.checked
@@ -133,8 +135,6 @@ function StremioConnection() {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
-	const emailId = useId();
-	const passwordId = useId();
 
 	const run = async (operation: () => Promise<unknown>, success: string) => {
 		setBusy(true);
@@ -161,96 +161,26 @@ function StremioConnection() {
 			{status === undefined ? (
 				<Skeleton className="h-20 w-full" />
 			) : status ? (
-				<>
-					<p className="break-all text-sm">{status.email}</p>
-					<p className="text-xs text-muted-foreground">
-						{status.lastSyncedAt
-							? `Última sincronización: ${formatSyncDate(status.lastSyncedAt)}`
-							: "Esperando la primera sincronización."}
-					</p>
-					{status.lastError && (
-						<p role="alert" className="text-sm text-destructive">
-							{status.lastError}
-						</p>
-					)}
-					<div className="flex flex-wrap gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={busy || status.nextSyncAt > Date.now()}
-							onClick={() =>
-								void run(() => sync({}), "Sincronización completada.")
-							}
-						>
-							{busy ? "Procesando…" : "Sincronizar ahora"}
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							disabled={busy}
-							onClick={() =>
-								void run(
-									() => disconnect({}),
-									"Cuenta desconectada. Tus obras se conservan.",
-								)
-							}
-						>
-							Desconectar
-						</Button>
-					</div>
-					<p className="text-xs text-muted-foreground">
-						Próxima sincronización a partir de{" "}
-						{formatSyncDate(status.nextSyncAt)}.
-					</p>
-				</>
+				<StremioAccount
+					status={status}
+					busy={busy}
+					onSync={() => run(() => sync({}), "Sincronización completada.")}
+					onDisconnect={() =>
+						run(
+							() => disconnect({}),
+							"Cuenta desconectada. Tus obras se conservan.",
+						)
+					}
+				/>
 			) : (
-				<form
-					className="space-y-3"
-					onSubmit={(event) => {
-						event.preventDefault();
-						const form = event.currentTarget;
-						const data = new FormData(form);
-						const email = String(data.get("email") ?? "");
-						const password = String(data.get("password") ?? "");
-						const passwordInput = form.elements.namedItem("password");
-						if (passwordInput instanceof HTMLInputElement)
-							passwordInput.value = "";
-						void run(() => connect({ email, password }), "Cuenta conectada.");
-					}}
-				>
-					<div className="space-y-2">
-						<Label htmlFor={emailId}>Correo de Stremio</Label>
-						<Input
-							id={emailId}
-							name="email"
-							type="email"
-							autoComplete="username"
-							required
-							disabled={busy}
-							maxLength={254}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor={passwordId}>Contraseña de Stremio</Label>
-						<Input
-							id={passwordId}
-							name="password"
-							type="password"
-							autoComplete="current-password"
-							required
-							disabled={busy}
-							maxLength={1024}
-						/>
-					</div>
-					<p className="text-xs text-muted-foreground">
-						Usamos tu contraseña para iniciar sesión; no la guardamos. La
-						conexión importa tu actividad disponible sin modificar Stremio.
-					</p>
-					<Button type="submit" disabled={busy}>
-						{busy ? "Conectando…" : "Conectar Stremio"}
-					</Button>
-				</form>
+				<StremioLoginForm
+					busy={busy}
+					onConnect={(credentials) =>
+						run(() => connect(credentials), "Cuenta conectada.")
+					}
+				/>
 			)}
+
 			{error && (
 				<p role="alert" className="text-sm text-destructive">
 					{error}
@@ -263,12 +193,128 @@ function StremioConnection() {
 	);
 }
 
+function StremioLoginForm({
+	busy,
+	onConnect,
+}: {
+	busy: boolean;
+	onConnect: (credentials: {
+		email: string;
+		password: string;
+	}) => Promise<void>;
+}) {
+	const emailId = useId();
+	const passwordId = useId();
+	return (
+		<form
+			className="space-y-3"
+			action={async (data) => {
+				await onConnect({
+					email: String(data.get("email") ?? ""),
+					password: String(data.get("password") ?? ""),
+				});
+			}}
+		>
+			<div className="space-y-2">
+				<Label htmlFor={emailId}>Correo de Stremio</Label>
+				<Input
+					id={emailId}
+					name="email"
+					type="email"
+					autoComplete="username"
+					required
+					disabled={busy}
+					maxLength={254}
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor={passwordId}>Contraseña de Stremio</Label>
+				<Input
+					id={passwordId}
+					name="password"
+					type="password"
+					autoComplete="current-password"
+					required
+					disabled={busy}
+					maxLength={1024}
+				/>
+			</div>
+			<p className="text-xs text-muted-foreground">
+				Usamos tu contraseña para iniciar sesión; no la guardamos. La conexión
+				importa tu actividad disponible sin modificar Stremio.
+			</p>
+			<Button type="submit" disabled={busy}>
+				{busy ? "Conectando…" : "Conectar Stremio"}
+			</Button>
+		</form>
+	);
+}
+
+function StremioAccount({
+	status,
+	busy,
+	onSync,
+	onDisconnect,
+}: {
+	status: NonNullable<FunctionReturnType<typeof api.stremio.status>>;
+	busy: boolean;
+	onSync: () => Promise<void>;
+	onDisconnect: () => Promise<void>;
+}) {
+	const [availableAt, setAvailableAt] = useState<number | null>(null);
+	useEffect(() => {
+		const timer = setTimeout(
+			() => setAvailableAt(status.nextSyncAt),
+			Math.max(0, status.nextSyncAt - Date.now()),
+		);
+		return () => clearTimeout(timer);
+	}, [status.nextSyncAt]);
+	return (
+		<>
+			<p className="wrap-anywhere text-sm">{status.email}</p>
+			<p className="text-xs text-muted-foreground">
+				{status.lastSyncedAt
+					? `Última sincronización: ${formatSyncDate(status.lastSyncedAt)}`
+					: "Esperando la primera sincronización."}
+			</p>
+			{status.lastError && (
+				<p role="alert" className="text-sm text-destructive">
+					{status.lastError}
+				</p>
+			)}
+			<div className="flex flex-wrap gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={busy || availableAt !== status.nextSyncAt}
+					onClick={() => void onSync()}
+				>
+					{busy ? "Procesando…" : "Sincronizar ahora"}
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					disabled={busy}
+					onClick={() => void onDisconnect()}
+				>
+					Desconectar
+				</Button>
+			</div>
+			<p className="text-xs text-muted-foreground">
+				Próxima sincronización a partir de {formatSyncDate(status.nextSyncAt)}.
+			</p>
+		</>
+	);
+}
+
+const syncDateFormatter = new Intl.DateTimeFormat("es-CL", {
+	timeZone: "America/Santiago",
+	day: "numeric",
+	month: "short",
+	hour: "2-digit",
+	minute: "2-digit",
+});
+
 function formatSyncDate(timestamp: number) {
-	return new Intl.DateTimeFormat("es-CL", {
-		timeZone: "America/Santiago",
-		day: "numeric",
-		month: "short",
-		hour: "2-digit",
-		minute: "2-digit",
-	}).format(timestamp);
+	return syncDateFormatter.format(timestamp);
 }
