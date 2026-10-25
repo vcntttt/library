@@ -2,8 +2,9 @@ import { api as convexApi } from "@convex/_generated/api";
 import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { Activity, ChevronDown, LogOut } from "lucide-react";
+import { Activity, ChevronDown, LogOut, Tv } from "lucide-react";
 import { useMemo, useState } from "react";
+import { PlatformSettingsDialog } from "@/components/platform-settings-dialog";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
@@ -34,6 +35,7 @@ export function UserMenu() {
 	const { isAuthenticated, isLoading } = useConvexAuth();
 	const { signOut } = useAuthActions();
 	const user = useQuery(convexApi.users.current);
+	const [platformsOpen, setPlatformsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 
 	const displayName = useMemo(() => {
@@ -72,69 +74,82 @@ export function UserMenu() {
 	}
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger
-				render={
-					<Button
-						variant="ghost"
-						className="h-11 gap-2 rounded-full px-3 hover:bg-muted/60"
-					/>
-				}
-			>
-				<span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-muted/40 text-[0.65rem] font-semibold text-muted-foreground">
-					{user?.image ? (
-						<img
-							src={user.image}
-							alt={displayName}
-							className="h-full w-full object-cover"
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger
+					render={
+						<Button
+							variant="ghost"
+							className="h-11 gap-2 rounded-full px-3 hover:bg-muted/60"
 						/>
-					) : (
-						initials
-					)}
-				</span>
-				<span className="hidden min-w-0 flex-1 text-left sm:block">
-					<span className="block truncate text-sm font-medium text-foreground">
-						{displayName}
+					}
+				>
+					<span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-muted/40 text-[0.65rem] font-semibold text-muted-foreground">
+						{user?.image ? (
+							<img
+								src={user.image}
+								alt={displayName}
+								className="h-full w-full object-cover"
+							/>
+						) : (
+							initials
+						)}
 					</span>
-				</span>
-				<ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
-				<span className="sr-only">Menú de usuario</span>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent
-				align="end"
-				sideOffset={8}
-				className="w-64 rounded-xl border border-border/60 bg-card/95 p-2 shadow-lg"
-			>
-				<DropdownMenuGroup>
-					<DropdownMenuLabel className="space-y-1 px-2 py-2">
-						<span className="block text-sm font-medium text-foreground">
+					<span className="hidden min-w-0 flex-1 text-left sm:block">
+						<span className="block truncate text-sm font-medium text-foreground">
 							{displayName}
 						</span>
-						{user?.email && (
-							<span className="block text-xs text-muted-foreground">
-								{user.email}
+					</span>
+					<ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
+					<span className="sr-only">Menú de usuario</span>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent
+					align="end"
+					sideOffset={8}
+					className="w-64 rounded-xl border border-border/60 bg-card/95 p-2 shadow-lg"
+				>
+					<DropdownMenuGroup>
+						<DropdownMenuLabel className="space-y-1 px-2 py-2">
+							<span className="block text-sm font-medium text-foreground">
+								{displayName}
 							</span>
-						)}
-					</DropdownMenuLabel>
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						render={<Link to="/health" />}
-						className="cursor-pointer"
-					>
-						<Activity className="h-4 w-4" />
-						Sanidad de metadatos
-					</DropdownMenuItem>
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						onClick={() => void handleSignOut()}
-						disabled={isSigningOut}
-						className="cursor-pointer"
-					>
-						<LogOut className="h-4 w-4" />
-						{isSigningOut ? "Cerrando sesión..." : "Cerrar sesión"}
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+							{user?.email && (
+								<span className="block text-xs text-muted-foreground">
+									{user.email}
+								</span>
+							)}
+						</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							onClick={() => setPlatformsOpen(true)}
+							className="cursor-pointer"
+						>
+							<Tv className="h-4 w-4" />
+							Mis plataformas
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							render={<Link to="/health" />}
+							className="cursor-pointer"
+						>
+							<Activity className="h-4 w-4" />
+							Sanidad de metadatos
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							onClick={() => void handleSignOut()}
+							disabled={isSigningOut}
+							className="cursor-pointer"
+						>
+							<LogOut className="h-4 w-4" />
+							{isSigningOut ? "Cerrando sesión..." : "Cerrar sesión"}
+						</DropdownMenuItem>
+					</DropdownMenuGroup>
+				</DropdownMenuContent>
+			</DropdownMenu>
+			<PlatformSettingsDialog
+				open={platformsOpen}
+				onOpenChange={setPlatformsOpen}
+			/>
+		</>
 	);
 }

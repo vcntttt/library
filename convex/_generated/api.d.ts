@@ -15,10 +15,14 @@ import type * as ideas from "../ideas.js";
 import type * as lib_fsrs from "../lib/fsrs.js";
 import type * as lib_notifications from "../lib/notifications.js";
 import type * as lib_obras from "../lib/obras.js";
+import type * as lib_stremio from "../lib/stremio.js";
+import type * as lib_stremioProgress from "../lib/stremioProgress.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as notifications from "../notifications.js";
 import type * as obras from "../obras.js";
+import type * as platforms from "../platforms.js";
 import type * as reading from "../reading.js";
+import type * as stremio from "../stremio.js";
 import type * as users from "../users.js";
 
 import type {
@@ -35,10 +39,14 @@ declare const fullApi: ApiFromModules<{
   "lib/fsrs": typeof lib_fsrs;
   "lib/notifications": typeof lib_notifications;
   "lib/obras": typeof lib_obras;
+  "lib/stremio": typeof lib_stremio;
+  "lib/stremioProgress": typeof lib_stremioProgress;
   "lib/validators": typeof lib_validators;
   notifications: typeof notifications;
   obras: typeof obras;
+  platforms: typeof platforms;
   reading: typeof reading;
+  stremio: typeof stremio;
   users: typeof users;
 }>;
 

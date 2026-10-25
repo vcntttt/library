@@ -706,7 +706,7 @@ async function getTmdbDetails(
 
 	const data = await fetchJson<TmdbDetails>(detailUrl.toString());
 	let watchProviders: string[] | undefined;
-	if (isMovie) {
+	if (obraType === "movie" || obraType === "series") {
 		try {
 			const providersUrl = new URL(
 				`https://api.themoviedb.org/3/${endpoint}/${id}/watch/providers`,

@@ -62,6 +62,9 @@ export default defineSchema({
 				}),
 			),
 		),
+		stremioMtime: v.optional(v.number()),
+		stremioPosition: v.optional(v.number()),
+		stremioVideoId: v.optional(v.string()),
 		startedAt: v.optional(v.number()),
 		finishedAt: v.optional(v.number()),
 		readingDocumentId: v.optional(v.id("readingDocuments")),
@@ -76,11 +79,17 @@ export default defineSchema({
 		readingRereadSuggestedAt: v.optional(v.number()),
 		createdAt: v.number(),
 		updatedAt: v.number(),
-		})
+	})
 		.index("by_user_updatedAt", ["userId", "updatedAt"])
 		.index("by_user_createdAt", ["userId", "createdAt"])
 		.index("by_user_status_updatedAt", ["userId", "status", "updatedAt"])
 		.index("by_user_type_updatedAt", ["userId", "type", "updatedAt"])
+		.index("by_user_external_source_id_type", [
+			"userId",
+			"externalSource",
+			"externalId",
+			"type",
+		])
 		.index("by_user_reviewStatus_updatedAt", [
 			"userId",
 			"reviewStatus",
@@ -227,7 +236,9 @@ export default defineSchema({
 			// Estado legado; no se usa desde la interfaz.
 			v.literal("discarded"),
 		),
-		sourceStatus: v.optional(v.union(v.literal("active"), v.literal("missing"))),
+		sourceStatus: v.optional(
+			v.union(v.literal("active"), v.literal("missing")),
+		),
 		sourceMissingAt: v.optional(v.number()),
 		possibleDuplicateOf: v.optional(v.id("readingAnnotations")),
 		createdAt: v.number(),
@@ -260,6 +271,50 @@ export default defineSchema({
 	})
 		.index("by_user_startedAt", ["userId", "startedAt"])
 		.index("by_user_status_startedAt", ["userId", "status", "startedAt"]),
+	platformPreferences: defineTable({
+		userId: v.id("users"),
+		providers: v.array(v.string()),
+		stremioEnabled: v.boolean(),
+		updatedAt: v.number(),
+	}).index("by_user", ["userId"]),
+	stremioConnections: defineTable({
+		userId: v.id("users"),
+		email: v.string(),
+		authKey: v.optional(v.string()),
+		connecting: v.optional(v.boolean()),
+		lastSyncedAt: v.optional(v.number()),
+		lastError: v.optional(v.string()),
+		connectRetryAfter: v.optional(v.number()),
+		checkpointMtime: v.optional(v.number()),
+		checkpointId: v.optional(v.string()),
+		leaseUntil: v.optional(v.number()),
+		version: v.number(),
+		nextSyncAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user", ["userId"])
+		.index("by_next_sync", ["nextSyncAt"]),
+	stremioPending: defineTable({
+		userId: v.id("users"),
+		email: v.string(),
+		stremioId: v.string(),
+		mtime: v.number(),
+		nextRetryAt: v.number(),
+	})
+		.index("by_user_email_id", ["userId", "email", "stremioId"])
+		.index("by_user_email_retry", ["userId", "email", "nextRetryAt"]),
+	stremioImports: defineTable({
+		userId: v.id("users"),
+		type: v.union(v.literal("movie"), v.literal("series")),
+		imdbId: v.string(),
+		accountEmail: v.optional(v.string()),
+		stremioId: v.string(),
+		mtime: v.number(),
+		obraId: v.optional(v.id("obras")),
+		updatedAt: v.number(),
+	})
+		.index("by_user_type_imdb", ["userId", "type", "imdbId"])
+		.index("by_user_updatedAt", ["userId", "updatedAt"]),
 	ideas: defineTable({
 		userId: v.id("users"),
 		relativePath: v.string(),

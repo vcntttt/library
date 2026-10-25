@@ -114,7 +114,10 @@ export function buildTechnicalItems(obra: Obra): DetailItem[] {
 				value: `${metadata.runtime} min`,
 			});
 		}
-		if (obra.type === "movie" && metadata.watchProviders) {
+		if (
+			(obra.type === "movie" || obra.type === "series") &&
+			metadata.watchProviders
+		) {
 			metadataItems.push({
 				label: "Plataformas en Chile",
 				value: metadata.watchProviders.length

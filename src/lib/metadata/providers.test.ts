@@ -1202,6 +1202,30 @@ describe("metadata providers", () => {
 		);
 	});
 
+	it("consulta plataformas en Chile también para series y conserva disponibilidad vacía", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonResponse({ name: "Normal People", number_of_episodes: 12 }),
+			)
+			.mockResolvedValueOnce(
+				jsonResponse({
+					results: {
+						CL: { flatrate: [{ provider_name: "Netflix" }] },
+						US: { flatrate: [{ provider_name: "Hulu" }] },
+					},
+				}),
+			);
+		vi.stubGlobal("fetch", fetchMock);
+		vi.stubEnv("TMDB_API_KEY", "test-key");
+		const { getMetadataDetails } = await import("./providers");
+		const details = await getMetadataDetails("tmdb", "89905", "series");
+		expect(details.watchProviders).toEqual(["Netflix"]);
+		expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
+			"/tv/89905/watch/providers",
+		);
+	});
+
 	it("does not fetch Amazon URLs from look-alike hosts", async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);

@@ -31,6 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WatchAvailability } from "@/components/watch-availability";
 import { isMetadataOngoing, isObraUpToDate } from "@/lib/metadata/format";
 import { buildTechnicalItems, type DetailItem } from "@/lib/obra-detail-items";
 import { getCoverProgress } from "@/lib/obra-detail-progress";
@@ -270,6 +271,7 @@ function ObraDetailView({
 					showOngoingBadge={showOngoingBadge}
 					showUpToDateBadge={showUpToDateBadge}
 				/>
+				<WatchAvailability obra={obra} />
 				{!shouldKeepTechnicalWithCover && (
 					<TechnicalInfoSection
 						items={technicalItems}
