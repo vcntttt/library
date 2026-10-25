@@ -32,7 +32,12 @@ export function PlatformSettingsDialog({
 						tus obras.
 					</DialogDescription>
 				</DialogHeader>
-				{open && <PlatformSettings />}
+				{open && (
+					<div className="space-y-6">
+						<PlatformSettings />
+						<StremioConnection />
+					</div>
+				)}
 			</DialogContent>
 		</Dialog>
 	);
@@ -46,24 +51,32 @@ function PlatformSettings() {
 		},
 	);
 	const [state, setState] = useState<{
-		saving: boolean;
+		pending: number;
 		error: string | null;
 		saved: boolean;
-	}>({ saving: false, error: null, saved: false });
+	}>({ pending: 0, error: null, saved: false });
 
 	if (!preferences) return <Skeleton className="h-48 w-full" />;
 
 	const update = async (providers: string[], stremioEnabled: boolean) => {
-		setState({ saving: true, error: null, saved: false });
+		setState((state) => ({
+			pending: state.pending + 1,
+			error: null,
+			saved: false,
+		}));
 		try {
 			await save({ providers, stremioEnabled });
-			setState({ saving: false, error: null, saved: true });
+			setState((state) => ({
+				...state,
+				pending: state.pending - 1,
+				saved: true,
+			}));
 		} catch {
-			setState({
-				saving: false,
+			setState((state) => ({
+				pending: state.pending - 1,
 				error: "No se pudieron guardar las plataformas. Inténtalo de nuevo.",
 				saved: false,
-			});
+			}));
 		}
 	};
 	const selected = new Set(preferences.providers);
@@ -72,7 +85,7 @@ function PlatformSettings() {
 	].sort((a, b) => a.localeCompare(b, "es"));
 	return (
 		<div className="space-y-6">
-			<fieldset disabled={state.saving} className="grid grid-cols-2 gap-2">
+			<fieldset className="grid grid-cols-2 gap-2">
 				<legend className="sr-only">Servicios disponibles</legend>
 				{options.map((name) => (
 					<label
@@ -102,7 +115,6 @@ function PlatformSettings() {
 				<input
 					type="checkbox"
 					className="mt-0.5 size-4 shrink-0 accent-primary"
-					disabled={state.saving}
 					checked={preferences.stremioEnabled}
 					onChange={(event) =>
 						void update(preferences.providers, event.target.checked)
@@ -111,7 +123,7 @@ function PlatformSettings() {
 				<span>Ofrecer Stremio cuando no esté en mis plataformas</span>
 			</label>
 			<output className="min-h-4 text-xs text-muted-foreground">
-				{state.saving
+				{state.pending > 0
 					? "Guardando…"
 					: state.saved
 						? "Cambios guardados"
@@ -122,7 +134,6 @@ function PlatformSettings() {
 					{state.error}
 				</p>
 			)}
-			<StremioConnection />
 		</div>
 	);
 }

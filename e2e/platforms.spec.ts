@@ -7,6 +7,52 @@ import {
 	openObraDetailByTitle,
 } from "./helpers/obras";
 
+test("marcar plataformas no bloquea las demás opciones ni reinicia la conexión", async ({
+	page,
+}) => {
+	await login(page);
+	await page.getByRole("button", { name: /Menú de usuario/ }).click();
+	await page.getByRole("menuitem", { name: "Mis plataformas" }).click();
+	const option = page.getByRole("checkbox", { name: "Netflix", exact: true });
+	await expect(option).toBeVisible();
+	const original = await option.isChecked();
+	await page.getByLabel("Correo de Stremio").fill("fixture@example.test");
+	await page.getByRole("dialog").evaluate((dialog) => {
+		const email = dialog.querySelector('input[name="email"]');
+		const changes = { blocked: false, replaced: false };
+		Object.assign(window, { platformChanges: changes });
+		new MutationObserver((records) => {
+			if (records.some((record) => record.attributeName === "disabled"))
+				changes.blocked = true;
+			if (dialog.querySelector('input[name="email"]') !== email)
+				changes.replaced = true;
+		}).observe(dialog, {
+			attributes: true,
+			childList: true,
+			subtree: true,
+			attributeFilter: ["disabled"],
+		});
+	});
+	try {
+		await option.setChecked(!original);
+		await expect(
+			page.getByText("Cambios guardados", { exact: true }),
+		).toBeVisible();
+		await expect(page.getByLabel("Correo de Stremio")).toHaveValue(
+			"fixture@example.test",
+		);
+		const changes = await page.evaluate(() =>
+			Reflect.get(window, "platformChanges"),
+		);
+		expect(changes).toEqual({ blocked: false, replaced: false });
+	} finally {
+		await option.setChecked(original);
+		await expect(
+			page.getByText("Cambios guardados", { exact: true }),
+		).toBeVisible();
+	}
+});
+
 test("guarda plataformas por usuario y ofrece Stremio como alternativa", async ({
 	page,
 }) => {
